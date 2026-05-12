@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Sistema de Registro de BO - Login</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="header">
+    <img src="../public/brasao-gcm.png" alt="Brasão GCM" class="logo">
+    <h1>Sistema de Registro de BO</h1>
+    <img src="../public/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+  </header>
+
+  <main class="login-container">
+    <h2>Login</h2>
+    <form onsubmit="login(); return false;">
+      <input type="text" id="usuario" placeholder="Usuário" required>
+      <input type="password" id="senha" placeholder="Senha" required>
+      <button type="submit">Entrar</button>
+    </form>
+    <a href="#">Esqueceu a senha?</a>
+  </main>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

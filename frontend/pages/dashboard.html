@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard - Sistema de BO</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="header">
+    <img src="../../public/brasao-gcm.png" alt="Brasão GCM" class="logo">
+    <h1>Sistema de Registro de BO</h1>
+    <img src="../../public/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+  </header>
+
+  <main class="dashboard">
+    <h2>BO Nº: <span id="numeroBO">BO-GCM-0000</span></h2>
+
+    <!-- Navegação das abas -->
+    <nav class="tabs">
+      <button onclick="showTab('solicitacao')">Dados da Solicitação</button>
+      <button onclick="showTab('ocorrencia')">Dados da Ocorrência</button>
+      <button onclick="showTab('vitima')">Vítimas</button>
+      <button onclick="showTab('suspeito')">Suspeitos</button>
+      <button onclick="showTab('relato')">Relato da Ocorrência</button>
+      <button onclick="showTab('objetos')">Objetos Apreendidos</button>
+      <button onclick="showTab('autoridade')">Autoridade Policial</button>
+    </nav>
+
+    <!-- Solicitação -->
+    <section id="solicitacao" class="tab-content">
+      <h3>Dados da Solicitação</h3>
+      <form>
+        <input type="text" placeholder="Canal da Solicitação">
+        <input type="datetime-local" placeholder="Data e Hora">
+        <input type="text" placeholder="Natureza da Solicitação">
+        <input type="text" placeholder="Nome">
+        <input type="text" placeholder="RG/CPF/CNH">
+        <input type="tel" placeholder="Telefone">
+      </form>
+    </section>
+
+    <!-- Ocorrência -->
+    <section id="ocorrencia" class="tab-content hidden">
+      <h3>Dados da Ocorrência</h3>
+      <form>
+        <input type="text" placeholder="Tipificação">
+        <input type="datetime-local" placeholder="Data e Hora">
+        <input type="text" placeholder="Rua">
+        <input type="text" placeholder="Número">
+        <input type="text" placeholder="Cidade">
+        <input type="text" placeholder="Complemento">
+        <input type="text" placeholder="Cod. da Viatura">
+        <input type="text" placeholder="Comandante">
+        <input type="text" placeholder="Motorista">
+        <input type="text" placeholder="Patrulheiro I">
+        <input type="text" placeholder="Patrulheiro II">
+      </form>
+    </section>
+
+    <!-- Vítimas -->
+    <section id="vitima" class="tab-content hidden">
+      <h3>Dados das Vítimas</h3>
+      <div id="vitimas-list">
+        <div>
+          <input type="text" placeholder="Nome">
+          <input type="text" placeholder="Alcunha">
+          <input type="text" placeholder="RG/CPF/CNH/CNPJ">
+          <input type="text" placeholder="Nacionalidade">
+          <input type="date" placeholder="Nascimento">
+          <input type="number" placeholder="Idade">
+          <input type="text" placeholder="Naturalidade">
+          <input type="text" placeholder="Estado Civil">
+          <input type="text" placeholder="Ocupação">
+          <input type="text" placeholder="Gênero Declarado">
+          <input type="text" placeholder="Nome do Pai">
+          <input type="text" placeholder="Nome da Mãe">
+          <input type="text" placeholder="Rua">
+          <input type="text" placeholder="Número">
+          <input type="text" placeholder="Cidade">
+          <input type="text" placeholder="Complemento">
+          <input type="tel" placeholder="Telefone">
+          <input type="text" placeholder="Escolaridade">
+          <button type="button" onclick="removerBloco(this)">Excluir Vítima</button>
+          <hr>
+        </div>
+      </div>
+      <button type="button" onclick="adicionarVitima()">Adicionar Vítima</button>
+    </section>
+
+    <!-- Suspeitos -->
+    <section id="suspeito" class="tab-content hidden">
+      <h3>Dados dos Suspeitos</h3>
+      <div id="suspeitos-list">
+        <div>
+          <input type="text" placeholder="Nome">
+          <input type="text" placeholder="Alcunha">
+          <input type="text" placeholder="RG/CPF/CNH/CNPJ">
+          <input type="text" placeholder="Nacionalidade">
+          <input type="date" placeholder="Nascimento">
+          <input type="number" placeholder="Idade">
+          <input type="text" placeholder="Naturalidade">
+          <input type="text" placeholder="Estado Civil">
+          <input type="text" placeholder="Ocupação">
+          <input type="text" placeholder="Gênero Declarado">
+          <input type="text" placeholder="Nome do Pai">
+          <input type="text" placeholder="Nome da Mãe">
+          <input type="text" placeholder="Rua">
+          <input type="text" placeholder="Número">
+          <input type="text" placeholder="Cidade">
+          <input type="text" placeholder="Complemento">
+          <input type="tel" placeholder="Telefone">
+          <input type="text" placeholder="Escolaridade">
+          <button type="button" onclick="removerBloco(this)">Excluir Suspeito</button>
+          <hr>
+        </div>
+      </div>
+      <button type="button" onclick="adicionarSuspeito()">Adicionar Suspeito</button>
+    </section>
+
+    <!-- Relato -->
+    <section id="relato" class="tab-content hidden">
+      <h3>Relato da Ocorrência</h3>
+      <textarea rows="10" cols="80" placeholder="Descreva os fatos..."></textarea>
+    </section>
+
+    <!-- Objetos -->
+    <section id="objetos" class="tab-content hidden">
+      <h3>Objetos Apreendidos</h3>
+      <div id="objetos-list">
+        <div>
+          <input type="text" placeholder="Tipo de Objeto">
+          <input type="number" placeholder="Quantidade">
+          <textarea placeholder="Descrição"></textarea>
+          <button type="button" onclick="removerBloco(this)">Excluir Objeto</button>
+          <hr>
+        </div>
+      </div>
+      <button type="button" onclick="adicionarObjeto()">Adicionar Objeto</button>
+    </section>
+
+    <!-- Autoridade -->
+    <section id="autoridade" class="tab-content hidden">
+      <h3>Autoridade Policial</h3>
+      <form>
+        <input type="datetime-local" placeholder="Data e Hora">
+        <input type="text" placeholder="Local">
+        <input type="text" placeholder="Nome">
+        <input type="text" placeholder="Cargo">
+        <input type="text" placeholder="Matrícula">
+      </form>
+    </section>
+
+    <div class="actions">
+      <button onclick="salvarBO()">Salvar</button>
+      <button onclick="finalizarBO()">Finalizar</button>
+    </div>
+  </main>
+
+  <script src="../assets/js/main.js"></script>
+</body>
+</html>
