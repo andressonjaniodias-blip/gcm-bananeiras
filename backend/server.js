@@ -9,6 +9,7 @@ const app = express();
 // Middlewares
 app.use(cors()); // Permite requisições de diferentes origens
 app.use(bodyParser.json()); // Interpreta JSON no corpo das requisições
+app.post('/api/bo/finalizar', boController.finalizarBO);
 
 // Rotas principais
 app.use('/api/bo', boRoutes);
