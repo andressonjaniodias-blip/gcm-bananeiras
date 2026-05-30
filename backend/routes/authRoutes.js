@@ -1,50 +1,76 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
+const bcrypt = require('bcrypt');
+const sqlite3 = require('sqlite3').verbose();
 
-// Simulando um banco de usuários (em produção, usar banco de dados)
-const usuariosValidos = [
-  { usuario: 'admin', senha: 'super_senha_segura_123' }
-];
+// Conexão com SQLite (DB_PATH definido no .env)
+const db = new sqlite3.Database(process.env.DB_PATH);
 
+// Criar tabela de usuários se não existir
+db.run(`
+  CREATE TABLE IF NOT EXISTS usuarios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario TEXT UNIQUE,
+    senha TEXT
+  )
+`);
+
+// Rota de login
 router.post('/login', (req, res) => {
   try {
     const { usuario, senha } = req.body;
 
-    // Validação básica
     if (!usuario || !senha) {
-      return res.status(400).json({ 
-        error: 'Usuário e senha são obrigatórios' 
-      });
+      return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
     }
 
-    // Validar credenciais (em produção, validar contra bcrypt do BD)
-    const usuarioEncontrado = usuariosValidos.find(
-      u => u.usuario === usuario && u.senha === senha
-    );
+    // Buscar usuário no banco
+    db.get('SELECT * FROM usuarios WHERE usuario = ?', [usuario], async (err, row) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!row) return res.status(401).json({ error: 'Usuário ou senha inválidos' });
 
-    if (!usuarioEncontrado) {
-      // ✅ Não informar qual campo está errado (segurança)
-      return res.status(401).json({ 
-        error: 'Usuário ou senha inválidos' 
+      // Comparar senha com hash
+      const senhaValida = await bcrypt.compare(senha, row.senha);
+      if (!senhaValida) {
+        return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+      }
+
+      // Gerar JWT
+      const token = jwt.sign(
+        { usuario: row.usuario },
+        process.env.JWT_SECRET,
+        { expiresIn: '8h' }
+      );
+
+      res.json({
+        message: 'Login realizado com sucesso',
+        token,
+        expiresIn: '8h'
       });
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Rota para registrar novo usuário (exemplo)
+router.post('/register', async (req, res) => {
+  try {
+    const { usuario, senha } = req.body;
+    if (!usuario || !senha) {
+      return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
     }
 
-    // Gerar JWT
-    const token = jwt.sign(
-      { 
-        usuario: usuarioEncontrado.usuario,
-        iat: Date.now()
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '8h' }
-    );
+    // Gerar hash da senha
+    const hash = await bcrypt.hash(senha, 10);
 
-    res.json({ 
-      message: 'Login realizado com sucesso',
-      token: token,
-      expiresIn: '8h'
+    db.run('INSERT INTO usuarios (usuario, senha) VALUES (?, ?)', [usuario, hash], function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Erro ao registrar usuário: ' + err.message });
+      }
+      res.json({ message: 'Usuário registrado com sucesso', id: this.lastID });
     });
 
   } catch (error) {
