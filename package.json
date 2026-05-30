@@ -10,17 +10,18 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "body-parser": "^1.20.2",
-    "pdfkit": "^0.13.0",
-    "sqlite3": "^5.1.6",
-    "jsonwebtoken": "^9.0.0",
-    "dotenv": "^16.0.3",
-    "express-validator": "^7.0.0",
-    "uuid": "^9.0.0",
+    "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
-    "express-rate-limit": "^6.7.0"
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.7.0",
+    "express-validator": "^7.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "pdfkit": "^0.13.0",
+    "sqlite3": "^5.1.7",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
