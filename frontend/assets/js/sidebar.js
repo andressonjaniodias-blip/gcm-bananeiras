@@ -32,19 +32,13 @@
     const aside = document.createElement('aside');
     aside.id = 'sidebar';
     aside.innerHTML = `
-      <div class="sb-brand">
-        <img src="/brasao-gcm.png" alt="GCM" class="sb-brand-logo">
-        <div class="sb-brand-text">
-          <span class="sb-brand-title">GCM</span>
-          <span class="sb-brand-sub">Bananeiras-PB</span>
-        </div>
-      </div>
       <div class="sb-user">
         <div class="sb-avatar" id="sbAvatar">${initial}</div>
         <div class="sb-user-info">
           <span class="sb-user-name" id="sbNome">${perfil.usuario || '—'}</span>
           <span class="sb-user-role" id="sbRole">${roleLabel}</span>
         </div>
+        <button class="sb-close-btn" onclick="toggleSidebar()" title="Fechar menu">✕</button>
       </div>
       <nav class="sb-nav">${navHTML}</nav>
       <div class="sb-footer">
@@ -52,10 +46,24 @@
       </div>
     `;
 
+    // Overlay para fechar ao clicar fora
+    const overlay = document.createElement('div');
+    overlay.id = 'sb-overlay';
+    overlay.onclick = closeSidebar;
+
+    // Botão flutuante para abrir o menu
+    const fab = document.createElement('button');
+    fab.id = 'sb-fab';
+    fab.title = 'Menu';
+    fab.innerHTML = '☰';
+    fab.onclick = toggleSidebar;
+
     const wrapper = document.createElement('div');
     wrapper.id = 'app-content';
     Array.from(document.body.children).forEach(c => wrapper.appendChild(c));
     document.body.appendChild(aside);
+    document.body.appendChild(overlay);
+    document.body.appendChild(fab);
     document.body.appendChild(wrapper);
     document.body.classList.add('has-sidebar');
 
@@ -65,6 +73,17 @@
     const legacyUserSpan = document.getElementById('usuarioLogado');
     if (legacyUserSpan) legacyUserSpan.closest('div')?.remove();
   }
+
+  window.toggleSidebar = function () {
+    const open = document.body.classList.toggle('sb-open');
+    document.getElementById('sb-overlay').style.display = open ? 'block' : 'none';
+  };
+
+  window.closeSidebar = function () {
+    document.body.classList.remove('sb-open');
+    const ov = document.getElementById('sb-overlay');
+    if (ov) ov.style.display = 'none';
+  };
 
   // Atualiza dados do usuário no sidebar (chamado por main.js após autenticar)
   window.updateSidebarUser = function (perfil) {
