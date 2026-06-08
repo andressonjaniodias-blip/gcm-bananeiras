@@ -29,6 +29,10 @@ app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 const frontendPath = path.join(__dirname, '../frontend');
 app.use(express.static(frontendPath));
 
+// ✅ Servir imagens da pasta public
+const publicPath = path.join(__dirname, '../public');
+app.use(express.static(publicPath));
+
 // Rotas da API
 app.use('/api/auth', authRoutes);
 app.use('/api/bo', boRoutes);
