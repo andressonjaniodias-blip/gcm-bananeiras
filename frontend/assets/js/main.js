@@ -1,33 +1,38 @@
-let authToken = null;
+// Sessão controlada por cookie httpOnly — o token não fica exposto no JS
+// Os dados do usuário logado são guardados em sessionStorage apenas para exibição na UI
+let authToken = null; // mantido para compatibilidade com código legado
 
-window.addEventListener('DOMContentLoaded', () => {
-  authToken = localStorage.getItem('authToken');
-
+window.addEventListener('DOMContentLoaded', async () => {
   const isLoginPage = window.location.pathname === '/' ||
     window.location.pathname.endsWith('index.html');
   const isSetupPage = window.location.pathname.includes('setup');
 
-  // Redireciona para login só se estiver em página protegida sem token
-  if (!authToken && !isLoginPage && !isSetupPage) {
-    window.location.href = '/';
+  if (isLoginPage || isSetupPage) {
+    // Verifica se já está autenticado (cookie válido)
+    if (isLoginPage) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
+        if (res.ok) {
+          window.location.href = '/pages/dashboard.html';
+          return;
+        }
+      } catch {}
+    }
     return;
   }
 
-  // Se já tem token e está na login, vai direto pro dashboard
-  if (authToken && isLoginPage) {
-    window.location.href = '/pages/dashboard.html';
-    return;
-  }
+  // Páginas protegidas: valida sessão
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
+    if (!res.ok) { window.location.href = '/'; return; }
+    const perfil = await res.json();
+    sessionStorage.setItem('perfil', JSON.stringify(perfil));
 
-  const elUsuario = document.getElementById('usuarioLogado');
-  const elLink = document.getElementById('linkUsuarios');
-  if (elUsuario && authToken) {
-    try {
-      const payload = JSON.parse(atob(authToken.split('.')[1]));
-      elUsuario.textContent = payload.usuario;
-      if (elLink) elLink.style.display = 'inline';
-    } catch {}
-  }
+    const elUsuario = document.getElementById('usuarioLogado');
+    const elLink = document.getElementById('linkUsuarios');
+    if (elUsuario) elUsuario.textContent = perfil.usuario;
+    if (elLink) elLink.style.display = 'inline';
+  } catch { window.location.href = '/'; return; }
 
   // Restaurar rascunho
   const rascunho = localStorage.getItem('boTemp');
@@ -223,10 +228,8 @@ async function finalizarBO() {
   try {
     const response = await fetch(`${API_BASE_URL}/api/bo`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
-      },
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(dados)
     });
 
@@ -266,8 +269,12 @@ function restaurarRascunho(dados) {
 }
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
-function logout() {
-  authToken = null;
+async function logout() {
+  try {
+    await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' });
+  } catch {}
+  sessionStorage.removeItem('perfil');
+  // limpa token legado caso ainda exista
   localStorage.removeItem('authToken');
   window.location.href = '/';
 }
@@ -281,13 +288,20 @@ async function login() {
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ usuario, senha })
     });
     const result = await response.json();
     if (response.ok) {
-      localStorage.setItem('authToken', result.token);
-      window.location.href = 'pages/dashboard.html';
+      sessionStorage.setItem('perfil', JSON.stringify({ usuario: result.usuario, role: result.role }));
+      // Exibir aviso LGPD se ainda não foi aceito
+      if (!localStorage.getItem('lgpd_aceito')) {
+        sessionStorage.setItem('redirecionarApos', 'pages/dashboard.html');
+        window.location.href = 'pages/aviso-lgpd.html';
+      } else {
+        window.location.href = 'pages/dashboard.html';
+      }
     } else {
       alert(result.error || 'Erro ao fazer login');
     }
