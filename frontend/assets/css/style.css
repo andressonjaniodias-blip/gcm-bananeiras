@@ -905,8 +905,9 @@ body.has-sidebar {
   border-right: 1px solid rgba(255,255,255,0.07);
   display: flex;
   flex-direction: column;
-  z-index: 200;
+  z-index: 300;
   box-shadow: 2px 0 12px rgba(0,0,0,0.25);
+  transition: transform 0.28s cubic-bezier(.4,0,.2,1);
 }
 
 #app-content {
@@ -915,35 +916,54 @@ body.has-sidebar {
   min-width: 0;
 }
 
-.sb-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 18px 14px 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.09);
+/* Overlay — oculto no desktop, usado no mobile */
+#sb-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 299;
+  backdrop-filter: blur(2px);
 }
 
-.sb-brand-logo {
-  height: 42px;
-  width: auto;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+/* Botão flutuante — oculto no desktop, visível no mobile */
+#sb-fab {
+  display: none;
+  position: fixed;
+  bottom: 70px;
+  right: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 400;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.15s;
+}
+#sb-fab:hover { background: var(--color-primary-dark, #1a56db); transform: scale(1.08); }
+
+/* Botão fechar — oculto no desktop */
+.sb-close-btn {
+  display: none;
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--header-text);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  opacity: 0.7;
   flex-shrink: 0;
 }
-
-.sb-brand-title {
-  display: block;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--header-text);
-  letter-spacing: 0.06em;
-}
-
-.sb-brand-sub {
-  display: block;
-  font-size: 0.68rem;
-  color: var(--header-text-sub);
-  letter-spacing: 0.04em;
-}
+.sb-close-btn:hover { opacity: 1; background: rgba(255,255,255,0.12); }
 
 .sb-user {
   display: flex;
@@ -1270,9 +1290,24 @@ body.has-sidebar .header {
 /* ============================================================
    MEDIA QUERIES
    ============================================================ */
+@media (max-width: 1024px) {
+  /* Sidebar vira drawer no mobile/tablet */
+  #sidebar {
+    transform: translateX(-100%);
+    width: 260px;
+    z-index: 400;
+  }
+  body.sb-open #sidebar { transform: translateX(0); }
+  body.sb-open #sb-overlay { display: block; }
+
+  #app-content { margin-left: 0; }
+
+  /* Mostra botão flutuante e botão de fechar */
+  #sb-fab { display: flex; }
+  .sb-close-btn { display: block; }
+}
+
 @media (max-width: 768px) {
-  #sidebar { width: 200px; }
-  #app-content { margin-left: 200px; }
   .header { padding: 10px 14px; }
 
   .tabs button,
