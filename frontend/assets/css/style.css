@@ -1061,8 +1061,19 @@ body.has-sidebar {
 }
 
 body.has-sidebar .header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 250;
   justify-content: center;
   gap: 16px;
+  box-sizing: border-box;
+}
+
+body.has-sidebar #app-content {
+  padding-top: 90px;
 }
 
 /* ============================================================
