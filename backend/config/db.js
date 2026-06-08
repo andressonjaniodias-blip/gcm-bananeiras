@@ -35,6 +35,46 @@ pool.connect()
     await client.query(`
       ALTER TABLE boletins ADD COLUMN IF NOT EXISTS criado_por TEXT;
     `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS relatorios (
+        id          SERIAL PRIMARY KEY,
+        numero      TEXT NOT NULL,
+        tipo        TEXT NOT NULL,
+        titulo      TEXT NOT NULL,
+        data        TEXT NOT NULL,
+        local       TEXT,
+        equipe      TEXT,
+        conteudo    TEXT,
+        obs         TEXT,
+        status      TEXT DEFAULT 'rascunho',
+        criado_por  TEXT,
+        criado_em   TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS controle_viatura (
+        id          SERIAL PRIMARY KEY,
+        tipo        TEXT NOT NULL,
+        codigo      TEXT NOT NULL,
+        data_hora   TIMESTAMPTZ NOT NULL,
+        km          INTEGER NOT NULL,
+        responsavel TEXT,
+        dados       TEXT,
+        obs         TEXT,
+        criado_em   TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS documentos (
+        id            SERIAL PRIMARY KEY,
+        tipo          TEXT NOT NULL,
+        titulo        TEXT NOT NULL,
+        data          TEXT NOT NULL,
+        numero        TEXT,
+        descricao     TEXT,
+        arquivo       TEXT,
+        arquivo_nome  TEXT,
+        arquivo_mime  TEXT,
+        publicado_por TEXT,
+        criado_em     TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
     client.release();
   })
   .catch(err => console.error('Erro ao conectar ao banco:', err.message));
