@@ -25,7 +25,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try {
       const payload = JSON.parse(atob(authToken.split('.')[1]));
       elUsuario.textContent = payload.usuario;
-      if (payload.role === 'admin' && elLink) elLink.style.display = 'inline';
+      if (elLink) elLink.style.display = 'inline';
     } catch {}
   }
 
