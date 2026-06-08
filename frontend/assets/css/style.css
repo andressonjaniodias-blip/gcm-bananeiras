@@ -5,6 +5,7 @@
 /* Gov Modern (padrão) — azul institucional, fundo claro */
 :root,
 [data-theme="gov-modern"] {
+  --header-h: 88px;
   --bg-page:         #F0F4FB;
   --bg-card:         #FFFFFF;
   --bg-header-from:  #0D1B2A;
@@ -1072,8 +1073,13 @@ body.has-sidebar .header {
   box-sizing: border-box;
 }
 
+body.has-sidebar #sidebar {
+  top: var(--header-h);
+  min-height: calc(100vh - var(--header-h));
+}
+
 body.has-sidebar #app-content {
-  padding-top: 90px;
+  padding-top: calc(var(--header-h) + 16px);
 }
 
 /* ============================================================
@@ -1302,16 +1308,23 @@ body.has-sidebar #app-content {
    MEDIA QUERIES
    ============================================================ */
 @media (max-width: 1024px) {
+  :root { --header-h: 72px; }
+
   /* Sidebar vira drawer no mobile/tablet */
-  #sidebar {
+  body.has-sidebar #sidebar {
     transform: translateX(-100%);
+    top: 0;
+    min-height: 100vh;
     width: 260px;
     z-index: 400;
   }
   body.sb-open #sidebar { transform: translateX(0); }
   body.sb-open #sb-overlay { display: block; }
 
-  #app-content { margin-left: 0; }
+  body.has-sidebar #app-content {
+    margin-left: 0;
+    padding-top: calc(var(--header-h) + 24px);
+  }
 
   /* Mostra botão flutuante e botão de fechar */
   #sb-fab { display: flex; }
@@ -1341,6 +1354,8 @@ body.has-sidebar #app-content {
 }
 
 @media (max-width: 480px) {
+  :root { --header-h: 110px; }
+
   .header {
     flex-direction: column;
     padding: 10px;
