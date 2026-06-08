@@ -3,62 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Consulta de BOs - Sistema de BO</title>
+  <title>Histórico de BOs - GCM Bananeiras</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/style.css">
   <script src="../assets/js/theme-switcher.js"></script>
-  <style>
-    .consulta { width: 95%; max-width: 900px; margin: 24px auto; }
-    .consulta h2 { color: #003366; margin-bottom: 16px; }
-    .filters {
-      display: flex; flex-wrap: wrap; gap: 10px;
-      align-items: center; margin-bottom: 20px;
-      background: #fff; padding: 14px; border-radius: 6px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
-    .filters input { padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem; }
-    .filters button {
-      padding: 7px 18px; background: #003366; color: #fff;
-      border: none; border-radius: 4px; cursor: pointer; font-size: 0.95rem;
-    }
-    .filters button:hover { background: #00509e; }
-    .filters .btn-limpar { background: #888; }
-    .filters .btn-limpar:hover { background: #555; }
-    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-    th { background: #003366; color: #fff; padding: 12px; text-align: left; font-size: 0.95rem; }
-    td { padding: 11px 12px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #f5f8ff; }
-    .btn-pdf {
-      padding: 5px 14px; background: #c0392b; color: #fff;
-      border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;
-    }
-    .btn-pdf:hover { background: #96281b; }
-    .voltar { display: inline-block; margin-bottom: 14px; color: #003366; text-decoration: none; font-size: 0.9rem; }
-    .voltar:hover { text-decoration: underline; }
-    #msgVazia { text-align: center; color: #999; padding: 24px; }
-  </style>
+  <script src="../assets/js/sidebar.js"></script>
 </head>
 <body>
   <header class="header">
     <img src="/brasao-gcm.png" alt="Brasão GCM" class="logo">
-    <h1>Sistema de Registro de BO</h1>
-    <div style="display:flex; align-items:center; gap:12px;">
-      <span id="usuarioLogado" style="font-size:0.85rem; color:#cce;"></span>
-      <button onclick="logout()" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:6px 12px;cursor:pointer;font-size:0.85rem;">Sair</button>
-    </div>
+    <h1>Histórico de Boletins</h1>
     <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
   </header>
 
   <div class="consulta">
-    <a href="/pages/dashboard.html" class="voltar">← Novo BO</a>
-
-    <h2>Histórico de Boletins</h2>
+    <h2>Boletins de Ocorrência</h2>
 
     <div class="filters">
+      <label>Buscar:</label>
       <input type="text" id="buscar" placeholder="Número do BO (ex: BO-GCM-0001)">
+      <label>Data:</label>
       <input type="date" id="data">
       <button onclick="filtrar()">Filtrar</button>
       <button class="btn-limpar" onclick="limparFiltro()">Limpar</button>
@@ -70,24 +36,19 @@
           <th>Nº do BO</th>
           <th>Data</th>
           <th>Natureza</th>
+          <th>Registrado por</th>
           <th>PDF</th>
         </tr>
       </thead>
       <tbody id="listaBOs">
-        <tr><td colspan="4" id="msgVazia">Carregando...</td></tr>
+        <tr><td colspan="5" style="text-align:center;color:var(--color-hint);">Carregando...</td></tr>
       </tbody>
     </table>
   </div>
 
   <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/main.js"></script>
   <script>
-    async function logout() {
-      try { await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' }); } catch {}
-      sessionStorage.removeItem('perfil');
-      localStorage.removeItem('authToken');
-      window.location.href = '/';
-    }
-
     let todosOsBOs = [];
 
     (async () => {
@@ -95,7 +56,8 @@
         const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
         if (!res.ok) { window.location.href = '/'; return; }
         const perfil = await res.json();
-        document.getElementById('usuarioLogado').textContent = perfil.usuario;
+        sessionStorage.setItem('perfil', JSON.stringify(perfil));
+        if (typeof updateSidebarUser === 'function') updateSidebarUser(perfil);
       } catch { window.location.href = '/'; return; }
       carregarBOs();
     })();
@@ -108,14 +70,14 @@
         renderizar(todosOsBOs);
       } catch {
         document.getElementById('listaBOs').innerHTML =
-          '<tr><td colspan="4" style="text-align:center;color:#c00;">Erro ao carregar boletins.</td></tr>';
+          '<tr><td colspan="5" style="text-align:center;color:var(--color-danger);">Erro ao carregar boletins.</td></tr>';
       }
     }
 
     function renderizar(bos) {
       const tbody = document.getElementById('listaBOs');
       if (!bos.length) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;">Nenhum BO encontrado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--color-hint);">Nenhum BO encontrado.</td></tr>';
         return;
       }
       tbody.innerHTML = bos.map(bo => {
@@ -129,24 +91,25 @@
           <td>${bo.numero}</td>
           <td>${data}</td>
           <td>${natureza}</td>
-          <td><button class="btn-pdf" onclick="baixarPDF(${bo.id}, '${bo.numero}')">⬇ PDF</button></td>
+          <td>${bo.criado_por || '—'}</td>
+          <td><button class="btn-pdf" onclick="baixarPDF(${bo.id}, '${bo.numero}')">PDF</button></td>
         </tr>`;
       }).join('');
     }
 
     function filtrar() {
       const termo = document.getElementById('buscar').value.trim().toLowerCase();
-      const data = document.getElementById('data').value;
+      const data  = document.getElementById('data').value;
       renderizar(todosOsBOs.filter(bo => {
         const matchNumero = !termo || bo.numero.toLowerCase().includes(termo);
-        const matchData = !data || bo.data.startsWith(data);
+        const matchData   = !data  || bo.data.startsWith(data);
         return matchNumero && matchData;
       }));
     }
 
     function limparFiltro() {
       document.getElementById('buscar').value = '';
-      document.getElementById('data').value = '';
+      document.getElementById('data').value   = '';
       renderizar(todosOsBOs);
     }
 
@@ -155,9 +118,9 @@
         const res = await fetch(`${API_BASE_URL}/api/bo/${id}/pdf`, { credentials: 'include' });
         if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
         a.download = `bo_${numero}.pdf`;
         a.click();
         URL.revokeObjectURL(url);
