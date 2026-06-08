@@ -28,16 +28,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     const perfil = await res.json();
     sessionStorage.setItem('perfil', JSON.stringify(perfil));
 
-    const elUsuario = document.getElementById('usuarioLogado');
-    const elLink = document.getElementById('linkUsuarios');
-    if (elUsuario) elUsuario.textContent = perfil.usuario;
-    if (elLink) elLink.style.display = 'inline';
+    // Atualiza sidebar com dados do perfil
+    if (typeof updateSidebarUser === 'function') updateSidebarUser(perfil);
   } catch { window.location.href = '/'; return; }
 
-  // Inicializa um bloco por aba (se estiver no dashboard)
-  if (document.getElementById('vitimas-list')) adicionarVitima();
-  if (document.getElementById('suspeitos-list')) adicionarSuspeito();
-  if (document.getElementById('objetos-list')) adicionarObjeto();
+  // Dashboard: blocos começam vazios; só adiciona ao clicar
+  // (não auto-adiciona mais)
 
   // Restaurar rascunho
   const rascunho = localStorage.getItem('boTemp');
@@ -146,38 +142,40 @@ let countVitimas = 0, countSuspeitos = 0, countObjetos = 0;
 function adicionarVitima() {
   countVitimas++;
   document.getElementById('vitimas-list').insertAdjacentHTML('beforeend', htmlPessoa('Vítima', countVitimas));
-  atualizarBotoesRemover('vitimas-list');
+  atualizarBotaoRemover('vitimas-list', 'btnRemoverVitima');
 }
 
 function adicionarSuspeito() {
   countSuspeitos++;
   document.getElementById('suspeitos-list').insertAdjacentHTML('beforeend', htmlPessoa('Suspeito', countSuspeitos));
-  atualizarBotoesRemover('suspeitos-list');
+  atualizarBotaoRemover('suspeitos-list', 'btnRemoverSuspeito');
 }
 
 function adicionarObjeto() {
   countObjetos++;
   document.getElementById('objetos-list').insertAdjacentHTML('beforeend', htmlObjeto(countObjetos));
-  atualizarBotoesRemover('objetos-list');
+  atualizarBotaoRemover('objetos-list', 'btnRemoverObjeto');
 }
 
-function removerBloco(btn) {
-  const bloco = btn.closest('.bloco-pessoa, .bloco-objeto');
-  if (!bloco) return;
-  const container = bloco.parentElement;
-  if (!container || container.querySelectorAll('.bloco-pessoa, .bloco-objeto').length <= 1) return;
-  bloco.remove();
-  atualizarBotoesRemover(container.id);
-}
+function removerUltimoVitima()  { removerUltimoDe('vitimas-list',   'btnRemoverVitima'); }
+function removerUltimoSuspeito(){ removerUltimoDe('suspeitos-list', 'btnRemoverSuspeito'); }
+function removerUltimoObjeto()  { removerUltimoDe('objetos-list',   'btnRemoverObjeto'); }
 
-function atualizarBotoesRemover(containerId) {
+function removerUltimoDe(containerId, btnId) {
   const container = document.getElementById(containerId);
   if (!container) return;
   const blocos = container.querySelectorAll('.bloco-pessoa, .bloco-objeto');
-  blocos.forEach(bloco => {
-    const btn = bloco.querySelector('.btn-remover');
-    if (btn) btn.disabled = blocos.length <= 1;
-  });
+  if (!blocos.length) return;
+  blocos[blocos.length - 1].remove();
+  atualizarBotaoRemover(containerId, btnId);
+}
+
+function atualizarBotaoRemover(containerId, btnId) {
+  const container = document.getElementById(containerId);
+  const btn = document.getElementById(btnId);
+  if (!btn || !container) return;
+  const count = container.querySelectorAll('.bloco-pessoa, .bloco-objeto').length;
+  btn.style.display = count > 0 ? 'inline-block' : 'none';
 }
 
 // ── Coleta de dados ──────────────────────────────────────────────────────────
@@ -326,10 +324,10 @@ async function login() {
       sessionStorage.setItem('perfil', JSON.stringify({ usuario: result.usuario, role: result.role }));
       // Exibir aviso LGPD se ainda não foi aceito
       if (!localStorage.getItem('lgpd_aceito')) {
-        sessionStorage.setItem('redirecionarApos', 'pages/dashboard.html');
+        sessionStorage.setItem('redirecionarApos', 'pages/home.html');
         window.location.href = 'pages/aviso-lgpd.html';
       } else {
-        window.location.href = 'pages/dashboard.html';
+        window.location.href = 'pages/home.html';
       }
     } else {
       alert(result.error || 'Erro ao fazer login');
