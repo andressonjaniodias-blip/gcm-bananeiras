@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { registrarAuditoria } = require('../middleware/auth');
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
@@ -17,11 +18,15 @@ exports.criarBO = async (req, res) => {
     const numero = `BO-GCM-${String(numeroSequencial).padStart(4, '0')}`;
     const dados = JSON.stringify(req.body);
     const data = new Date().toISOString();
+    const criado_por = req.usuario.usuario;
 
     const result = await db.query(
-      'INSERT INTO boletins (numero, dados, data) VALUES ($1, $2, $3) RETURNING id',
-      [numero, dados, data]
+      'INSERT INTO boletins (numero, dados, data, criado_por) VALUES ($1, $2, $3, $4) RETURNING id',
+      [numero, dados, data, criado_por]
     );
+
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
+    await registrarAuditoria(criado_por, 'CRIAR_BO', numero, ip);
 
     res.status(201).json({ message: 'BO criado com sucesso', id: result.rows[0].id, numero });
   } catch (err) {
@@ -31,7 +36,19 @@ exports.criarBO = async (req, res) => {
 
 exports.listarBOs = async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT * FROM boletins ORDER BY id DESC');
+    const { usuario, role } = req.usuario;
+    let rows;
+
+    if (role === 'agente') {
+      // Agente vê apenas os próprios BOs
+      ({ rows } = await db.query(
+        'SELECT * FROM boletins WHERE criado_por = $1 ORDER BY id DESC',
+        [usuario]
+      ));
+    } else {
+      ({ rows } = await db.query('SELECT * FROM boletins ORDER BY id DESC'));
+    }
+
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -45,6 +62,17 @@ exports.consultarBO = async (req, res) => {
   try {
     const { rows } = await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
+
+    const { usuario, role } = req.usuario;
+
+    // Agente só pode acessar os próprios BOs
+    if (role === 'agente' && rows[0].criado_por !== usuario) {
+      return res.status(403).json({ error: 'Acesso negado a este BO' });
+    }
+
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
+    await registrarAuditoria(usuario, 'ACESSAR_BO', rows[0].numero, ip);
+
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -58,6 +86,14 @@ exports.exportarPDF = async (req, res) => {
   try {
     const { rows } = await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
+
+    const { usuario, role } = req.usuario;
+    if (role === 'agente' && rows[0].criado_por !== usuario) {
+      return res.status(403).json({ error: 'Acesso negado a este BO' });
+    }
+
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
+    await registrarAuditoria(usuario, 'EXPORTAR_PDF', rows[0].numero, ip);
 
     const row = rows[0];
     let dados = {};
