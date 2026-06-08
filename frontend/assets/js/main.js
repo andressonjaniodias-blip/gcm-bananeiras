@@ -34,6 +34,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (elLink) elLink.style.display = 'inline';
   } catch { window.location.href = '/'; return; }
 
+  // Inicializa um bloco por aba (se estiver no dashboard)
+  if (document.getElementById('vitimas-list')) adicionarVitima();
+  if (document.getElementById('suspeitos-list')) adicionarSuspeito();
+  if (document.getElementById('objetos-list')) adicionarObjeto();
+
   // Restaurar rascunho
   const rascunho = localStorage.getItem('boTemp');
   if (rascunho) {
@@ -73,7 +78,10 @@ function mascararTelefone(input) {
 function htmlPessoa(tipo, idx) {
   return `
   <div class="bloco-pessoa" data-tipo="${tipo}">
-    <h4>${tipo} ${idx}</h4>
+    <div class="bloco-header">
+      <h4>${tipo} ${idx}</h4>
+      <button type="button" class="btn-remover" onclick="removerBloco(this)">Remover</button>
+    </div>
     <div class="campo-group"><label>Nome</label>
       <input type="text" name="nome" placeholder="Nome completo" maxlength="150"></div>
     <div class="campo-group"><label>Alcunha</label>
@@ -114,8 +122,22 @@ function htmlPessoa(tipo, idx) {
       <input type="text" name="endereco" placeholder="Rua, Nº, Bairro, Cidade" maxlength="250"></div>
     <div class="campo-group"><label>Telefone</label>
       <input type="tel" name="telefone" placeholder="(00) 00000-0000" maxlength="15" oninput="mascararTelefone(this)"></div>
-    <button type="button" class="btn-remover" onclick="removerBloco(this)">Remover ${tipo}</button>
-    <hr>
+  </div>`;
+}
+
+function htmlObjeto(idx) {
+  return `
+  <div class="bloco-objeto">
+    <div class="bloco-header">
+      <h4>Objeto ${idx}</h4>
+      <button type="button" class="btn-remover" onclick="removerBloco(this)">Remover</button>
+    </div>
+    <div class="campo-group"><label>Tipo de Objeto</label>
+      <input type="text" name="tipoObjeto" placeholder="Ex: Faca, Celular, Veículo" maxlength="100"></div>
+    <div class="campo-group"><label>Quantidade</label>
+      <input type="number" name="quantidade" min="1" placeholder="1"></div>
+    <div class="campo-group"><label>Descrição</label>
+      <textarea name="descricaoObjeto" rows="3" placeholder="Cor, marca, modelo, características..."></textarea></div>
   </div>`;
 }
 
@@ -124,31 +146,38 @@ let countVitimas = 0, countSuspeitos = 0, countObjetos = 0;
 function adicionarVitima() {
   countVitimas++;
   document.getElementById('vitimas-list').insertAdjacentHTML('beforeend', htmlPessoa('Vítima', countVitimas));
+  atualizarBotoesRemover('vitimas-list');
 }
 
 function adicionarSuspeito() {
   countSuspeitos++;
   document.getElementById('suspeitos-list').insertAdjacentHTML('beforeend', htmlPessoa('Suspeito', countSuspeitos));
+  atualizarBotoesRemover('suspeitos-list');
 }
 
 function adicionarObjeto() {
   countObjetos++;
-  document.getElementById('objetos-list').insertAdjacentHTML('beforeend', `
-  <div class="bloco-objeto">
-    <h4>Objeto ${countObjetos}</h4>
-    <div class="campo-group"><label>Tipo de Objeto</label>
-      <input type="text" name="tipoObjeto" placeholder="Ex: Faca, Celular, Veículo" maxlength="100"></div>
-    <div class="campo-group"><label>Quantidade</label>
-      <input type="number" name="quantidade" min="1" placeholder="1"></div>
-    <div class="campo-group"><label>Descrição</label>
-      <textarea name="descricaoObjeto" rows="3" placeholder="Cor, marca, modelo, características..."></textarea></div>
-    <button type="button" class="btn-remover" onclick="removerBloco(this)">Remover Objeto</button>
-    <hr>
-  </div>`);
+  document.getElementById('objetos-list').insertAdjacentHTML('beforeend', htmlObjeto(countObjetos));
+  atualizarBotoesRemover('objetos-list');
 }
 
 function removerBloco(btn) {
-  btn.closest('div[class^="bloco"]')?.remove();
+  const bloco = btn.closest('.bloco-pessoa, .bloco-objeto');
+  if (!bloco) return;
+  const container = bloco.parentElement;
+  if (!container || container.querySelectorAll('.bloco-pessoa, .bloco-objeto').length <= 1) return;
+  bloco.remove();
+  atualizarBotoesRemover(container.id);
+}
+
+function atualizarBotoesRemover(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const blocos = container.querySelectorAll('.bloco-pessoa, .bloco-objeto');
+  blocos.forEach(bloco => {
+    const btn = bloco.querySelector('.btn-remover');
+    if (btn) btn.disabled = blocos.length <= 1;
+  });
 }
 
 // ── Coleta de dados ──────────────────────────────────────────────────────────
