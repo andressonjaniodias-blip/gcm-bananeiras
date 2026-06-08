@@ -6,8 +6,11 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 
-const boRoutes = require('./routes/boRoutes');
-const authRoutes = require('./routes/authRoutes');
+const boRoutes        = require('./routes/boRoutes');
+const authRoutes      = require('./routes/authRoutes');
+const relatorioRoutes = require('./routes/relatorioRoutes');
+const viaturaRoutes   = require('./routes/viaturaRoutes');
+const documentoRoutes = require('./routes/documentoRoutes');
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
@@ -33,8 +36,8 @@ app.use(cors({
 
 // Middlewares
 app.use(cookieParser());
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+app.use(bodyParser.json({ limit: '20mb' }));
+app.use(bodyParser.urlencoded({ limit: '20mb', extended: true }));
 
 // ✅ Servir arquivos estáticos do frontend
 const frontendPath = path.join(__dirname, '../frontend');
@@ -46,8 +49,11 @@ app.use(express.static(publicPath));
 
 // Rotas da API
 app.use('/api/auth/login', loginLimiter);
-app.use('/api/auth', authRoutes);
-app.use('/api/bo', boRoutes);
+app.use('/api/auth',      authRoutes);
+app.use('/api/bo',        boRoutes);
+app.use('/api/relatorio', relatorioRoutes);
+app.use('/api/viatura',   viaturaRoutes);
+app.use('/api/documentos', documentoRoutes);
 
 // ✅ Health check endpoint (Render verifica isso)
 app.get('/health', (req, res) => {
