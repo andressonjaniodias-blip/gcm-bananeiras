@@ -77,32 +77,32 @@
 
   <script src="../assets/js/config.js"></script>
   <script>
-    const token = localStorage.getItem('authToken');
-    if (!token) window.location.href = '/';
-
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      document.getElementById('usuarioLogado').textContent = payload.usuario;
-    } catch {}
-
-    function logout() {
+    async function logout() {
+      try { await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' }); } catch {}
+      sessionStorage.removeItem('perfil');
       localStorage.removeItem('authToken');
       window.location.href = '/';
     }
 
     let todosOsBOs = [];
 
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
+        if (!res.ok) { window.location.href = '/'; return; }
+        const perfil = await res.json();
+        document.getElementById('usuarioLogado').textContent = perfil.usuario;
+      } catch { window.location.href = '/'; return; }
+      carregarBOs();
+    })();
+
     async function carregarBOs() {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/bo`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
+        const res = await fetch(`${API_BASE_URL}/api/bo`, { credentials: 'include' });
         if (res.status === 401) { logout(); return; }
-
         todosOsBOs = await res.json();
         renderizar(todosOsBOs);
-      } catch (err) {
+      } catch {
         document.getElementById('listaBOs').innerHTML =
           '<tr><td colspan="4" style="text-align:center;color:#c00;">Erro ao carregar boletins.</td></tr>';
       }
@@ -118,7 +118,7 @@
         let natureza = '';
         try {
           const dados = JSON.parse(bo.dados);
-          natureza = dados.dadosOcorrencia?.['Tipificação'] || dados.dadosSolicitacao?.['Natureza da Solicitação'] || '—';
+          natureza = dados.dadosOcorrencia?.tipificacao || dados.dadosSolicitacao?.natureza || '—';
         } catch {}
         const data = new Date(bo.data).toLocaleDateString('pt-BR');
         return `<tr>
@@ -133,12 +133,11 @@
     function filtrar() {
       const termo = document.getElementById('buscar').value.trim().toLowerCase();
       const data = document.getElementById('data').value;
-      const filtrados = todosOsBOs.filter(bo => {
+      renderizar(todosOsBOs.filter(bo => {
         const matchNumero = !termo || bo.numero.toLowerCase().includes(termo);
         const matchData = !data || bo.data.startsWith(data);
         return matchNumero && matchData;
-      });
-      renderizar(filtrados);
+      }));
     }
 
     function limparFiltro() {
@@ -149,9 +148,7 @@
 
     async function baixarPDF(id, numero) {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/bo/${id}/pdf`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await fetch(`${API_BASE_URL}/api/bo/${id}/pdf`, { credentials: 'include' });
         if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
@@ -160,12 +157,8 @@
         a.download = `bo_${numero}.pdf`;
         a.click();
         URL.revokeObjectURL(url);
-      } catch {
-        alert('Erro ao baixar PDF.');
-      }
+      } catch { alert('Erro ao baixar PDF.'); }
     }
-
-    carregarBOs();
   </script>
 </body>
 </html>
