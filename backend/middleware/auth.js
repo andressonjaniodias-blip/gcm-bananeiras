@@ -1,4 +1,7 @@
 const jwt = require('jsonwebtoken');
+const db = require('../config/db');
+
+const ROLES = ['admin', 'supervisor', 'agente'];
 
 function verificarToken(req, res, next) {
   try {
@@ -30,4 +33,22 @@ function verificarAdmin(req, res, next) {
   next();
 }
 
-module.exports = { verificarToken, verificarAdmin };
+// Permite acesso para admin e supervisor
+function verificarSupervisor(req, res, next) {
+  const role = req.usuario?.role;
+  if (role !== 'admin' && role !== 'supervisor') {
+    return res.status(403).json({ error: 'Acesso restrito a supervisores e administradores' });
+  }
+  next();
+}
+
+async function registrarAuditoria(usuario, acao, recurso, ip) {
+  try {
+    await db.query(
+      'INSERT INTO audit_logs (usuario, acao, recurso, ip) VALUES ($1, $2, $3, $4)',
+      [usuario, acao, recurso, ip]
+    );
+  } catch { /* não bloqueia a requisição por falha de auditoria */ }
+}
+
+module.exports = { verificarToken, verificarAdmin, verificarSupervisor, registrarAuditoria, ROLES };
