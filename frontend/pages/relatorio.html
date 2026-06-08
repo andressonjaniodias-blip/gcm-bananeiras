@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatório Interno - GCM Bananeiras</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="../assets/js/theme-switcher.js"></script>
+  <script src="../assets/js/sidebar.js"></script>
+  <style>
+    .obrigatorio::after { content: ' *'; color: var(--color-danger); }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <img src="/brasao-gcm.png" alt="Brasão GCM" class="logo">
+    <h1>Relatório Interno</h1>
+    <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+  </header>
+
+  <main class="dashboard">
+
+    <!-- Abas: Criar / Histórico -->
+    <nav class="tabs" style="margin-bottom:20px;">
+      <button class="tab-btn active" onclick="showRelTab('criar')">Criar Relatório</button>
+      <button class="tab-btn" onclick="showRelTab('historico')">Histórico</button>
+    </nav>
+
+    <!-- CRIAR -->
+    <section id="criar" class="tab-content">
+      <div class="relatorio-header-info">
+        <div class="campo-group" style="margin:0;">
+          <label>Número do Relatório</label>
+          <div class="relatorio-numero" id="numRelatorio">REL-GCM-????/<span id="anoRelatorio"></span></div>
+        </div>
+        <div class="campo-group" style="margin:0;">
+          <label>Relator (Agente Logado)</label>
+          <input type="text" id="relatorNome" readonly style="background:var(--color-bloco-bg);font-weight:600;">
+        </div>
+        <div class="campo-group" style="margin:0;">
+          <label class="obrigatorio">Data do Relatório</label>
+          <input type="date" id="dataRelatorio" required>
+        </div>
+        <div class="campo-group" style="margin:0;">
+          <label class="obrigatorio">Tipo</label>
+          <select id="tipoRelatorio" required>
+            <option value="">Selecione</option>
+            <option>Relatório de Ronda</option>
+            <option>Relatório de Ocorrência</option>
+            <option>Relatório Administrativo</option>
+            <option>Relatório de Fiscalização</option>
+            <option>Relatório de Operação</option>
+            <option>Outro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="campo-group">
+        <label class="obrigatorio">Título / Assunto</label>
+        <input type="text" id="tituloRelatorio" placeholder="Ex: Ronda noturna - Bairro Centro" required maxlength="200">
+      </div>
+
+      <div class="campo-group">
+        <label>Local / Área Coberta</label>
+        <input type="text" id="localRelatorio" placeholder="Ex: Bairro Centro, Av. Principal" maxlength="200">
+      </div>
+
+      <div class="campo-group">
+        <label>Viaturas / Equipe</label>
+        <input type="text" id="equipeRelatorio" placeholder="Ex: GCM-01 — João Silva, Pedro Santos" maxlength="300">
+      </div>
+
+      <div class="campo-group">
+        <label class="obrigatorio">Conteúdo do Relatório</label>
+        <textarea id="conteudoRelatorio" rows="14" placeholder="Descreva detalhadamente os fatos, observações, ocorrências e providências tomadas..." required minlength="20" style="min-height:280px;"></textarea>
+      </div>
+
+      <div class="campo-group">
+        <label>Observações Adicionais</label>
+        <textarea id="obsRelatorio" rows="4" placeholder="Observações complementares, recomendações..." style="min-height:100px;"></textarea>
+      </div>
+
+      <div class="actions">
+        <button onclick="salvarRelatorio('rascunho')" style="background:var(--color-text-muted);">Salvar Rascunho</button>
+        <button onclick="salvarRelatorio('finalizado')" style="background:var(--color-success);">Finalizar Relatório</button>
+        <button onclick="exportarPDFRelatorio()" style="background:var(--color-danger);" id="btnExportarPDF" disabled>Exportar PDF</button>
+      </div>
+      <p id="msgRelatorio" class="msg" style="margin-top:12px;"></p>
+    </section>
+
+    <!-- HISTÓRICO -->
+    <section id="historico" class="tab-content hidden">
+      <h3>Relatórios Registrados</h3>
+      <div class="filters" style="margin-bottom:16px;">
+        <input type="text" id="buscarRel" placeholder="Buscar por número ou título...">
+        <input type="date" id="dataFiltroRel">
+        <button onclick="filtrarRelatorios()">Filtrar</button>
+        <button class="btn-limpar" onclick="limparFiltroRel()">Limpar</button>
+      </div>
+      <div id="listaRelatorios" style="margin-top:8px;">
+        <p style="text-align:center;color:var(--color-hint);">Carregando...</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/main.js"></script>
+  <script>
+    let relatorioIdAtual = null;
+    let todosRelatorios = [];
+
+    // Inicializa campos automáticos
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.getElementById('anoRelatorio').textContent = new Date().getFullYear();
+      document.getElementById('dataRelatorio').value = new Date().toISOString().slice(0, 10);
+
+      // Aguarda perfil ficar disponível
+      await new Promise(r => setTimeout(r, 300));
+      const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
+      if (perfil.usuario) document.getElementById('relatorNome').value = perfil.usuario;
+
+      // Busca próximo número do servidor
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/relatorio/proximo-numero`, { credentials: 'include' });
+        if (res.ok) {
+          const { numero } = await res.json();
+          document.getElementById('numRelatorio').textContent = numero;
+        }
+      } catch {}
+
+      carregarRelatorios();
+    });
+
+    function showRelTab(id) {
+      document.querySelectorAll('#criar, #historico').forEach(s => s.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(id).classList.remove('hidden');
+      event?.target?.classList.add('active');
+      if (id === 'historico') renderizarRelatorios(todosRelatorios);
+    }
+
+    async function salvarRelatorio(status) {
+      const tipo     = document.getElementById('tipoRelatorio').value.trim();
+      const titulo   = document.getElementById('tituloRelatorio').value.trim();
+      const conteudo = document.getElementById('conteudoRelatorio').value.trim();
+      const data     = document.getElementById('dataRelatorio').value;
+
+      if (!tipo || !titulo || !data) { mostrarMsg('Preencha os campos obrigatórios.', 'danger'); return; }
+      if (status === 'finalizado' && conteudo.length < 20) {
+        mostrarMsg('O conteúdo deve ter pelo menos 20 caracteres.', 'danger'); return;
+      }
+
+      const payload = {
+        tipo, titulo, conteudo,
+        data,
+        local:  document.getElementById('localRelatorio').value.trim(),
+        equipe: document.getElementById('equipeRelatorio').value.trim(),
+        obs:    document.getElementById('obsRelatorio').value.trim(),
+        status,
+      };
+
+      try {
+        const method = relatorioIdAtual ? 'PUT' : 'POST';
+        const url    = relatorioIdAtual
+          ? `${API_BASE_URL}/api/relatorio/${relatorioIdAtual}`
+          : `${API_BASE_URL}/api/relatorio`;
+
+        const res = await fetch(url, {
+          method,
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.status === 401) { logout(); return; }
+        if (!res.ok) { const e = await res.json(); mostrarMsg(e.error || 'Erro ao salvar.', 'danger'); return; }
+
+        const result = await res.json();
+        relatorioIdAtual = result.id;
+        document.getElementById('numRelatorio').textContent = result.numero;
+        document.getElementById('btnExportarPDF').disabled = false;
+        mostrarMsg(status === 'finalizado' ? 'Relatório finalizado com sucesso!' : 'Rascunho salvo!', 'success');
+        carregarRelatorios();
+      } catch { mostrarMsg('Erro de conexão.', 'danger'); }
+    }
+
+    async function exportarPDFRelatorio() {
+      if (!relatorioIdAtual) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/relatorio/${relatorioIdAtual}/pdf`, { credentials: 'include' });
+        if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `relatorio_${document.getElementById('numRelatorio').textContent.replace(/\//g, '-')}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch { alert('Erro ao exportar PDF.'); }
+    }
+
+    async function carregarRelatorios() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/relatorio`, { credentials: 'include' });
+        if (res.ok) todosRelatorios = await res.json();
+      } catch {}
+    }
+
+    function renderizarRelatorios(lista) {
+      const el = document.getElementById('listaRelatorios');
+      if (!lista.length) { el.innerHTML = '<p style="text-align:center;color:var(--color-hint);">Nenhum relatório encontrado.</p>'; return; }
+      el.innerHTML = `<table>
+        <thead><tr><th>Número</th><th>Data</th><th>Tipo</th><th>Título</th><th>Status</th><th>PDF</th></tr></thead>
+        <tbody>${lista.map(r => `<tr>
+          <td>${r.numero}</td>
+          <td>${new Date(r.data).toLocaleDateString('pt-BR')}</td>
+          <td>${r.tipo}</td>
+          <td>${r.titulo}</td>
+          <td><span class="badge ${r.status === 'finalizado' ? 'badge-supervisor' : 'badge-usuario'}">${r.status}</span></td>
+          <td>${r.status === 'finalizado' ? `<button class="btn-pdf" onclick="baixarPDFRel(${r.id},'${r.numero}')">PDF</button>` : '—'}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+    }
+
+    function filtrarRelatorios() {
+      const termo = document.getElementById('buscarRel').value.toLowerCase();
+      const data  = document.getElementById('dataFiltroRel').value;
+      renderizarRelatorios(todosRelatorios.filter(r =>
+        (!termo || r.numero.toLowerCase().includes(termo) || r.titulo.toLowerCase().includes(termo)) &&
+        (!data  || r.data.startsWith(data))
+      ));
+    }
+
+    function limparFiltroRel() {
+      document.getElementById('buscarRel').value = '';
+      document.getElementById('dataFiltroRel').value = '';
+      renderizarRelatorios(todosRelatorios);
+    }
+
+    async function baixarPDFRel(id, numero) {
+      try {
+        const res  = await fetch(`${API_BASE_URL}/api/relatorio/${id}/pdf`, { credentials: 'include' });
+        if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `relatorio_${numero.replace(/\//g, '-')}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch { alert('Erro ao baixar PDF.'); }
+    }
+
+    function mostrarMsg(texto, tipo) {
+      const el = document.getElementById('msgRelatorio');
+      el.textContent = texto;
+      el.style.display = 'block';
+      el.style.background = tipo === 'success' ? '#dcfce7' : '#fee2e2';
+      el.style.color      = tipo === 'success' ? '#166534' : '#991b1b';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+  </script>
+</body>
+</html>
