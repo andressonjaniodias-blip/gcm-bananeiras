@@ -26,7 +26,8 @@ pool.getConnection()
       CREATE TABLE IF NOT EXISTS usuarios (
         id INT AUTO_INCREMENT PRIMARY KEY,
         usuario VARCHAR(100) UNIQUE,
-        senha VARCHAR(255)
+        senha VARCHAR(255),
+        role VARCHAR(20) DEFAULT 'usuario'
       )
     `);
     conn.release();

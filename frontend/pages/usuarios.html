@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciar Usuários - GCM</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    .page-container {
+      width: 90%;
+      max-width: 700px;
+      margin: 30px auto;
+    }
+    .page-container h2 {
+      margin-bottom: 20px;
+      color: #003366;
+    }
+    .card {
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .card h3 {
+      margin-bottom: 14px;
+      color: #003366;
+      font-size: 1rem;
+    }
+    .form-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .form-row input, .form-row select {
+      flex: 1;
+      min-width: 140px;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.95rem;
+    }
+    .form-row button {
+      padding: 8px 18px;
+      background: #003366;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    .form-row button:hover { background: #00509e; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+    }
+    th { background: #f0f4f8; color: #003366; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+    .badge-admin { background: #003366; color: #fff; }
+    .badge-usuario { background: #e0e7ef; color: #333; }
+    .btn-excluir {
+      background: #c0392b;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 12px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .btn-excluir:hover { background: #96281b; }
+    #msg {
+      display: none;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .voltar {
+      display: inline-block;
+      margin-bottom: 16px;
+      color: #003366;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .voltar:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <img src="../assets/images/brasao-gcm.png" alt="Brasão GCM" class="logo">
+    <h1>Gerenciar Usuários</h1>
+    <img src="../assets/images/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+  </header>
+
+  <div class="page-container">
+    <a href="/pages/dashboard.html" class="voltar">← Voltar ao Dashboard</a>
+
+    <div id="msg"></div>
+
+    <div class="card">
+      <h3>Novo Usuário</h3>
+      <form onsubmit="criarUsuario(event)">
+        <div class="form-row">
+          <input type="text" id="novoUsuario" placeholder="Nome de usuário" required autocomplete="off">
+          <input type="password" id="novaSenha" placeholder="Senha" required>
+          <select id="novoRole">
+            <option value="usuario">Usuário</option>
+            <option value="admin">Administrador</option>
+          </select>
+          <button type="submit">Adicionar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Usuários Cadastrados</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Usuário</th>
+            <th>Perfil</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaUsuarios">
+          <tr><td colspan="4" style="text-align:center; color:#999;">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script>
+    const token = localStorage.getItem('token');
+
+    // Redireciona se não for admin
+    (function() {
+      if (!token) return window.location.href = '/';
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.role !== 'admin') window.location.href = '/pages/dashboard.html';
+      } catch { window.location.href = '/'; }
+    })();
+
+    async function carregarUsuarios() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const usuarios = await res.json();
+        const tbody = document.getElementById('tabelaUsuarios');
+
+        if (!usuarios.length) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;">Nenhum usuário encontrado</td></tr>';
+          return;
+        }
+
+        const meUsuario = JSON.parse(atob(token.split('.')[1])).usuario;
+
+        tbody.innerHTML = usuarios.map(u => `
+          <tr>
+            <td>${u.id}</td>
+            <td>${u.usuario} ${u.usuario === meUsuario ? '<em style="color:#999;font-size:0.8rem;">(você)</em>' : ''}</td>
+            <td><span class="badge badge-${u.role}">${u.role}</span></td>
+            <td>
+              ${u.usuario !== meUsuario
+                ? `<button class="btn-excluir" onclick="excluirUsuario(${u.id}, '${u.usuario}')">Remover</button>`
+                : '—'
+              }
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        mostrarMsg('Erro ao carregar usuários.', 'erro');
+      }
+    }
+
+    async function criarUsuario(e) {
+      e.preventDefault();
+      const usuario = document.getElementById('novoUsuario').value.trim();
+      const senha = document.getElementById('novaSenha').value;
+      const role = document.getElementById('novoRole').value;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ usuario, senha, role })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          mostrarMsg('Usuário criado com sucesso!', 'ok');
+          document.getElementById('novoUsuario').value = '';
+          document.getElementById('novaSenha').value = '';
+          carregarUsuarios();
+        } else {
+          mostrarMsg(data.error || 'Erro ao criar usuário.', 'erro');
+        }
+      } catch {
+        mostrarMsg('Erro de conexão com o servidor.', 'erro');
+      }
+    }
+
+    async function excluirUsuario(id, nome) {
+      if (!confirm(`Remover o usuário "${nome}"?`)) return;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          mostrarMsg('Usuário removido.', 'ok');
+          carregarUsuarios();
+        } else {
+          mostrarMsg(data.error || 'Erro ao remover usuário.', 'erro');
+        }
+      } catch {
+        mostrarMsg('Erro de conexão com o servidor.', 'erro');
+      }
+    }
+
+    function mostrarMsg(texto, tipo) {
+      const msg = document.getElementById('msg');
+      msg.textContent = texto;
+      msg.style.display = 'block';
+      msg.style.background = tipo === 'ok' ? '#d4edda' : '#f8d7da';
+      msg.style.color = tipo === 'ok' ? '#155724' : '#721c24';
+      setTimeout(() => msg.style.display = 'none', 4000);
+    }
+
+    carregarUsuarios();
+  </script>
+</body>
+</html>

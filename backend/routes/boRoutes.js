@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const boController = require('../controllers/boController');
-const verificarToken = require('../middleware/auth');
+const { verificarToken } = require('../middleware/auth');
 const { validarBO } = require('../utils/validation');
 
 // ✅ TODAS as rotas de BO requerem autenticação

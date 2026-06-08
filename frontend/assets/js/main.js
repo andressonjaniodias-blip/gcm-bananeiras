@@ -2,7 +2,17 @@ let authToken = null;
 
 window.addEventListener('DOMContentLoaded', () => {
   authToken = localStorage.getItem('authToken');
-  console.log('🔐 Token recuperado:', !!authToken);
+
+  // Inicializa header do dashboard se os elementos existirem
+  const elUsuario = document.getElementById('usuarioLogado');
+  const elLink = document.getElementById('linkUsuarios');
+  if (elUsuario && authToken) {
+    try {
+      const payload = JSON.parse(atob(authToken.split('.')[1]));
+      elUsuario.textContent = payload.usuario;
+      if (payload.role === 'admin' && elLink) elLink.style.display = 'inline';
+    } catch {}
+  }
 });
 
 // Login com URL dinâmica

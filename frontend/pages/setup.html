@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuração Inicial - GCM</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="header">
+    <img src="../assets/images/brasao-gcm.png" alt="Brasão GCM" class="logo">
+    <h1>Configuração Inicial</h1>
+    <img src="../assets/images/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+  </header>
+
+  <main class="login-container">
+    <h2>Criar Administrador</h2>
+    <p style="text-align:center; margin-bottom:16px; color:#666; font-size:0.9rem;">
+      Esta página só funciona uma vez, enquanto não houver nenhum usuário cadastrado.
+    </p>
+    <div id="msg" style="display:none; padding:10px; border-radius:4px; margin-bottom:12px; text-align:center;"></div>
+    <form onsubmit="criarAdmin(event)">
+      <input type="text" id="usuario" placeholder="Nome de usuário" required autocomplete="off">
+      <input type="password" id="senha" placeholder="Senha" required>
+      <input type="password" id="confirmar" placeholder="Confirmar senha" required>
+      <button type="submit" id="btn">Criar Administrador</button>
+    </form>
+  </main>
+
+  <script src="../assets/js/config.js"></script>
+  <script>
+    async function criarAdmin(e) {
+      e.preventDefault();
+      const usuario = document.getElementById('usuario').value.trim();
+      const senha = document.getElementById('senha').value;
+      const confirmar = document.getElementById('confirmar').value;
+      const msg = document.getElementById('msg');
+      const btn = document.getElementById('btn');
+
+      if (senha !== confirmar) {
+        mostrarMsg('As senhas não coincidem.', 'erro');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Aguarde...';
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/setup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario, senha })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          mostrarMsg('Administrador criado! Redirecionando para o login...', 'ok');
+          setTimeout(() => window.location.href = '/', 2000);
+        } else {
+          mostrarMsg(data.error || 'Erro ao criar administrador.', 'erro');
+          btn.disabled = false;
+          btn.textContent = 'Criar Administrador';
+        }
+      } catch (err) {
+        mostrarMsg('Erro de conexão com o servidor.', 'erro');
+        btn.disabled = false;
+        btn.textContent = 'Criar Administrador';
+      }
+    }
+
+    function mostrarMsg(texto, tipo) {
+      const msg = document.getElementById('msg');
+      msg.textContent = texto;
+      msg.style.display = 'block';
+      msg.style.background = tipo === 'ok' ? '#d4edda' : '#f8d7da';
+      msg.style.color = tipo === 'ok' ? '#155724' : '#721c24';
+    }
+  </script>
+</body>
+</html>
