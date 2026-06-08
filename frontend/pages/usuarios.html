@@ -30,6 +30,8 @@
     th { background: #f0f4f8; color: #003366; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; }
     .badge-admin { background: #003366; color: #fff; }
+    .badge-supervisor { background: #1a6e2e; color: #fff; }
+    .badge-agente { background: #e0e7ef; color: #333; }
     .badge-usuario { background: #e0e7ef; color: #333; }
     .btn-excluir { background: #c0392b; color: #fff; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.85rem; }
     .btn-excluir:hover { background: #96281b; }
@@ -63,7 +65,8 @@
           <input type="text" id="novoUsuario" placeholder="Nome de usuário" required autocomplete="off">
           <input type="password" id="novaSenha" placeholder="Senha" required>
           <select id="novoRole">
-            <option value="usuario">Usuário</option>
+            <option value="agente">Agente</option>
+            <option value="supervisor">Supervisor</option>
             <option value="admin">Administrador</option>
           </select>
           <button type="submit">Adicionar</button>
@@ -80,6 +83,19 @@
         </thead>
         <tbody id="tabelaUsuarios">
           <tr><td colspan="4" style="text-align:center;color:#999;">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Log de auditoria (só admin vê) -->
+    <div class="card" id="cardAuditoria" style="display:none;">
+      <h3>Log de Auditoria</h3>
+      <table>
+        <thead>
+          <tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Recurso</th><th>IP</th></tr>
+        </thead>
+        <tbody id="tabelaAuditoria">
+          <tr><td colspan="5" style="text-align:center;color:#999;">Carregando...</td></tr>
         </tbody>
       </table>
     </div>
@@ -122,7 +138,9 @@
     if (meRole === 'admin') {
       document.getElementById('cardNovoUsuario').style.display = 'block';
       document.getElementById('cardListaUsuarios').style.display = 'block';
+      document.getElementById('cardAuditoria').style.display = 'block';
       carregarUsuarios();
+      carregarAuditoria();
     }
 
     async function carregarUsuarios() {
@@ -138,11 +156,12 @@
           return;
         }
 
+        const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente', usuario: 'Agente' };
         tbody.innerHTML = usuarios.map(u => `
           <tr>
             <td>${u.id}</td>
             <td>${u.usuario} ${u.usuario === meUsuario ? '<em style="color:#999;font-size:0.8rem;">(você)</em>' : ''}</td>
-            <td><span class="badge badge-${u.role}">${u.role}</span></td>
+            <td><span class="badge badge-${u.role}">${roleLabel[u.role] || u.role}</span></td>
             <td>
               ${u.usuario !== meUsuario
                 ? `<button class="btn-excluir" onclick="excluirUsuario(${u.id}, '${u.usuario}')">Remover</button>`
@@ -219,6 +238,28 @@
           mostrarMsg(data.error || 'Erro ao alterar senha.', 'erro');
         }
       } catch { mostrarMsg('Erro de conexão.', 'erro'); }
+    }
+
+    async function carregarAuditoria() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/auditoria`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const logs = await res.json();
+        const tbody = document.getElementById('tabelaAuditoria');
+        if (!logs.length) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">Nenhum registro</td></tr>';
+          return;
+        }
+        tbody.innerHTML = logs.map(l => `
+          <tr>
+            <td style="white-space:nowrap;font-size:0.82rem;">${new Date(l.data).toLocaleString('pt-BR')}</td>
+            <td>${l.usuario}</td>
+            <td><span style="font-size:0.82rem;background:#f0f4f8;padding:2px 6px;border-radius:4px;">${l.acao}</span></td>
+            <td>${l.recurso || '—'}</td>
+            <td style="font-size:0.8rem;color:#666;">${l.ip || '—'}</td>
+          </tr>`).join('');
+      } catch { mostrarMsg('Erro ao carregar auditoria.', 'erro'); }
     }
 
     function mostrarMsg(texto, tipo) {
