@@ -342,6 +342,81 @@ table button:hover {
   background-color: #0077cc;
 }
 
+/* Campo group */
+.campo-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.campo-group label {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.campo-group input,
+.campo-group textarea,
+.campo-group select {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 15px;
+  font-family: Arial, sans-serif;
+}
+
+.campo-group select { background: #fff; cursor: pointer; }
+.campo-group input:focus,
+.campo-group textarea:focus,
+.campo-group select:focus { border-color: #0055a5; outline: none; }
+
+/* Blocos de vítima/suspeito/objeto */
+.bloco-pessoa, .bloco-objeto {
+  background: #f9f9f9;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.bloco-pessoa h4, .bloco-objeto h4 {
+  margin-bottom: 12px;
+  color: #003366;
+}
+
+.btn-adicionar {
+  background: #1a7a1a;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  margin-top: 8px;
+}
+
+.btn-adicionar:hover { background: #155e15; }
+
+.btn-remover {
+  background: #c62828;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.btn-remover:hover { background: #b71c1c; }
+
+/* Aba ativa */
+.tabs button.active { background-color: #001f4d; }
+
 /* MEDIA QUERIES - Tablet (até 768px) */
 @media (max-width: 768px) {
   .header {
