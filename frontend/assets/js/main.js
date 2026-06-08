@@ -2,8 +2,20 @@ let authToken = null;
 
 window.addEventListener('DOMContentLoaded', () => {
   authToken = localStorage.getItem('authToken');
-  if (!authToken && !window.location.pathname.includes('setup')) {
+
+  const isLoginPage = window.location.pathname === '/' ||
+    window.location.pathname.endsWith('index.html');
+  const isSetupPage = window.location.pathname.includes('setup');
+
+  // Redireciona para login só se estiver em página protegida sem token
+  if (!authToken && !isLoginPage && !isSetupPage) {
     window.location.href = '/';
+    return;
+  }
+
+  // Se já tem token e está na login, vai direto pro dashboard
+  if (authToken && isLoginPage) {
+    window.location.href = '/pages/dashboard.html';
     return;
   }
 
