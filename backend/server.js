@@ -3,9 +3,18 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 
 const boRoutes = require('./routes/boRoutes');
 const authRoutes = require('./routes/authRoutes');
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 20,
+  message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const app = express();
 
@@ -34,6 +43,7 @@ const publicPath = path.join(__dirname, '../public');
 app.use(express.static(publicPath));
 
 // Rotas da API
+app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/bo', boRoutes);
 
