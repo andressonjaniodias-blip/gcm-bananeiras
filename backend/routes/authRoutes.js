@@ -29,10 +29,29 @@ router.post('/login', async (req, res) => {
     const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
     await registrarAuditoria(row.usuario, 'LOGIN', null, ip);
 
-    res.json({ message: 'Login realizado com sucesso', token, role: row.role, expiresIn: '8h' });
+    const isProducao = process.env.NODE_ENV === 'production';
+    res.cookie('authToken', token, {
+      httpOnly: true,
+      secure: isProducao,
+      sameSite: isProducao ? 'strict' : 'lax',
+      maxAge: 8 * 60 * 60 * 1000, // 8 horas em ms
+    });
+
+    res.json({ message: 'Login realizado com sucesso', role: row.role, usuario: row.usuario });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// Logout — limpa o cookie
+router.post('/logout', (req, res) => {
+  res.clearCookie('authToken');
+  res.json({ message: 'Logout realizado com sucesso' });
+});
+
+// Perfil do usuário logado (usado pelo frontend para verificar sessão)
+router.get('/me', verificarToken, (req, res) => {
+  res.json({ usuario: req.usuario.usuario, role: req.usuario.role });
 });
 
 // Setup — cria o primeiro admin (só funciona se não houver usuários)
@@ -112,6 +131,39 @@ router.delete('/usuarios/:id', verificarToken, verificarAdmin, async (req, res) 
 
     await db.query('DELETE FROM usuarios WHERE id = $1', [id]);
     res.json({ message: 'Usuário removido com sucesso' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Estatísticas de retenção (admin)
+router.get('/retencao', verificarToken, verificarAdmin, async (req, res) => {
+  try {
+    const anos = parseInt(process.env.RETENCAO_ANOS || '5');
+    const { rows: total } = await db.query('SELECT COUNT(*) AS total FROM boletins');
+    const { rows: antigos } = await db.query(
+      `SELECT COUNT(*) AS total FROM boletins WHERE data::timestamptz < NOW() - INTERVAL '${anos} years'`
+    );
+    res.json({
+      retencao_anos: anos,
+      total_bos: parseInt(total[0].total),
+      bos_para_arquivar: parseInt(antigos[0].total),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Arquivar BOs antigos (admin) — remove registros além do prazo de retenção
+router.delete('/retencao/arquivar', verificarToken, verificarAdmin, async (req, res) => {
+  try {
+    const anos = parseInt(process.env.RETENCAO_ANOS || '5');
+    const { rows, rowCount } = await db.query(
+      `DELETE FROM boletins WHERE data::timestamptz < NOW() - INTERVAL '${anos} years' RETURNING numero`
+    );
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
+    await registrarAuditoria(req.usuario.usuario, 'ARQUIVAR_BOs', `${rowCount} registros removidos`, ip);
+    res.json({ message: `${rowCount} BO(s) arquivado(s)`, arquivados: rows.map(r => r.numero) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
