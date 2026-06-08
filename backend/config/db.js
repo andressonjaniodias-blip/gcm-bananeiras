@@ -14,14 +14,26 @@ pool.connect()
         id SERIAL PRIMARY KEY,
         numero TEXT NOT NULL,
         dados TEXT NOT NULL,
-        data TEXT NOT NULL
+        data TEXT NOT NULL,
+        criado_por TEXT
       );
       CREATE TABLE IF NOT EXISTS usuarios (
         id SERIAL PRIMARY KEY,
         usuario TEXT UNIQUE,
         senha TEXT,
-        role TEXT DEFAULT 'usuario'
+        role TEXT DEFAULT 'agente'
       );
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id SERIAL PRIMARY KEY,
+        usuario TEXT NOT NULL,
+        acao TEXT NOT NULL,
+        recurso TEXT,
+        ip TEXT,
+        data TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await client.query(`
+      ALTER TABLE boletins ADD COLUMN IF NOT EXISTS criado_por TEXT;
     `);
     client.release();
   })
