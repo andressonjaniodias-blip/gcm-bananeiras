@@ -1,5 +1,10 @@
 const db = require('../config/db');
 const PDFDocument = require('pdfkit');
+const path = require('path');
+const fs = require('fs');
+
+const brasaoGCM        = path.join(__dirname, '../../public/brasao-gcm.png');
+const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.png');
 
 exports.criarBO = async (req, res) => {
   if (!req.body || Object.keys(req.body).length === 0) {
@@ -64,10 +69,25 @@ exports.exportarPDF = async (req, res) => {
     const doc = new PDFDocument({ margin: 50 });
     doc.pipe(res);
 
-    // Cabeçalho
-    doc.fontSize(18).font('Helvetica-Bold').text('Boletim de Ocorrência', { align: 'center' });
-    doc.fontSize(12).font('Helvetica').text(`Número: ${row.numero}`, { align: 'center' });
-    doc.text(`Data: ${new Date(row.data).toLocaleDateString('pt-BR')}`, { align: 'center' });
+    // Cabeçalho com brasões
+    const temGCM        = fs.existsSync(brasaoGCM);
+    const temPrefeitura = fs.existsSync(brasaoPrefeitura);
+    const imgSize = 60;
+    const pageWidth = doc.page.width - 100; // descontando margens
+
+    if (temGCM)        doc.image(brasaoGCM,        50,  30, { width: imgSize });
+    if (temPrefeitura) doc.image(brasaoPrefeitura, doc.page.width - 50 - imgSize, 30, { width: imgSize });
+
+    const topoY = temGCM || temPrefeitura ? 35 : doc.y;
+    doc.fontSize(16).font('Helvetica-Bold')
+       .text('GUARDA CIVIL MUNICIPAL', 50, topoY, { width: pageWidth, align: 'center' });
+    doc.fontSize(13).font('Helvetica')
+       .text('Boletim de Ocorrência', { width: pageWidth, align: 'center' });
+    doc.fontSize(11)
+       .text(`Número: ${row.numero}   |   Data: ${new Date(row.data).toLocaleDateString('pt-BR')}`, { width: pageWidth, align: 'center' });
+
+    doc.moveDown(temGCM || temPrefeitura ? 3 : 1);
+    doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).lineWidth(1.5).stroke();
     doc.moveDown();
 
     function secao(titulo, obj) {
