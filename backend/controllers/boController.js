@@ -14,20 +14,20 @@ exports.criarBO = async (req, res) => {
   }
 
   try {
-    const [countRows] = await db.query('SELECT COUNT(*) AS total FROM boletins');
+    const { rows: countRows } = await db.query('SELECT COUNT(*) AS total FROM boletins');
     const numeroSequencial = parseInt(countRows[0].total) + 1;
     const numero = `BO-GCM-${String(numeroSequencial).padStart(4, '0')}`;
     const dados = JSON.stringify(req.body);
     const data = new Date().toISOString();
 
-    const [result] = await db.query(
-      'INSERT INTO boletins (numero, dados, data) VALUES (?, ?, ?)',
+    const result = await db.query(
+      'INSERT INTO boletins (numero, dados, data) VALUES ($1, $2, $3) RETURNING id',
       [numero, dados, data]
     );
 
     res.status(201).json({
       message: 'BO criado com sucesso',
-      id: result.insertId,
+      id: result.rows[0].id,
       numero,
     });
   } catch (err) {
@@ -37,7 +37,7 @@ exports.criarBO = async (req, res) => {
 
 exports.listarBOs = async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM boletins ORDER BY id DESC');
+    const { rows } = await db.query('SELECT * FROM boletins ORDER BY id DESC');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -49,7 +49,7 @@ exports.consultarBO = async (req, res) => {
   if (!id) return res.status(400).json({ error: 'ID do BO é obrigatório' });
 
   try {
-    const [rows] = await db.query('SELECT * FROM boletins WHERE id = ?', [id]);
+    const { rows } = await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
     res.json(rows[0]);
   } catch (err) {
@@ -62,7 +62,7 @@ exports.exportarPDF = async (req, res) => {
   if (!id) return res.status(400).json({ error: 'ID do BO é obrigatório' });
 
   try {
-    const [rows] = await db.query('SELECT * FROM boletins WHERE id = ?', [id]);
+    const { rows } = await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
 
     const row = rows[0];

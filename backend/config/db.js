@@ -1,36 +1,29 @@
 // backend/config/db.js
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 
-const pool = mysql.createPool({
-  host:     process.env.DB_HOST,
-  user:     process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port:     process.env.DB_PORT || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
-pool.getConnection()
-  .then(async conn => {
-    console.log('Conectado ao banco MySQL.');
-    await conn.query(`
+pool.connect()
+  .then(async client => {
+    console.log('Conectado ao banco PostgreSQL.');
+    await client.query(`
       CREATE TABLE IF NOT EXISTS boletins (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        numero VARCHAR(20) NOT NULL,
-        dados LONGTEXT NOT NULL,
-        data VARCHAR(30) NOT NULL
-      )
-    `);
-    await conn.query(`
+        id SERIAL PRIMARY KEY,
+        numero TEXT NOT NULL,
+        dados TEXT NOT NULL,
+        data TEXT NOT NULL
+      );
       CREATE TABLE IF NOT EXISTS usuarios (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        usuario VARCHAR(100) UNIQUE,
-        senha VARCHAR(255),
-        role VARCHAR(20) DEFAULT 'usuario'
-      )
+        id SERIAL PRIMARY KEY,
+        usuario TEXT UNIQUE,
+        senha TEXT,
+        role TEXT DEFAULT 'usuario'
+      );
     `);
-    conn.release();
+    client.release();
   })
   .catch(err => console.error('Erro ao conectar ao banco:', err.message));
 

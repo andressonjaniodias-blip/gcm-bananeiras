@@ -19,8 +19,8 @@
     "express-rate-limit": "^6.7.0",
     "express-validator": "^7.0.0",
     "jsonwebtoken": "^9.0.0",
-    "mysql2": "^3.22.5",
     "pdfkit": "^0.13.0",
+    "pg": "^8.21.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
