@@ -396,53 +396,48 @@ form textarea {
 
 /* ============================================================
    BLOCOS DINÂMICOS (vítima / suspeito / objeto)
+   — mesma aparência que os outros forms, separados por divisor
    ============================================================ */
 .bloco-pessoa,
-.bloco-objeto,
-#vitimas-list div,
-#suspeitos-list div,
-#objetos-list div {
-  background: var(--color-bloco-bg);
-  padding: 16px;
+.bloco-objeto {
+  padding-top: 16px;
+  margin-bottom: 8px;
+  border-top: 2px solid var(--color-border);
+}
+
+.bloco-pessoa:first-child,
+.bloco-objeto:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.bloco-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 14px;
-  border: 1px solid var(--color-bloco-border);
-  border-left: 4px solid var(--color-primary);
-  border-radius: var(--radius-sm);
 }
 
 .bloco-pessoa h4,
 .bloco-objeto h4 {
-  margin-bottom: 12px;
   color: var(--color-primary);
   font-size: 0.95rem;
   font-weight: 700;
+  margin: 0;
 }
 
-#vitimas-list input,
-#suspeitos-list input,
-#objetos-list input,
-#vitimas-list textarea,
-#suspeitos-list textarea,
-#objetos-list textarea {
-  display: block;
+/* btn-remover dentro do bloco — menor e alinhado ao header */
+.bloco-header .btn-remover {
+  width: auto;
+  margin: 0;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+}
+
+/* Standalone btn-remover (fora do header) */
+.btn-remover-standalone {
+  margin-top: 12px;
   width: 100%;
-  margin: 6px 0;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: 15px;
-  font-family: 'Inter', Arial, sans-serif;
-  background: var(--color-input-bg);
-  color: var(--color-text);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-#vitimas-list input:focus,
-#suspeitos-list input:focus,
-#objetos-list input:focus {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-input);
-  outline: none;
 }
 
 /* ============================================================
