@@ -2,8 +2,11 @@ let authToken = null;
 
 window.addEventListener('DOMContentLoaded', () => {
   authToken = localStorage.getItem('authToken');
+  if (!authToken && !window.location.pathname.includes('setup')) {
+    window.location.href = '/';
+    return;
+  }
 
-  // Inicializa header do dashboard se os elementos existirem
   const elUsuario = document.getElementById('usuarioLogado');
   const elLink = document.getElementById('linkUsuarios');
   if (elUsuario && authToken) {
@@ -13,320 +16,270 @@ window.addEventListener('DOMContentLoaded', () => {
       if (payload.role === 'admin' && elLink) elLink.style.display = 'inline';
     } catch {}
   }
+
+  // Restaurar rascunho
+  const rascunho = localStorage.getItem('boTemp');
+  if (rascunho) {
+    try {
+      const dados = JSON.parse(rascunho);
+      restaurarRascunho(dados);
+    } catch {}
+  }
 });
 
-// Login com URL dinâmica
-async function login() {
-  const usuario = document.getElementById('usuario').value.trim();
-  const senha = document.getElementById('senha').value;
+// ── Navegação de abas ────────────────────────────────────────────────────────
+function showTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId)?.classList.remove('hidden');
+  event?.target?.classList.add('active');
+}
 
-  if (!usuario || !senha) {
-    alert('Usuário e senha são obrigatórios');
+// ── Máscaras ─────────────────────────────────────────────────────────────────
+function mascararCPF(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
+  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+  else if (v.length > 3) v = v.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+  input.value = v;
+}
+
+function mascararTelefone(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 10) v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  else if (v.length > 6) v = v.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+  else if (v.length > 2) v = v.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+  input.value = v;
+}
+
+// ── Blocos dinâmicos ─────────────────────────────────────────────────────────
+function htmlPessoa(tipo, idx) {
+  return `
+  <div class="bloco-pessoa" data-tipo="${tipo}">
+    <h4>${tipo} ${idx}</h4>
+    <div class="campo-group"><label>Nome</label>
+      <input type="text" name="nome" placeholder="Nome completo" maxlength="150"></div>
+    <div class="campo-group"><label>Alcunha</label>
+      <input type="text" name="alcunha" placeholder="Apelido" maxlength="100"></div>
+    <div class="campo-group"><label>CPF / RG / CNH</label>
+      <input type="text" name="documento" placeholder="000.000.000-00" maxlength="20" oninput="mascararCPF(this)"></div>
+    <div class="campo-group"><label>Nascimento</label>
+      <input type="date" name="nascimento"></div>
+    <div class="campo-group"><label>Idade</label>
+      <input type="number" name="idade" min="0" max="120" placeholder="Anos"></div>
+    <div class="campo-group"><label>Gênero</label>
+      <input type="text" name="genero" placeholder="Gênero declarado" maxlength="50"></div>
+    <div class="campo-group"><label>Nacionalidade</label>
+      <input type="text" name="nacionalidade" placeholder="Ex: Brasileira" maxlength="50"></div>
+    <div class="campo-group"><label>Naturalidade</label>
+      <input type="text" name="naturalidade" placeholder="Cidade/Estado" maxlength="100"></div>
+    <div class="campo-group"><label>Estado Civil</label>
+      <select name="estadoCivil">
+        <option value="">Selecione</option>
+        <option>Solteiro(a)</option><option>Casado(a)</option>
+        <option>Divorciado(a)</option><option>Viúvo(a)</option><option>União Estável</option>
+      </select></div>
+    <div class="campo-group"><label>Ocupação</label>
+      <input type="text" name="ocupacao" placeholder="Profissão" maxlength="100"></div>
+    <div class="campo-group"><label>Escolaridade</label>
+      <select name="escolaridade">
+        <option value="">Selecione</option>
+        <option>Sem instrução</option><option>Fundamental Incompleto</option>
+        <option>Fundamental Completo</option><option>Médio Incompleto</option>
+        <option>Médio Completo</option><option>Superior Incompleto</option>
+        <option>Superior Completo</option>
+      </select></div>
+    <div class="campo-group"><label>Nome do Pai</label>
+      <input type="text" name="nomePai" placeholder="Nome do pai" maxlength="150"></div>
+    <div class="campo-group"><label>Nome da Mãe</label>
+      <input type="text" name="nomeMae" placeholder="Nome da mãe" maxlength="150"></div>
+    <div class="campo-group"><label>Endereço</label>
+      <input type="text" name="endereco" placeholder="Rua, Nº, Bairro, Cidade" maxlength="250"></div>
+    <div class="campo-group"><label>Telefone</label>
+      <input type="tel" name="telefone" placeholder="(00) 00000-0000" maxlength="15" oninput="mascararTelefone(this)"></div>
+    <button type="button" class="btn-remover" onclick="removerBloco(this)">Remover ${tipo}</button>
+    <hr>
+  </div>`;
+}
+
+let countVitimas = 0, countSuspeitos = 0, countObjetos = 0;
+
+function adicionarVitima() {
+  countVitimas++;
+  document.getElementById('vitimas-list').insertAdjacentHTML('beforeend', htmlPessoa('Vítima', countVitimas));
+}
+
+function adicionarSuspeito() {
+  countSuspeitos++;
+  document.getElementById('suspeitos-list').insertAdjacentHTML('beforeend', htmlPessoa('Suspeito', countSuspeitos));
+}
+
+function adicionarObjeto() {
+  countObjetos++;
+  document.getElementById('objetos-list').insertAdjacentHTML('beforeend', `
+  <div class="bloco-objeto">
+    <h4>Objeto ${countObjetos}</h4>
+    <div class="campo-group"><label>Tipo de Objeto</label>
+      <input type="text" name="tipoObjeto" placeholder="Ex: Faca, Celular, Veículo" maxlength="100"></div>
+    <div class="campo-group"><label>Quantidade</label>
+      <input type="number" name="quantidade" min="1" placeholder="1"></div>
+    <div class="campo-group"><label>Descrição</label>
+      <textarea name="descricaoObjeto" rows="3" placeholder="Cor, marca, modelo, características..."></textarea></div>
+    <button type="button" class="btn-remover" onclick="removerBloco(this)">Remover Objeto</button>
+    <hr>
+  </div>`);
+}
+
+function removerBloco(btn) {
+  btn.closest('div[class^="bloco"]')?.remove();
+}
+
+// ── Coleta de dados ──────────────────────────────────────────────────────────
+function coletarSecao(seletor) {
+  const obj = {};
+  document.querySelectorAll(`${seletor} input, ${seletor} textarea, ${seletor} select`).forEach(el => {
+    if (el.name && el.value.trim()) obj[el.name] = el.value.trim();
+  });
+  return obj;
+}
+
+function coletarBlocos(containerId) {
+  return Array.from(document.querySelectorAll(`#${containerId} > div`)).map(bloco => {
+    const obj = {};
+    bloco.querySelectorAll('input, textarea, select').forEach(el => {
+      if (el.name && el.value.trim()) obj[el.name] = el.value.trim();
+    });
+    return obj;
+  }).filter(obj => Object.keys(obj).length > 0);
+}
+
+function coletarDadosBO() {
+  return {
+    dadosSolicitacao: coletarSecao('#solicitacao'),
+    dadosOcorrencia:  coletarSecao('#ocorrencia'),
+    vitimas:   coletarBlocos('vitimas-list'),
+    suspeitos: coletarBlocos('suspeitos-list'),
+    objetos:   coletarBlocos('objetos-list'),
+    relato:    document.querySelector('#relato textarea')?.value.trim() || '',
+    autoridade: coletarSecao('#autoridade'),
+  };
+}
+
+// ── Validação ────────────────────────────────────────────────────────────────
+function validarCamposObrigatorios() {
+  const obrigatorios = document.querySelectorAll('[required]');
+  for (const campo of obrigatorios) {
+    if (!campo.value.trim()) {
+      const label = campo.closest('.campo-group')?.querySelector('label')?.textContent?.trim() || campo.name;
+      const secao = campo.closest('.tab-content');
+      if (secao) {
+        showTab(secao.id);
+        campo.focus();
+      }
+      alert(`Campo obrigatório não preenchido: "${label}"`);
+      return false;
+    }
+    if (campo.minLength > 0 && campo.value.trim().length < campo.minLength) {
+      const label = campo.closest('.campo-group')?.querySelector('label')?.textContent?.trim() || campo.name;
+      alert(`"${label}" deve ter pelo menos ${campo.minLength} caracteres.`);
+      campo.focus();
+      return false;
+    }
+  }
+  return true;
+}
+
+// ── Salvar / Finalizar ───────────────────────────────────────────────────────
+function salvarBO() {
+  const dados = coletarDadosBO();
+  localStorage.setItem('boTemp', JSON.stringify(dados));
+  alert('Rascunho salvo!');
+}
+
+async function finalizarBO() {
+  if (!validarCamposObrigatorios()) return;
+
+  const dados = coletarDadosBO();
+  if (!dados.relato) {
+    showTab('relato');
+    alert('O relato da ocorrência é obrigatório.');
     return;
   }
 
+  if (!confirm('Confirmar a finalização do BO? Esta ação não poderá ser desfeita.')) return;
+
   try {
-    console.log('📡 Tentando login em:', API_BASE_URL);
-    
+    const response = await fetch(`${API_BASE_URL}/api/bo`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify(dados)
+    });
+
+    if (response.status === 401) { logout(); return; }
+
+    if (response.ok) {
+      const result = await response.json();
+      localStorage.removeItem('boTemp');
+      alert(`BO finalizado com sucesso!\nNúmero: ${result.numero}`);
+      window.location.href = '/pages/consulta.html';
+    } else {
+      const error = await response.json();
+      alert(`Erro: ${error.error}`);
+    }
+  } catch (err) {
+    console.error('Erro:', err);
+    alert('Erro de conexão ao finalizar BO.');
+  }
+}
+
+// ── Restaurar rascunho ───────────────────────────────────────────────────────
+function restaurarRascunho(dados) {
+  function preencherSecao(seletor, obj) {
+    if (!obj) return;
+    Object.entries(obj).forEach(([name, value]) => {
+      const el = document.querySelector(`${seletor} [name="${name}"]`);
+      if (el) el.value = value;
+    });
+  }
+  preencherSecao('#solicitacao', dados.dadosSolicitacao);
+  preencherSecao('#ocorrencia', dados.dadosOcorrencia);
+  preencherSecao('#autoridade', dados.autoridade);
+  if (dados.relato) {
+    const rel = document.querySelector('#relato textarea');
+    if (rel) rel.value = dados.relato;
+  }
+}
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+function logout() {
+  authToken = null;
+  localStorage.removeItem('authToken');
+  window.location.href = '/';
+}
+
+// Login (usado na index)
+async function login() {
+  const usuario = document.getElementById('usuario')?.value.trim();
+  const senha   = document.getElementById('senha')?.value;
+  if (!usuario || !senha) { alert('Usuário e senha são obrigatórios'); return; }
+
+  try {
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ usuario, senha })
     });
-
     const result = await response.json();
-
     if (response.ok) {
-      authToken = result.token;
-      localStorage.setItem('authToken', authToken);
-      console.log('✅ Login bem-sucedido!');
+      localStorage.setItem('authToken', result.token);
       window.location.href = 'pages/dashboard.html';
     } else {
       alert(result.error || 'Erro ao fazer login');
-      console.error('❌ Erro:', result);
     }
-  } catch (error) {
-    console.error('❌ Erro de conexão:', error);
-    alert('Erro de conexão. Verifique se o servidor está rodando.\n\n' + 
-          'URL tentada: ' + API_BASE_URL);
+  } catch {
+    alert('Erro de conexão. Verifique se o servidor está rodando.');
   }
-}
-
-// Logout
-function logout() {
-  authToken = null;
-  localStorage.removeItem('authToken');
-  window.location.href = '/index.html';
-}
-
-// Fetch com autenticação e URL dinâmica
-async function fetchComAutenticacao(endpoint, opcoes = {}) {
-  if (!authToken) {
-    window.location.href = '/index.html';
-    return null;
-  }
-
-  const url = `${API_BASE_URL}${endpoint}`;
-  console.log('📡 Requisição para:', url);
-
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${authToken}`,
-    ...opcoes.headers
-  };
-
-  try {
-    const response = await fetch(url, {
-      ...opcoes,
-      headers
-    });
-
-    if (response.status === 401) {
-      console.warn('⚠️ Token expirado');
-      logout();
-      return null;
-    }
-
-    return response;
-  } catch (error) {
-    console.error('❌ Erro na requisição:', error);
-    throw error;
-  }
-}
-
-// Finalizar BO
-async function finalizarBO() {
-  const dados = coletarDadosBO();
-
-  if (!dados.relato || dados.relato.trim() === '') {
-    alert('Relato é obrigatório');
-    return;
-  }
-
-  if (dados.vitimas.length === 0) {
-    alert('Adicione pelo menos uma vítima');
-    return;
-  }
-
-  try {
-    const response = await fetchComAutenticacao('/api/bo', {
-      method: 'POST',
-      body: JSON.stringify(dados)
-    });
-
-    if (response && response.ok) {
-      const result = await response.json();
-      alert(`BO finalizado com sucesso!\nNúmero: ${result.numero}`);
-      localStorage.removeItem('boTemp');
-      window.location.href = 'consulta.html';
-    } else if (response) {
-      const error = await response.json();
-      alert(`Erro: ${error.error}`);
-    }
-  } catch (error) {
-    console.error('Erro:', error);
-    alert('Erro ao finalizar BO');
-  }
-}
-
-// Listar BOs
-async function listarBOs() {
-  try {
-    const response = await fetchComAutenticacao('/api/bo');
-
-    if (!response) return;
-
-    const bos = await response.json();
-    const lista = document.getElementById('listaBOs');
-    lista.innerHTML = '';
-
-    if (bos.length === 0) {
-      lista.innerHTML = '<tr><td colspan="4">Nenhum BO encontrado</td></tr>';
-      return;
-    }
-
-    bos.forEach(bo => {
-      const row = document.createElement('tr');
-      const data = new Date(bo.data).toLocaleDateString('pt-BR');
-      row.innerHTML = `
-        <td>${bo.numero}</td>
-        <td>${data}</td>
-        <td>Concluído</td>
-        <td>
-          <button onclick="exportarPDF(${bo.id})">PDF</button>
-        </td>
-      `;
-      lista.appendChild(row);
-    });
-  } catch (error) {
-    console.error('Erro:', error);
-    alert('Erro ao carregar BOs');
-  }
-}
-
-// Exportar PDF com autenticação
-function exportarPDF(id) {
-  if (!authToken) {
-    window.location.href = '/index.html';
-    return;
-  }
-  window.location.href = `${API_BASE_URL}/api/bo/${id}/pdf?token=${authToken}`;
-}
-
-// Resto das funções (showTab, adicionarVitima, etc.)
-function showTab(tabId) {
-  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
-  document.getElementById(tabId).classList.remove('hidden');
-}
-
-function removerBloco(botao) {
-  botao.parentElement.remove();
-}
-
-function adicionarVitima() {
-  const container = document.getElementById('vitimas-list');
-  const bloco = document.createElement('div');
-  bloco.innerHTML = `
-    <input type="text" placeholder="Nome">
-    <input type="text" placeholder="Alcunha">
-    <input type="text" placeholder="RG/CPF/CNH/CNPJ">
-    <input type="text" placeholder="Nacionalidade">
-    <input type="date" placeholder="Nascimento">
-    <input type="number" placeholder="Idade">
-    <input type="text" placeholder="Naturalidade">
-    <input type="text" placeholder="Estado Civil">
-    <input type="text" placeholder="Ocupação">
-    <input type="text" placeholder="Gênero Declarado">
-    <input type="text" placeholder="Nome do Pai">
-    <input type="text" placeholder="Nome da Mãe">
-    <input type="text" placeholder="Rua">
-    <input type="text" placeholder="Número">
-    <input type="text" placeholder="Cidade">
-    <input type="text" placeholder="Complemento">
-    <input type="tel" placeholder="Telefone">
-    <input type="text" placeholder="Escolaridade">
-    <button type="button" onclick="removerBloco(this)">Excluir Vítima</button>
-    <hr>
-  `;
-  container.appendChild(bloco);
-}
-
-function adicionarSuspeito() {
-  const container = document.getElementById('suspeitos-list');
-  const bloco = document.createElement('div');
-  bloco.innerHTML = `
-    <input type="text" placeholder="Nome">
-    <input type="text" placeholder="Alcunha">
-    <input type="text" placeholder="RG/CPF/CNH/CNPJ">
-    <input type="text" placeholder="Nacionalidade">
-    <input type="date" placeholder="Nascimento">
-    <input type="number" placeholder="Idade">
-    <input type="text" placeholder="Naturalidade">
-    <input type="text" placeholder="Estado Civil">
-    <input type="text" placeholder="Ocupação">
-    <input type="text" placeholder="Gênero Declarado">
-    <input type="text" placeholder="Nome do Pai">
-    <input type="text" placeholder="Nome da Mãe">
-    <input type="text" placeholder="Rua">
-    <input type="text" placeholder="Número">
-    <input type="text" placeholder="Cidade">
-    <input type="text" placeholder="Complemento">
-    <input type="tel" placeholder="Telefone">
-    <input type="text" placeholder="Escolaridade">
-    <button type="button" onclick="removerBloco(this)">Excluir Suspeito</button>
-    <hr>
-  `;
-  container.appendChild(bloco);
-}
-
-function adicionarObjeto() {
-  const container = document.getElementById('objetos-list');
-  const bloco = document.createElement('div');
-  bloco.innerHTML = `
-    <input type="text" placeholder="Tipo de Objeto">
-    <input type="number" placeholder="Quantidade">
-    <textarea placeholder="Descrição"></textarea>
-    <button type="button" onclick="removerBloco(this)">Excluir Objeto</button>
-    <hr>
-  `;
-  container.appendChild(bloco);
-}
-
-function coletarDadosBO() {
-  const vitimas = Array.from(document.querySelectorAll('#vitimas-list div')).map(div => {
-    const obj = {};
-    div.querySelectorAll('input, textarea').forEach(input => {
-      if (input.placeholder && input.value) {
-        obj[input.placeholder] = input.value;
-      }
-    });
-    return obj;
-  });
-
-  const suspeitos = Array.from(document.querySelectorAll('#suspeitos-list div')).map(div => {
-    const obj = {};
-    div.querySelectorAll('input, textarea').forEach(input => {
-      if (input.placeholder && input.value) {
-        obj[input.placeholder] = input.value;
-      }
-    });
-    return obj;
-  });
-
-  const objetos = Array.from(document.querySelectorAll('#objetos-list div')).map(div => {
-    const obj = {};
-    div.querySelectorAll('input, textarea').forEach(input => {
-      if (input.placeholder && input.value) {
-        obj[input.placeholder] = input.value;
-      }
-    });
-    return obj;
-  });
-
-  const dadosSolicitacao = {};
-  document.querySelectorAll('#solicitacao form input').forEach(input => {
-    if (input.placeholder && input.value) {
-      dadosSolicitacao[input.placeholder] = input.value;
-    }
-  });
-
-  const dadosOcorrencia = {};
-  document.querySelectorAll('#ocorrencia form input').forEach(input => {
-    if (input.placeholder && input.value) {
-      dadosOcorrencia[input.placeholder] = input.value;
-    }
-  });
-
-  const autoridade = {};
-  document.querySelectorAll('#autoridade form input').forEach(input => {
-    if (input.placeholder && input.value) {
-      autoridade[input.placeholder] = input.value;
-    }
-  });
-
-  return {
-    vitimas,
-    suspeitos,
-    objetos,
-    relato: document.querySelector('#relato textarea')?.value || '',
-    dadosSolicitacao,
-    dadosOcorrencia,
-    autoridade
-  };
-}
-
-function salvarBO() {
-  const dados = coletarDadosBO();
-  localStorage.setItem('boTemp', JSON.stringify(dados));
-  alert('Dados salvos temporariamente');
-}
-
-function visualizarBO(id) {
-  alert(`Visualizando BO ID: ${id}`);
-}
-
-function filtrarBOs() {
-  const termo = document.getElementById('buscar')?.value || '';
-  const data = document.getElementById('data')?.value || '';
-  alert(`Filtro aplicado: termo="${termo}", data="${data}"`);
 }
