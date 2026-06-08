@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aviso de Privacidade - GCM</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    body { background: #f0f4f8; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .aviso-card {
+      background: #fff; border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      padding: 36px 40px; max-width: 600px; width: 90%;
+    }
+    .aviso-card .logo-row { display: flex; justify-content: center; gap: 24px; margin-bottom: 20px; }
+    .aviso-card .logo-row img { height: 56px; }
+    h2 { color: #003366; text-align: center; margin-bottom: 6px; font-size: 1.2rem; }
+    .subtitulo { text-align: center; color: #555; font-size: 0.9rem; margin-bottom: 20px; }
+    .secao { margin-bottom: 14px; }
+    .secao h3 { font-size: 0.95rem; color: #003366; margin-bottom: 4px; }
+    .secao p, .secao ul { font-size: 0.88rem; color: #444; margin: 0; line-height: 1.6; }
+    .secao ul { padding-left: 18px; }
+    .rodape {
+      margin-top: 24px; padding-top: 16px; border-top: 1px solid #eee;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .rodape label { font-size: 0.9rem; color: #333; display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
+    .btn-aceitar {
+      background: #003366; color: #fff; border: none; border-radius: 5px;
+      padding: 10px 28px; font-size: 0.95rem; cursor: pointer; white-space: nowrap;
+    }
+    .btn-aceitar:disabled { background: #aaa; cursor: not-allowed; }
+    .btn-aceitar:not(:disabled):hover { background: #00509e; }
+  </style>
+</head>
+<body>
+  <div class="aviso-card">
+    <div class="logo-row">
+      <img src="/brasao-gcm.png" alt="GCM">
+      <img src="/brasao-prefeitura.png" alt="Prefeitura">
+    </div>
+
+    <h2>Aviso de Privacidade e Proteção de Dados</h2>
+    <p class="subtitulo">Lei Geral de Proteção de Dados Pessoais — Lei nº 13.709/2018 (LGPD)</p>
+
+    <div class="secao">
+      <h3>Quem trata os dados</h3>
+      <p>A Guarda Civil Municipal de Bananeiras, na qualidade de controladora, é responsável pelo tratamento dos dados pessoais registrados neste sistema.</p>
+    </div>
+
+    <div class="secao">
+      <h3>Quais dados são coletados</h3>
+      <ul>
+        <li>Dados de identificação: nome, CPF, RG, CNH, data de nascimento</li>
+        <li>Dados de contato: endereço, telefone</li>
+        <li>Dados familiares: nome do pai e da mãe</li>
+        <li>Dados da ocorrência: relato, natureza, local, data e hora</li>
+      </ul>
+    </div>
+
+    <div class="secao">
+      <h3>Finalidade e base legal</h3>
+      <p>Os dados são coletados exclusivamente para o registro e instrução de Boletins de Ocorrência, no exercício regular das atribuições legais da GCM, com base no art. 7º, inciso III da LGPD (execução de políticas públicas).</p>
+    </div>
+
+    <div class="secao">
+      <h3>Prazo de conservação</h3>
+      <p>Os registros são conservados pelo prazo de 5 (cinco) anos, após os quais são arquivados conforme a política de retenção institucional.</p>
+    </div>
+
+    <div class="secao">
+      <h3>Direitos do titular</h3>
+      <p>Os titulares dos dados podem solicitar acesso, correção ou exclusão de seus dados mediante requerimento presencial na sede da GCM, conforme arts. 17 a 22 da LGPD.</p>
+    </div>
+
+    <div class="rodape">
+      <label>
+        <input type="checkbox" id="chkAceite"> Declaro que li e compreendi este aviso de privacidade.
+      </label>
+      <button class="btn-aceitar" id="btnAceitar" disabled onclick="aceitar()">Continuar</button>
+    </div>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script>
+    document.getElementById('chkAceite').addEventListener('change', function () {
+      document.getElementById('btnAceitar').disabled = !this.checked;
+    });
+
+    function aceitar() {
+      localStorage.setItem('lgpd_aceito', '1');
+      const destino = sessionStorage.getItem('redirecionarApos') || 'dashboard.html';
+      sessionStorage.removeItem('redirecionarApos');
+      window.location.href = '/' + destino;
+    }
+  </script>
+</body>
+</html>
