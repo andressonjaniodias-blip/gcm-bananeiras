@@ -32,8 +32,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (typeof updateSidebarUser === 'function') updateSidebarUser(perfil);
   } catch { window.location.href = '/'; return; }
 
-  // Dashboard: blocos começam vazios; só adiciona ao clicar
-  // (não auto-adiciona mais)
+  // Dashboard: inicia com um form de cada seção
+  const isDashboard = window.location.pathname.includes('dashboard');
+  if (isDashboard && !localStorage.getItem('boTemp')) {
+    adicionarVitima();
+    adicionarSuspeito();
+    adicionarObjeto();
+  }
 
   // Restaurar rascunho
   const rascunho = localStorage.getItem('boTemp');
@@ -175,7 +180,7 @@ function atualizarBotaoRemover(containerId, btnId) {
   const btn = document.getElementById(btnId);
   if (!btn || !container) return;
   const count = container.querySelectorAll('.bloco-pessoa, .bloco-objeto').length;
-  btn.style.display = count > 0 ? 'inline-block' : 'none';
+  btn.style.display = count > 1 ? 'inline-block' : 'none';
 }
 
 // ── Coleta de dados ──────────────────────────────────────────────────────────
