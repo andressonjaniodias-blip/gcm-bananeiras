@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Início - GCM Bananeiras</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="../assets/js/theme-switcher.js"></script>
+  <script src="../assets/js/sidebar.js"></script>
+</head>
+<body>
+  <header class="header">
+    <img src="/brasao-gcm.png" alt="Brasão GCM" class="logo">
+    <h1>Sistema de Gestão GCM</h1>
+    <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+  </header>
+
+  <main style="padding: 0 clamp(12px,2vw,24px);">
+    <div class="home-container">
+      <div class="home-welcome">
+        <h2>Bem-vindo, <span id="nomeUsuario">—</span></h2>
+        <p id="dataHoje"></p>
+      </div>
+
+      <div class="home-stats" id="statsArea">
+        <div class="stat-card">
+          <div class="stat-num" id="statTotal">—</div>
+          <div class="stat-label">BOs Registrados</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="statHoje">—</div>
+          <div class="stat-label">BOs Hoje</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="statSemana">—</div>
+          <div class="stat-label">BOs Esta Semana</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="statRelatorios">—</div>
+          <div class="stat-label">Relatórios Internos</div>
+        </div>
+      </div>
+
+      <h3 style="margin-bottom:16px;font-size:1rem;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.04em;">Módulos do Sistema</h3>
+
+      <div class="home-cards">
+        <a href="/pages/dashboard.html" class="home-card card-bo">
+          <div class="home-card-title">Novo BO</div>
+          <div class="home-card-desc">Registrar um novo Boletim de Ocorrência com todas as informações da ocorrência.</div>
+        </a>
+        <a href="/pages/consulta.html" class="home-card card-hist">
+          <div class="home-card-title">Histórico de BOs</div>
+          <div class="home-card-desc">Consultar, filtrar e exportar PDF dos boletins já registrados.</div>
+        </a>
+        <a href="/pages/relatorio.html" class="home-card card-rel">
+          <div class="home-card-title">Relatório Interno</div>
+          <div class="home-card-desc">Criar e exportar relatórios internos com numeração automática e assinatura do agente.</div>
+        </a>
+        <a href="/pages/viatura.html" class="home-card card-viatura">
+          <div class="home-card-title">Controle de Viatura</div>
+          <div class="home-card-desc">Registrar abastecimentos, revisões e manutenções das viaturas da guarda.</div>
+        </a>
+        <a href="/pages/documentos.html" class="home-card card-docs">
+          <div class="home-card-title">Documentos</div>
+          <div class="home-card-desc">Publicar e consultar ofícios, escalas e demais documentos do serviço.</div>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/main.js"></script>
+  <script>
+    (async () => {
+      // Exibe data atual
+      const agora = new Date();
+      document.getElementById('dataHoje').textContent =
+        agora.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+      // Nome do usuário
+      const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
+      if (perfil.usuario) document.getElementById('nomeUsuario').textContent = perfil.usuario;
+
+      // Estatísticas de BOs
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/bo`, { credentials: 'include' });
+        if (res.ok) {
+          const bos = await res.json();
+          const hoje = new Date().toISOString().slice(0, 10);
+          const inicioSemana = new Date();
+          inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
+          const semanaStr = inicioSemana.toISOString().slice(0, 10);
+
+          document.getElementById('statTotal').textContent   = bos.length;
+          document.getElementById('statHoje').textContent    = bos.filter(b => b.data && b.data.startsWith(hoje)).length;
+          document.getElementById('statSemana').textContent  = bos.filter(b => b.data && b.data >= semanaStr).length;
+        }
+      } catch {}
+
+      // Estatísticas de relatórios
+      try {
+        const rr = await fetch(`${API_BASE_URL}/api/relatorio`, { credentials: 'include' });
+        if (rr.ok) {
+          const rels = await rr.json();
+          document.getElementById('statRelatorios').textContent = rels.length;
+        }
+      } catch { document.getElementById('statRelatorios').textContent = '0'; }
+    })();
+  </script>
+</body>
+</html>
