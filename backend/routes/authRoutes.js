@@ -114,4 +114,31 @@ router.delete('/usuarios/:id', verificarToken, verificarAdmin, async (req, res) 
   }
 });
 
+// Trocar própria senha
+router.post('/trocar-senha', verificarToken, async (req, res) => {
+  try {
+    const { senhaAtual, senhaNova } = req.body;
+    if (!senhaAtual || !senhaNova) {
+      return res.status(400).json({ error: 'Senha atual e nova senha são obrigatórias' });
+    }
+    if (senhaNova.length < 6) {
+      return res.status(400).json({ error: 'A nova senha deve ter pelo menos 6 caracteres' });
+    }
+
+    const { rows } = await db.query('SELECT * FROM usuarios WHERE usuario = $1', [req.usuario.usuario]);
+    const row = rows[0];
+    if (!row) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    const senhaValida = await bcrypt.compare(senhaAtual, row.senha);
+    if (!senhaValida) return res.status(401).json({ error: 'Senha atual incorreta' });
+
+    const hash = await bcrypt.hash(senhaNova, 10);
+    await db.query('UPDATE usuarios SET senha = $1 WHERE usuario = $2', [hash, req.usuario.usuario]);
+
+    res.json({ message: 'Senha alterada com sucesso' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
