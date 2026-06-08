@@ -5,48 +5,167 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Consulta de BOs - Sistema de BO</title>
   <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    .consulta { width: 95%; max-width: 900px; margin: 24px auto; }
+    .consulta h2 { color: #003366; margin-bottom: 16px; }
+    .filters {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      align-items: center; margin-bottom: 20px;
+      background: #fff; padding: 14px; border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .filters input { padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem; }
+    .filters button {
+      padding: 7px 18px; background: #003366; color: #fff;
+      border: none; border-radius: 4px; cursor: pointer; font-size: 0.95rem;
+    }
+    .filters button:hover { background: #00509e; }
+    .filters .btn-limpar { background: #888; }
+    .filters .btn-limpar:hover { background: #555; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    th { background: #003366; color: #fff; padding: 12px; text-align: left; font-size: 0.95rem; }
+    td { padding: 11px 12px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f5f8ff; }
+    .btn-pdf {
+      padding: 5px 14px; background: #c0392b; color: #fff;
+      border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+    }
+    .btn-pdf:hover { background: #96281b; }
+    .voltar { display: inline-block; margin-bottom: 14px; color: #003366; text-decoration: none; font-size: 0.9rem; }
+    .voltar:hover { text-decoration: underline; }
+    #msgVazia { text-align: center; color: #999; padding: 24px; }
+  </style>
 </head>
 <body>
   <header class="header">
     <img src="/brasao-gcm.png" alt="Brasão GCM" class="logo">
     <h1>Sistema de Registro de BO</h1>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span id="usuarioLogado" style="font-size:0.85rem; color:#cce;"></span>
+      <button onclick="logout()" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:6px 12px;cursor:pointer;font-size:0.85rem;">Sair</button>
+    </div>
     <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
   </header>
 
-  <main class="consulta">
-    <h2>Consultar BOs</h2>
+  <div class="consulta">
+    <a href="/pages/dashboard.html" class="voltar">← Novo BO</a>
 
-    <!-- Filtros -->
+    <h2>Histórico de Boletins</h2>
+
     <div class="filters">
-      <label for="buscar">Buscar:</label>
-      <input type="text" id="buscar" placeholder="Número do BO">
-      
-      <label for="data">Data:</label>
+      <input type="text" id="buscar" placeholder="Número do BO (ex: BO-GCM-0001)">
       <input type="date" id="data">
-      
-      <button onclick="filtrarBOs()">Filtrar</button>
+      <button onclick="filtrar()">Filtrar</button>
+      <button class="btn-limpar" onclick="limparFiltro()">Limpar</button>
     </div>
 
-    <!-- Tabela de BOs -->
     <table>
       <thead>
         <tr>
           <th>Nº do BO</th>
           <th>Data</th>
-          <th>Status</th>
-          <th>Ações</th>
+          <th>Natureza</th>
+          <th>PDF</th>
         </tr>
       </thead>
       <tbody id="listaBOs">
-        <!-- Linhas preenchidas dinamicamente pelo main.js -->
+        <tr><td colspan="4" id="msgVazia">Carregando...</td></tr>
       </tbody>
     </table>
-  </main>
+  </div>
 
-  <script src="../assets/js/main.js"></script>
+  <script src="../assets/js/config.js"></script>
   <script>
-    // Carregar BOs ao abrir a página
-    document.addEventListener("DOMContentLoaded", listarBOs);
+    const token = localStorage.getItem('authToken');
+    if (!token) window.location.href = '/';
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      document.getElementById('usuarioLogado').textContent = payload.usuario;
+    } catch {}
+
+    function logout() {
+      localStorage.removeItem('authToken');
+      window.location.href = '/';
+    }
+
+    let todosOsBOs = [];
+
+    async function carregarBOs() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/bo`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.status === 401) { logout(); return; }
+
+        todosOsBOs = await res.json();
+        renderizar(todosOsBOs);
+      } catch (err) {
+        document.getElementById('listaBOs').innerHTML =
+          '<tr><td colspan="4" style="text-align:center;color:#c00;">Erro ao carregar boletins.</td></tr>';
+      }
+    }
+
+    function renderizar(bos) {
+      const tbody = document.getElementById('listaBOs');
+      if (!bos.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;">Nenhum BO encontrado.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = bos.map(bo => {
+        let natureza = '';
+        try {
+          const dados = JSON.parse(bo.dados);
+          natureza = dados.dadosOcorrencia?.['Tipificação'] || dados.dadosSolicitacao?.['Natureza da Solicitação'] || '—';
+        } catch {}
+        const data = new Date(bo.data).toLocaleDateString('pt-BR');
+        return `<tr>
+          <td>${bo.numero}</td>
+          <td>${data}</td>
+          <td>${natureza}</td>
+          <td><button class="btn-pdf" onclick="baixarPDF(${bo.id}, '${bo.numero}')">⬇ PDF</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    function filtrar() {
+      const termo = document.getElementById('buscar').value.trim().toLowerCase();
+      const data = document.getElementById('data').value;
+      const filtrados = todosOsBOs.filter(bo => {
+        const matchNumero = !termo || bo.numero.toLowerCase().includes(termo);
+        const matchData = !data || bo.data.startsWith(data);
+        return matchNumero && matchData;
+      });
+      renderizar(filtrados);
+    }
+
+    function limparFiltro() {
+      document.getElementById('buscar').value = '';
+      document.getElementById('data').value = '';
+      renderizar(todosOsBOs);
+    }
+
+    async function baixarPDF(id, numero) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/bo/${id}/pdf`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bo_${numero}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch {
+        alert('Erro ao baixar PDF.');
+      }
+    }
+
+    carregarBOs();
   </script>
 </body>
 </html>
