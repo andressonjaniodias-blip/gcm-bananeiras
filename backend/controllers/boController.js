@@ -1,12 +1,5 @@
 const db = require('../config/db');
 const PDFDocument = require('pdfkit');
-const fs = require('fs');
-const path = require('path');
-
-const pdfsDir = path.join(__dirname, '../pdfs');
-if (!fs.existsSync(pdfsDir)) {
-  fs.mkdirSync(pdfsDir, { recursive: true });
-}
 
 exports.criarBO = async (req, res) => {
   if (!req.body || Object.keys(req.body).length === 0) {
@@ -25,11 +18,7 @@ exports.criarBO = async (req, res) => {
       [numero, dados, data]
     );
 
-    res.status(201).json({
-      message: 'BO criado com sucesso',
-      id: result.rows[0].id,
-      numero,
-    });
+    res.status(201).json({ message: 'BO criado com sucesso', id: result.rows[0].id, numero });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -66,97 +55,77 @@ exports.exportarPDF = async (req, res) => {
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
 
     const row = rows[0];
-    const doc = new PDFDocument();
-    const filePath = path.join(pdfsDir, `bo_${row.numero}.pdf`);
-    const stream = fs.createWriteStream(filePath);
-
-    doc.on('error', (err) => {
-      console.error('Erro ao gerar PDF:', err);
-      return res.status(500).json({ error: 'Erro ao gerar PDF' });
-    });
-
-    doc.pipe(stream);
-
-    doc.fontSize(18).text('Boletim de Ocorrência', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(12).text(`Número: ${row.numero}`);
-    doc.text(`Data: ${new Date(row.data).toLocaleDateString('pt-BR')}`);
-    doc.moveDown();
-
     let dados = {};
-    try { dados = JSON.parse(row.dados); } catch (e) { dados = row.dados; }
+    try { dados = JSON.parse(row.dados); } catch (e) { dados = {}; }
 
-    if (dados.dadosSolicitacao) {
-      doc.fontSize(14).text('Dados da Solicitação:', { underline: true });
-      Object.entries(dados.dadosSolicitacao).forEach(([campo, valor]) => {
-        doc.fontSize(12).text(`${campo}: ${valor}`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="bo_${row.numero}.pdf"`);
+
+    const doc = new PDFDocument({ margin: 50 });
+    doc.pipe(res);
+
+    // Cabeçalho
+    doc.fontSize(18).font('Helvetica-Bold').text('Boletim de Ocorrência', { align: 'center' });
+    doc.fontSize(12).font('Helvetica').text(`Número: ${row.numero}`, { align: 'center' });
+    doc.text(`Data: ${new Date(row.data).toLocaleDateString('pt-BR')}`, { align: 'center' });
+    doc.moveDown();
+
+    function secao(titulo, obj) {
+      if (!obj || Object.keys(obj).length === 0) return;
+      doc.fontSize(13).font('Helvetica-Bold').text(titulo);
+      doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+      doc.moveDown(0.3);
+      doc.fontSize(11).font('Helvetica');
+      Object.entries(obj).forEach(([campo, valor]) => {
+        if (valor) doc.text(`${campo}: ${valor}`);
       });
       doc.moveDown();
     }
 
-    if (dados.dadosOcorrencia) {
-      doc.fontSize(14).text('Dados da Ocorrência:', { underline: true });
-      Object.entries(dados.dadosOcorrencia).forEach(([campo, valor]) => {
-        doc.fontSize(12).text(`${campo}: ${valor}`);
+    function secaoArray(titulo, arr) {
+      if (!arr || arr.length === 0) return;
+      doc.fontSize(13).font('Helvetica-Bold').text(titulo);
+      doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+      doc.moveDown(0.3);
+      arr.forEach((item, i) => {
+        doc.fontSize(11).font('Helvetica-Bold').text(`${titulo.replace('s', '')} ${i + 1}:`);
+        doc.font('Helvetica');
+        Object.entries(item).forEach(([campo, valor]) => {
+          if (valor) doc.fontSize(11).text(`${campo}: ${valor}`);
+        });
+        doc.moveDown(0.5);
       });
       doc.moveDown();
     }
 
-    if (dados.vitimas?.length > 0) {
-      doc.fontSize(14).text('Vítimas:', { underline: true });
-      dados.vitimas.forEach((v, i) => {
-        doc.fontSize(12).text(`Vítima ${i + 1}:`);
-        Object.entries(v).forEach(([campo, valor]) => doc.text(`${campo}: ${valor}`));
-        doc.moveDown();
-      });
-    }
-
-    if (dados.suspeitos?.length > 0) {
-      doc.fontSize(14).text('Suspeitos:', { underline: true });
-      dados.suspeitos.forEach((s, i) => {
-        doc.fontSize(12).text(`Suspeito ${i + 1}:`);
-        Object.entries(s).forEach(([campo, valor]) => doc.text(`${campo}: ${valor}`));
-        doc.moveDown();
-      });
-    }
-
-    if (dados.objetos?.length > 0) {
-      doc.fontSize(14).text('Objetos Apreendidos:', { underline: true });
-      dados.objetos.forEach((o, i) => {
-        doc.fontSize(12).text(`Objeto ${i + 1}:`);
-        Object.entries(o).forEach(([campo, valor]) => doc.text(`${campo}: ${valor}`));
-        doc.moveDown();
-      });
-    }
+    secao('Dados da Solicitação', dados.dadosSolicitacao);
+    secao('Dados da Ocorrência', dados.dadosOcorrencia);
+    secaoArray('Vítimas', dados.vitimas);
+    secaoArray('Suspeitos', dados.suspeitos);
+    secaoArray('Objetos Apreendidos', dados.objetos);
 
     if (dados.relato) {
-      doc.fontSize(14).text('Relato da Ocorrência:', { underline: true });
-      doc.fontSize(12).text(dados.relato);
+      doc.fontSize(13).font('Helvetica-Bold').text('Relato da Ocorrência');
+      doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+      doc.moveDown(0.3);
+      doc.fontSize(11).font('Helvetica').text(dados.relato, { align: 'justify' });
       doc.moveDown();
     }
 
-    if (dados.autoridade) {
-      doc.fontSize(14).text('Autoridade Policial:', { underline: true });
-      Object.entries(dados.autoridade).forEach(([campo, valor]) => {
-        doc.fontSize(12).text(`${campo}: ${valor}`);
-      });
-      doc.moveDown();
-    }
+    secao('Autoridade Policial', dados.autoridade);
 
-    doc.fontSize(14).text('Recibo da Autoridade:', { underline: true });
-    doc.text('Declaro que recebi a presente ocorrência, bem como as informações das pessoas e objetos envolvidos.');
+    // Assinatura
     doc.moveDown();
-    doc.text('Assinatura: __________________________');
+    doc.fontSize(11).font('Helvetica').text(
+      'Declaro que recebi a presente ocorrência, bem como as informações das pessoas e objetos envolvidos.',
+      { align: 'justify' }
+    );
+    doc.moveDown(2);
+    doc.text('Assinatura: ___________________________________', { align: 'center' });
 
     doc.end();
-
-    stream.on('finish', () => res.download(filePath, `bo_${row.numero}.pdf`));
-    stream.on('error', (err) => {
-      console.error('Erro ao escrever PDF:', err);
-      return res.status(500).json({ error: 'Erro ao gerar arquivo' });
-    });
   } catch (err) {
-    console.error('Erro:', err);
-    return res.status(500).json({ error: err.message });
+    console.error('Erro ao gerar PDF:', err);
+    if (!res.headersSent) res.status(500).json({ error: err.message });
   }
 };
