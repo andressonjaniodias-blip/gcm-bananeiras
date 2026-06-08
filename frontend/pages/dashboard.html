@@ -10,11 +10,8 @@
   <link rel="stylesheet" href="../assets/css/style.css">
   <script src="../assets/js/theme-switcher.js"></script>
   <style>
-    .obrigatorio::after { content: ' *'; color: #c0392b; }
-    input:invalid, textarea:invalid { border-color: #e74c3c !important; }
-    .campo-group { display: flex; flex-direction: column; gap: 4px; }
-    .campo-group label { font-size: 0.85rem; font-weight: bold; color: #333; }
-    .hint { font-size: 0.75rem; color: #888; }
+    .obrigatorio::after { content: ' *'; color: var(--color-danger); }
+    input:invalid, textarea:invalid { border-color: var(--color-danger) !important; }
   </style>
 </head>
 <body>
