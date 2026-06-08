@@ -87,6 +87,22 @@
       </table>
     </div>
 
+    <!-- Retenção de dados LGPD (só admin vê) -->
+    <div class="card" id="cardRetencao" style="display:none;">
+      <h3>Retenção de Dados (LGPD)</h3>
+      <p style="font-size:0.9rem;color:#555;margin-bottom:12px;">
+        Conforme a LGPD, dados pessoais devem ser conservados apenas pelo tempo necessário.
+        O prazo configurado é de <strong id="retencaoAnos">—</strong> ano(s).
+      </p>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <span style="font-size:0.95rem;">BOs para arquivar: <strong id="retencaoTotal" style="color:#c0392b;">—</strong></span>
+        <button id="btnArquivar" onclick="arquivarBOs()"
+          style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:7px 16px;cursor:pointer;font-size:0.9rem;">
+          Arquivar BOs vencidos
+        </button>
+      </div>
+    </div>
+
     <!-- Log de auditoria (só admin vê) -->
     <div class="card" id="cardAuditoria" style="display:none;">
       <h3>Log de Auditoria</h3>
@@ -116,38 +132,41 @@
 
   <script src="../assets/js/config.js"></script>
   <script>
-    const token = localStorage.getItem('authToken');
-    if (!token) window.location.href = '/';
-
     let meUsuario = '';
     let meRole = '';
 
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      meUsuario = payload.usuario;
-      meRole = payload.role;
-      document.getElementById('usuarioLogado').textContent = meUsuario;
-    } catch { window.location.href = '/'; }
-
-    function logout() {
+    async function logout() {
+      try { await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' }); } catch {}
+      sessionStorage.removeItem('perfil');
       localStorage.removeItem('authToken');
       window.location.href = '/';
     }
 
-    // Exibe seções de admin
-    if (meRole === 'admin') {
-      document.getElementById('cardNovoUsuario').style.display = 'block';
-      document.getElementById('cardListaUsuarios').style.display = 'block';
-      document.getElementById('cardAuditoria').style.display = 'block';
-      carregarUsuarios();
-      carregarAuditoria();
-    }
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
+        if (!res.ok) { window.location.href = '/'; return; }
+        const perfil = await res.json();
+        meUsuario = perfil.usuario;
+        meRole = perfil.role;
+        document.getElementById('usuarioLogado').textContent = meUsuario;
+      } catch { window.location.href = '/'; return; }
+
+      // Exibe seções de admin
+      if (meRole === 'admin') {
+        document.getElementById('cardNovoUsuario').style.display = 'block';
+        document.getElementById('cardListaUsuarios').style.display = 'block';
+        document.getElementById('cardRetencao').style.display = 'block';
+        document.getElementById('cardAuditoria').style.display = 'block';
+        carregarUsuarios();
+        carregarRetencao();
+        carregarAuditoria();
+      }
+    })();
 
     async function carregarUsuarios() {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, { credentials: 'include' });
         const usuarios = await res.json();
         const tbody = document.getElementById('tabelaUsuarios');
 
@@ -180,7 +199,8 @@
       try {
         const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ usuario, senha, role })
         });
         const data = await res.json();
@@ -201,7 +221,7 @@
       try {
         const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${id}`, {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` }
+          credentials: 'include'
         });
         const data = await res.json();
         if (res.ok) { mostrarMsg('Usuário removido.', 'ok'); carregarUsuarios(); }
@@ -225,7 +245,8 @@
       try {
         const res = await fetch(`${API_BASE_URL}/api/auth/trocar-senha`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ senhaAtual, senhaNova })
         });
         const data = await res.json();
@@ -240,11 +261,36 @@
       } catch { mostrarMsg('Erro de conexão.', 'erro'); }
     }
 
+    async function carregarRetencao() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/retencao`, { credentials: 'include' });
+        const data = await res.json();
+        document.getElementById('retencaoAnos').textContent = data.retencao_anos;
+        document.getElementById('retencaoTotal').textContent = data.bos_para_arquivar;
+        document.getElementById('btnArquivar').disabled = data.bos_para_arquivar === 0;
+      } catch { mostrarMsg('Erro ao carregar informações de retenção.', 'erro'); }
+    }
+
+    async function arquivarBOs() {
+      if (!confirm(`Remover permanentemente todos os BOs com mais de ${document.getElementById('retencaoAnos').textContent} ano(s)? Esta ação não pode ser desfeita.`)) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/retencao/arquivar`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (res.ok) {
+          mostrarMsg(`${data.arquivados.length} BO(s) arquivado(s) com sucesso.`, 'ok');
+          carregarRetencao();
+        } else {
+          mostrarMsg(data.error || 'Erro ao arquivar.', 'erro');
+        }
+      } catch { mostrarMsg('Erro de conexão.', 'erro'); }
+    }
+
     async function carregarAuditoria() {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/auditoria`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await fetch(`${API_BASE_URL}/api/auth/auditoria`, { credentials: 'include' });
         const logs = await res.json();
         const tbody = document.getElementById('tabelaAuditoria');
         if (!logs.length) {
