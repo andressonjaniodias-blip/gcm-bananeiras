@@ -3,7 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const db = require('../config/db');
-const { verificarToken, verificarAdmin } = require('../middleware/auth');
+const { verificarToken, verificarAdmin, registrarAuditoria, ROLES } = require('../middleware/auth');
 
 // Login
 router.post('/login', async (req, res) => {
@@ -25,6 +25,9 @@ router.post('/login', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
+
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
+    await registrarAuditoria(row.usuario, 'LOGIN', null, ip);
 
     res.json({ message: 'Login realizado com sucesso', token, role: row.role, expiresIn: '8h' });
   } catch (error) {
@@ -70,12 +73,12 @@ router.get('/usuarios', verificarToken, verificarAdmin, async (req, res) => {
 // Criar usuário (admin)
 router.post('/usuarios', verificarToken, verificarAdmin, async (req, res) => {
   try {
-    const { usuario, senha, role = 'usuario' } = req.body;
+    const { usuario, senha, role = 'agente' } = req.body;
     if (!usuario || !senha) {
       return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
     }
-    if (!['admin', 'usuario'].includes(role)) {
-      return res.status(400).json({ error: 'Role inválido' });
+    if (!ROLES.includes(role)) {
+      return res.status(400).json({ error: `Role inválido. Valores aceitos: ${ROLES.join(', ')}` });
     }
 
     const hash = await bcrypt.hash(senha, 10);
@@ -109,6 +112,18 @@ router.delete('/usuarios/:id', verificarToken, verificarAdmin, async (req, res) 
 
     await db.query('DELETE FROM usuarios WHERE id = $1', [id]);
     res.json({ message: 'Usuário removido com sucesso' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Logs de auditoria (admin)
+router.get('/auditoria', verificarToken, verificarAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT * FROM audit_logs ORDER BY data DESC LIMIT 500'
+    );
+    res.json(rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
