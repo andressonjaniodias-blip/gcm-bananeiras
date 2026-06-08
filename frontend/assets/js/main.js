@@ -34,7 +34,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Dashboard: inicia com um form de cada seção
   const isDashboard = window.location.pathname.includes('dashboard');
-  if (isDashboard && !localStorage.getItem('boTemp')) {
+  if (isDashboard) {
     adicionarVitima();
     adicionarSuspeito();
     adicionarObjeto();
@@ -81,7 +81,6 @@ function htmlPessoa(tipo, idx) {
   <div class="bloco-pessoa" data-tipo="${tipo}">
     <div class="bloco-header">
       <h4>${tipo} ${idx}</h4>
-      <button type="button" class="btn-remover" onclick="removerBloco(this)">Remover</button>
     </div>
     <div class="campo-group"><label>Nome</label>
       <input type="text" name="nome" placeholder="Nome completo" maxlength="150"></div>
@@ -131,7 +130,6 @@ function htmlObjeto(idx) {
   <div class="bloco-objeto">
     <div class="bloco-header">
       <h4>Objeto ${idx}</h4>
-      <button type="button" class="btn-remover" onclick="removerBloco(this)">Remover</button>
     </div>
     <div class="campo-group"><label>Tipo de Objeto</label>
       <input type="text" name="tipoObjeto" placeholder="Ex: Faca, Celular, Veículo" maxlength="100"></div>
