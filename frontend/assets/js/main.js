@@ -38,6 +38,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     adicionarVitima();
     adicionarSuspeito();
     adicionarObjeto();
+    iniciarAutosave();
   }
 
   // Restaurar rascunho
@@ -250,11 +251,17 @@ function validarCamposObrigatorios() {
   return true;
 }
 
-// ── Salvar / Finalizar ───────────────────────────────────────────────────────
-function salvarBO() {
-  const dados = coletarDadosBO();
-  localStorage.setItem('boTemp', JSON.stringify(dados));
-  alert('Rascunho salvo!');
+// ── Autosave ─────────────────────────────────────────────────────────────────
+let _autosaveTimer = null;
+function _autosave() {
+  clearTimeout(_autosaveTimer);
+  _autosaveTimer = setTimeout(() => {
+    localStorage.setItem('boTemp', JSON.stringify(coletarDadosBO()));
+  }, 800);
+}
+
+function iniciarAutosave() {
+  document.getElementById('bo-form')?.addEventListener('input', _autosave);
 }
 
 async function finalizarBO() {
