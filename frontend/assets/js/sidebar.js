@@ -67,6 +67,17 @@
     document.body.appendChild(wrapper);
     document.body.classList.add('has-sidebar');
 
+    // Ajusta --header-h com a altura real do cabeçalho
+    function syncHeaderHeight() {
+      const header = document.querySelector('.header');
+      if (header) {
+        const h = header.getBoundingClientRect().height;
+        document.documentElement.style.setProperty('--header-h', h + 'px');
+      }
+    }
+    syncHeaderHeight();
+    window.addEventListener('resize', syncHeaderHeight);
+
     // Remove elementos duplicados do cabeçalho que agora ficam no sidebar
     const headerActionDiv = document.querySelector('.header > div:not(.header-titulo)');
     if (headerActionDiv) headerActionDiv.remove();
