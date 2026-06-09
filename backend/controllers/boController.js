@@ -195,11 +195,11 @@ exports.exportarPDF = async (req, res) => {
     if (temPrefeitura) doc.image(brasaoPrefeitura, pageW - margem - imgSize, 30, { width: imgSize });
 
     const topoTextoY = 32;
-    doc.fontSize(15).font('Helvetica-Bold')
+    doc.fontSize(18).font('Helvetica-Bold')
        .text('PREFEITURA MUNICIPAL DE BANANEIRAS', margem, topoTextoY, { width: conteudoW, align: 'center' });
-    doc.fontSize(13).font('Helvetica-Bold')
+    doc.fontSize(16).font('Helvetica-Bold')
        .text('GUARDA CIVIL MUNICIPAL', { width: conteudoW, align: 'center' });
-    doc.fontSize(10).font('Helvetica')
+    doc.fontSize(12).font('Helvetica')
        .text('Secretaria de Segurança Pública Municipal', { width: conteudoW, align: 'center' });
 
     // Linha separadora após brasões
@@ -208,9 +208,9 @@ exports.exportarPDF = async (req, res) => {
 
     // Título do documento
     doc.y = posAposBrasao + 8;
-    doc.fontSize(14).font('Helvetica-Bold')
+    doc.fontSize(17).font('Helvetica-Bold')
        .text('BOLETIM DE OCORRÊNCIA', { width: conteudoW, align: 'center' });
-    doc.fontSize(10).font('Helvetica')
+    doc.fontSize(12).font('Helvetica')
        .text(
          `Nº ${row.numero}     |     Registrado em: ${new Date(row.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}     |     Por: ${String(row.criado_por).toUpperCase()}`,
          { width: conteudoW, align: 'center' }
@@ -221,7 +221,7 @@ exports.exportarPDF = async (req, res) => {
 
     // ── Funções auxiliares de renderização ───────────────────────────────────
     function tituloSecao(texto) {
-      doc.fontSize(11).font('Helvetica-Bold')
+      doc.fontSize(13).font('Helvetica-Bold')
          .fillColor('#000')
          .text(texto.toUpperCase(), { width: conteudoW });
       doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(1).stroke('#222');
@@ -232,7 +232,7 @@ exports.exportarPDF = async (req, res) => {
       if (!valor) return;
       const label = rotulo(chave);
       const val   = prepararValor(chave, valor);
-      doc.fontSize(10).font('Helvetica-Bold').fillColor('#333')
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333')
          .text(`${label}: `, { continued: true })
          .font('Helvetica').fillColor('#000')
          .text(val);
@@ -250,7 +250,7 @@ exports.exportarPDF = async (req, res) => {
       tituloSecao(tituloPlural);
       arr.forEach((item, i) => {
         if (!Object.values(item).some(v => v)) return;
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#000')
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#000')
            .text(`${tituloSingular} ${i + 1}:`);
         doc.font('Helvetica');
         Object.entries(item).forEach(([k, v]) => campoLinha(k, v));
@@ -268,7 +268,7 @@ exports.exportarPDF = async (req, res) => {
 
     if (dados.relato) {
       tituloSecao('Relato da Ocorrência');
-      doc.fontSize(10).font('Helvetica').fillColor('#000')
+      doc.fontSize(12).font('Helvetica').fillColor('#000')
          .text(dados.relato, { align: 'justify', lineGap: 3 });
       doc.moveDown(0.8);
     }
@@ -278,7 +278,7 @@ exports.exportarPDF = async (req, res) => {
     // ── Declaração ────────────────────────────────────────────────────────────
     doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(0.5).stroke('#444');
     doc.moveDown(0.6);
-    doc.fontSize(9).font('Helvetica').fillColor('#333')
+    doc.fontSize(11).font('Helvetica').fillColor('#333')
        .text(
          'Declaro que recebi a presente ocorrência, bem como as informações das pessoas e objetos envolvidos.',
          { align: 'justify' }
@@ -308,33 +308,33 @@ exports.exportarPDF = async (req, res) => {
     const yTexto = yLinha + 5;
 
     // Bloco esquerdo — Agente GCM
-    doc.fontSize(9).font('Helvetica-Bold').fillColor('#000')
+    doc.fontSize(11).font('Helvetica-Bold').fillColor('#000')
        .text(nomeAgente, xEsq, yTexto, { width: largAssin, align: 'center', lineBreak: false });
-    doc.fontSize(8).font('Helvetica').fillColor('#444')
-       .text('Agente GCM — Guarda Civil Municipal', xEsq, yTexto + 13, { width: largAssin, align: 'center', lineBreak: false });
+    doc.fontSize(10).font('Helvetica').fillColor('#444')
+       .text('Agente GCM — Guarda Civil Municipal', xEsq, yTexto + 15, { width: largAssin, align: 'center', lineBreak: false });
 
     // Bloco direito — Autoridade Policial
-    doc.fontSize(9).font('Helvetica-Bold').fillColor('#000')
+    doc.fontSize(11).font('Helvetica-Bold').fillColor('#000')
        .text(nomeAut || '________________________________', xDir, yTexto, { width: largAssin, align: 'center', lineBreak: false });
-    doc.fontSize(8).font('Helvetica').fillColor('#444')
-       .text(cargoAut, xDir, yTexto + 13, { width: largAssin, align: 'center', lineBreak: false });
+    doc.fontSize(10).font('Helvetica').fillColor('#444')
+       .text(cargoAut, xDir, yTexto + 15, { width: largAssin, align: 'center', lineBreak: false });
 
-    let extraY = yTexto + 26;
+    let extraY = yTexto + 30;
     if (matricAut) {
-      doc.fontSize(8).font('Helvetica').fillColor('#555')
+      doc.fontSize(10).font('Helvetica').fillColor('#555')
          .text(`Matrícula: ${matricAut}`, xDir, extraY, { width: largAssin, align: 'center', lineBreak: false });
-      extraY += 11;
+      extraY += 13;
     }
     if (localAut) {
-      doc.fontSize(8).font('Helvetica').fillColor('#555')
+      doc.fontSize(10).font('Helvetica').fillColor('#555')
          .text(localAut.toUpperCase(), xDir, extraY, { width: largAssin, align: 'center', lineBreak: false });
-      extraY += 11;
+      extraY += 13;
     }
 
     // ── Local e data — apenas no final ───────────────────────────────────────
     const dataDoc = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
     doc.y = Math.max(extraY, yTexto + 40) + 18;
-    doc.fontSize(9).font('Helvetica').fillColor('#444')
+    doc.fontSize(11).font('Helvetica').fillColor('#444')
        .text(`Bananeiras/PB, ${dataDoc}`, margem, doc.y, { width: conteudoW, align: 'center' });
 
     doc.end();
