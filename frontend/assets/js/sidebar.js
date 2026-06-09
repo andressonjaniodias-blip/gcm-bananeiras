@@ -86,6 +86,18 @@
     if (legacyUserSpan) legacyUserSpan.closest('div')?.remove();
   }
 
+  // Fallback de logout para páginas que não carregam main.js
+  if (typeof window.logout !== 'function') {
+    window.logout = async function () {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      } catch {}
+      sessionStorage.removeItem('perfil');
+      localStorage.removeItem('authToken');
+      window.location.href = '/';
+    };
+  }
+
   window.toggleSidebar = function () {
     const open = document.body.classList.toggle('sb-open');
     document.getElementById('sb-overlay').style.display = open ? 'block' : 'none';
