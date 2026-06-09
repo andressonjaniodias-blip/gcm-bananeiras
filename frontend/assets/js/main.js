@@ -59,39 +59,20 @@ function showTab(tabId) {
 }
 
 // ── Máscaras ─────────────────────────────────────────────────────────────────
-function mascararDocumento(input) {
-  const raw = input.value;
-  const temLetra = /[a-zA-Z]/.test(raw);
+function mascararCPF(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
+  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+  else if (v.length > 3) v = v.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+  input.value = v;
+}
 
-  if (temLetra) {
-    // CNH: alfanumérico, sem máscara, limite 11 chars
-    input.value = raw.replace(/[^a-zA-Z0-9]/g, '').slice(0, 11).toUpperCase();
-    input.dataset.tipoDoc = 'CNH';
-    input.placeholder = 'CNH (ex: 00000000000)';
-    return;
-  }
-
-  const digits = raw.replace(/\D/g, '');
-
-  if (digits.length <= 9) {
-    // RG: 00.000.000-0
-    input.dataset.tipoDoc = 'RG';
-    input.placeholder = 'RG (00.000.000-0)';
-    let v = digits.slice(0, 9);
-    if (v.length > 8) v = v.replace(/(\d{2})(\d{3})(\d{3})(\d{1})/, '$1.$2.$3-$4');
-    else if (v.length > 5) v = v.replace(/(\d{2})(\d{3})(\d{0,3})/, '$1.$2.$3');
-    else if (v.length > 2) v = v.replace(/(\d{2})(\d{0,3})/, '$1.$2');
-    input.value = v;
-  } else {
-    // CPF: 000.000.000-00
-    input.dataset.tipoDoc = 'CPF';
-    input.placeholder = 'CPF (000.000.000-00)';
-    let v = digits.slice(0, 11);
-    if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
-    else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
-    else if (v.length > 3) v = v.replace(/(\d{3})(\d{0,3})/, '$1.$2');
-    input.value = v;
-  }
+function mascararRG(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 9);
+  if (v.length > 8) v = v.replace(/(\d{2})(\d{3})(\d{3})(\d{1})/, '$1.$2.$3-$4');
+  else if (v.length > 5) v = v.replace(/(\d{2})(\d{3})(\d{0,3})/, '$1.$2.$3');
+  else if (v.length > 2) v = v.replace(/(\d{2})(\d{0,3})/, '$1.$2');
+  input.value = v;
 }
 
 function mascararTelefone(input) {
@@ -113,8 +94,10 @@ function htmlPessoa(tipo, idx) {
       <input type="text" name="nome" placeholder="Nome completo" maxlength="150"></div>
     <div class="campo-group"><label>Alcunha</label>
       <input type="text" name="alcunha" placeholder="Apelido" maxlength="100"></div>
-    <div class="campo-group"><label>CPF / RG / CNH</label>
-      <input type="text" name="documento" placeholder="Digite CPF, RG ou CNH" maxlength="14" oninput="mascararDocumento(this)"></div>
+    <div class="campo-group"><label>CPF</label>
+      <input type="text" name="cpf" placeholder="000.000.000-00" maxlength="14" oninput="mascararCPF(this)"></div>
+    <div class="campo-group"><label>RG</label>
+      <input type="text" name="rg" placeholder="00.000.000-0" maxlength="12" oninput="mascararRG(this)"></div>
     <div class="campo-group"><label>Nascimento</label>
       <input type="date" name="nascimento"></div>
     <div class="campo-group"><label>Idade</label>
