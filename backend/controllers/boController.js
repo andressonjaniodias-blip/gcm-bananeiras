@@ -209,10 +209,10 @@ exports.exportarPDF = async (req, res) => {
     // Título do documento
     doc.y = posAposBrasao + 8;
     doc.fontSize(17).font('Helvetica-Bold')
-       .text('BOLETIM DE OCORRÊNCIA', { width: conteudoW, align: 'center' });
+       .text(`BOLETIM DE OCORRÊNCIA  Nº ${row.numero}`, { width: conteudoW, align: 'center' });
     doc.fontSize(12).font('Helvetica')
        .text(
-         `Nº ${row.numero}     |     Registrado em: ${new Date(row.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}     |     Por: ${String(row.criado_por).toUpperCase()}`,
+         `Registrado em: ${new Date(row.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}     |     Por: ${String(row.criado_por).toUpperCase()}`,
          { width: conteudoW, align: 'center' }
        );
     doc.moveDown(0.5);
