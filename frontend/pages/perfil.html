@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meu Perfil - GCM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="../assets/js/theme-switcher.js"></script>
+  <script src="../assets/js/sidebar.js"></script>
+  <style>
+    .page-wrap { width: 92%; max-width: 680px; margin: 28px auto; }
+
+    .page-title {
+      font-size: 1.25rem; font-weight: 700;
+      color: var(--color-text); margin-bottom: 22px;
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      padding: 24px;
+      margin-bottom: 22px;
+      border: 1px solid var(--color-border);
+    }
+    .card-title {
+      font-size: 0.95rem; font-weight: 700;
+      color: var(--color-primary);
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Avatar */
+    .perfil-header {
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    }
+    .perfil-avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--color-primary), #1E3A5F);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; font-weight: 800; color: #fff;
+      flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .perfil-info { flex: 1; }
+    .perfil-nome {
+      font-size: 1.3rem; font-weight: 700;
+      color: var(--color-text); margin-bottom: 4px;
+    }
+    .perfil-role-badge {
+      display: inline-block; padding: 4px 12px;
+      border-radius: var(--radius-pill); font-size: 0.8rem; font-weight: 700;
+    }
+    .badge-admin      { background: #1E3A5F; color: #fff; }
+    .badge-supervisor { background: #14532D; color: #fff; }
+    .badge-agente     { background: var(--color-primary-light); color: var(--color-primary); }
+
+    /* Detalhes */
+    .info-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px;
+    }
+    @media (max-width: 500px) { .info-grid { grid-template-columns: 1fr; } }
+
+    .info-item label {
+      display: block; font-size: 0.72rem; font-weight: 700;
+      color: var(--color-text-muted); letter-spacing: 0.06em;
+      text-transform: uppercase; margin-bottom: 3px;
+    }
+    .info-item span {
+      font-size: 0.92rem; color: var(--color-text); font-weight: 500;
+    }
+
+    /* Formulário de senha */
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block; font-size: 0.78rem; font-weight: 600;
+      color: var(--color-label); margin-bottom: 5px; letter-spacing: 0.03em;
+    }
+    .field input {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.92rem;
+      background: var(--color-input-bg);
+      color: var(--color-text);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field input:focus {
+      outline: none; border-color: var(--color-primary);
+      box-shadow: var(--shadow-input);
+    }
+
+    .senha-strength {
+      height: 4px; border-radius: 2px; margin-top: 6px;
+      background: var(--color-border); overflow: hidden;
+    }
+    .senha-strength-bar {
+      height: 100%; border-radius: 2px;
+      transition: width 0.3s, background 0.3s;
+      width: 0%;
+    }
+    .senha-hint { font-size: 0.75rem; color: var(--color-hint); margin-top: 4px; }
+
+    .btn-primary {
+      width: 100%; background: var(--color-primary); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      padding: 11px; cursor: pointer; font-size: 0.95rem;
+      font-weight: 600; transition: background 0.2s; margin-top: 4px;
+    }
+    .btn-primary:hover { background: var(--color-primary-hover); }
+
+    .msg-toast {
+      display: none; padding: 11px 16px; border-radius: var(--radius-sm);
+      margin-bottom: 18px; font-size: 0.9rem; font-weight: 600;
+      border-left: 4px solid;
+    }
+    .msg-ok   { background: #D1FAE5; color: #065F46; border-color: var(--color-success); }
+    .msg-erro { background: #FEE2E2; color: #991B1B; border-color: var(--color-danger); }
+
+    /* Últimos acessos */
+    .acesso-lista { list-style: none; }
+    .acesso-lista li {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid var(--color-border);
+      font-size: 0.87rem;
+    }
+    .acesso-lista li:last-child { border-bottom: none; }
+    .acesso-data { color: var(--color-text-muted); font-size: 0.8rem; }
+    .acesso-ip   { font-size: 0.78rem; color: var(--color-hint); font-family: monospace; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <img src="/brasao-gcm.png" alt="Brasão GCM" class="logo">
+    <div class="header-titulo">
+      <span class="header-linha-1">GUARDA CIVIL MUNICIPAL</span>
+      <span class="header-linha-2">SISTEMA ONLINE</span>
+      <span class="header-linha-3">PREFEITURA MUNICIPAL DE BANANEIRAS</span>
+    </div>
+    <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+  </header>
+
+  <div class="page-wrap">
+    <div class="page-title">👤 Meu Perfil</div>
+
+    <div id="msgToast" class="msg-toast"></div>
+
+    <!-- Identidade -->
+    <div class="card">
+      <div class="card-title">🪪 Identificação</div>
+      <div class="perfil-header">
+        <div class="perfil-avatar" id="perfilAvatar">?</div>
+        <div class="perfil-info">
+          <div class="perfil-nome" id="perfilNome">—</div>
+          <span class="perfil-role-badge" id="perfilBadge">—</span>
+        </div>
+      </div>
+      <div class="info-grid" style="margin-top:20px;">
+        <div class="info-item">
+          <label>Usuário</label>
+          <span id="infoUsuario">—</span>
+        </div>
+        <div class="info-item">
+          <label>Nível de Acesso</label>
+          <span id="infoRole">—</span>
+        </div>
+        <div class="info-item">
+          <label>Sessão ativa desde</label>
+          <span id="infoSessao">—</span>
+        </div>
+        <div class="info-item">
+          <label>Sistema</label>
+          <span>GCM Bananeiras — Online</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alterar senha -->
+    <div class="card">
+      <div class="card-title">🔑 Alterar Senha</div>
+      <form onsubmit="trocarSenha(event)">
+        <div class="field">
+          <label>Senha atual</label>
+          <input type="password" id="senhaAtual" placeholder="Digite sua senha atual" required>
+        </div>
+        <div class="field">
+          <label>Nova senha</label>
+          <input type="password" id="senhaNova" placeholder="Mínimo 6 caracteres" required minlength="6"
+                 oninput="avaliarSenha(this.value)">
+          <div class="senha-strength"><div class="senha-strength-bar" id="strengthBar"></div></div>
+          <div class="senha-hint" id="strengthHint">Digite a nova senha</div>
+        </div>
+        <div class="field">
+          <label>Confirmar nova senha</label>
+          <input type="password" id="senhaConfirmar" placeholder="Repita a nova senha" required>
+        </div>
+        <button type="submit" class="btn-primary">Alterar Senha</button>
+      </form>
+    </div>
+
+    <!-- Últimos acessos -->
+    <div class="card" id="cardAcessos">
+      <div class="card-title">🕐 Últimos Acessos</div>
+      <ul class="acesso-lista" id="listaAcessos">
+        <li style="justify-content:center;color:var(--color-hint);">Carregando...</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script>
+    const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' };
+    const badgeClass = { admin: 'badge-admin', supervisor: 'badge-supervisor', agente: 'badge-agente' };
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
+        if (!res.ok) { window.location.href = '/'; return; }
+        const perfil = await res.json();
+
+        const inicial = (perfil.usuario || '?')[0].toUpperCase();
+        document.getElementById('perfilAvatar').textContent = inicial;
+        document.getElementById('perfilNome').textContent   = perfil.usuario;
+        document.getElementById('infoUsuario').textContent  = perfil.usuario;
+        document.getElementById('infoRole').textContent     = roleLabel[perfil.role] || perfil.role;
+        document.getElementById('infoSessao').textContent   = new Date().toLocaleString('pt-BR');
+
+        const badge = document.getElementById('perfilBadge');
+        badge.textContent  = roleLabel[perfil.role] || perfil.role;
+        badge.className    = `perfil-role-badge ${badgeClass[perfil.role] || 'badge-agente'}`;
+      } catch { window.location.href = '/'; }
+
+      carregarAcessos();
+    })();
+
+    async function trocarSenha(e) {
+      e.preventDefault();
+      const senhaAtual     = document.getElementById('senhaAtual').value;
+      const senhaNova      = document.getElementById('senhaNova').value;
+      const senhaConfirmar = document.getElementById('senhaConfirmar').value;
+
+      if (senhaNova !== senhaConfirmar) { toast('As senhas novas não coincidem.', 'erro'); return; }
+      if (senhaNova.length < 6)         { toast('A nova senha deve ter pelo menos 6 caracteres.', 'erro'); return; }
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/trocar-senha`, {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ senhaAtual, senhaNova })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          toast('Senha alterada com sucesso!', 'ok');
+          e.target.reset();
+          avaliarSenha('');
+        } else { toast(data.error || 'Erro ao alterar senha.', 'erro'); }
+      } catch { toast('Erro de conexão.', 'erro'); }
+    }
+
+    function avaliarSenha(v) {
+      const bar  = document.getElementById('strengthBar');
+      const hint = document.getElementById('strengthHint');
+      if (!v) { bar.style.width = '0%'; hint.textContent = 'Digite a nova senha'; return; }
+      let score = 0;
+      if (v.length >= 6)  score++;
+      if (v.length >= 10) score++;
+      if (/[A-Z]/.test(v)) score++;
+      if (/[0-9]/.test(v)) score++;
+      if (/[^A-Za-z0-9]/.test(v)) score++;
+      const cfg = [
+        null,
+        { w: '20%', bg: '#EF4444', txt: 'Muito fraca' },
+        { w: '40%', bg: '#F97316', txt: 'Fraca' },
+        { w: '60%', bg: '#EAB308', txt: 'Razoável' },
+        { w: '80%', bg: '#22C55E', txt: 'Boa' },
+        { w: '100%',bg: '#16A34A', txt: 'Excelente' },
+      ][score] || { w: '20%', bg: '#EF4444', txt: 'Muito fraca' };
+      bar.style.width      = cfg.w;
+      bar.style.background = cfg.bg;
+      hint.textContent     = cfg.txt;
+    }
+
+    async function carregarAcessos() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/auditoria`, { credentials: 'include' });
+        if (!res.ok) { document.getElementById('cardAcessos').style.display = 'none'; return; }
+        const logs = await res.json();
+        const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
+        const meus = logs
+          .filter(l => l.usuario === perfil.usuario && l.acao && l.acao.toLowerCase().includes('login'))
+          .slice(0, 5);
+
+        const ul = document.getElementById('listaAcessos');
+        if (!meus.length) {
+          ul.innerHTML = '<li style="justify-content:center;color:var(--color-hint);">Nenhum acesso registrado</li>';
+          return;
+        }
+        ul.innerHTML = meus.map(l => `
+          <li>
+            <span>Login realizado</span>
+            <span style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+              <span class="acesso-data">${new Date(l.data).toLocaleString('pt-BR')}</span>
+              <span class="acesso-ip">${l.ip || '—'}</span>
+            </span>
+          </li>`).join('');
+      } catch {
+        document.getElementById('cardAcessos').style.display = 'none';
+      }
+    }
+
+    function toast(texto, tipo) {
+      const el = document.getElementById('msgToast');
+      el.textContent = texto;
+      el.className = `msg-toast msg-${tipo}`;
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 4000);
+    }
+  </script>
+</body>
+</html>
