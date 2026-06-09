@@ -216,7 +216,7 @@
     function renderizarRelatorios(lista) {
       const el = document.getElementById('listaRelatorios');
       if (!lista.length) { el.innerHTML = '<p style="text-align:center;color:var(--color-hint);">Nenhum relatório encontrado.</p>'; return; }
-      el.innerHTML = `<table>
+      el.innerHTML = `<div class="table-wrap"><table>
         <thead><tr><th>Número</th><th>Data</th><th>Tipo</th><th>Título</th><th>Status</th><th>PDF</th></tr></thead>
         <tbody>${lista.map(r => `<tr>
           <td>${r.numero}</td>
@@ -226,7 +226,7 @@
           <td><span class="badge ${r.status === 'finalizado' ? 'badge-supervisor' : 'badge-usuario'}">${r.status}</span></td>
           <td>${r.status === 'finalizado' ? `<button class="btn-pdf" onclick="baixarPDFRel(${r.id},'${r.numero}')">PDF</button>` : '—'}</td>
         </tr>`).join('')}</tbody>
-      </table>`;
+      </table></div>`;
     }
 
     function filtrarRelatorios() {
