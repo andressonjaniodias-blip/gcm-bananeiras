@@ -41,13 +41,13 @@
   </header>
 
   <main class="dashboard">
-    <nav class="tabs">
-      <button class="tab-btn active" onclick="showDocTab('publicar')">Publicar Documento</button>
-      <button class="tab-btn" onclick="showDocTab('acervo')">Acervo</button>
+    <nav class="tabs" id="docTabs">
+      <button class="tab-btn" id="btnTabPublicar" onclick="showDocTab('publicar')">Publicar Documento</button>
+      <button class="tab-btn active" id="btnTabAcervo" onclick="showDocTab('acervo')">Acervo</button>
     </nav>
 
     <!-- PUBLICAR -->
-    <section id="publicar" class="tab-content">
+    <section id="publicar" class="tab-content hidden">
       <h3>Publicar Novo Documento</h3>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
@@ -139,6 +139,18 @@
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('docData').value = new Date().toISOString().slice(0, 10);
       carregarDocumentos();
+
+      const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
+      const podePublicar = perfil.role === 'supervisor' || perfil.role === 'admin';
+      const btnPublicar = document.getElementById('btnTabPublicar');
+      if (!podePublicar) {
+        btnPublicar.style.display = 'none';
+        showDocTab('acervo');
+      } else {
+        btnPublicar.classList.add('active');
+        document.getElementById('btnTabAcervo').classList.remove('active');
+        showDocTab('publicar');
+      }
     });
 
     function showDocTab(id) {
