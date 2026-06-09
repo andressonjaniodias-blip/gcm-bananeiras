@@ -349,14 +349,17 @@ exports.exportarPDF = async (req, res) => {
 
     // ── Rodapé em todas as páginas ────────────────────────────────────────────
     const range = doc.bufferedPageRange();
-    for (let i = 0; i < range.count; i++) {
+    const total = range.count;
+    for (let i = 0; i < total; i++) {
       doc.switchToPage(i);
+      // Zera margem inferior para evitar que o PDFKit crie páginas extras
+      doc.page.margins.bottom = 0;
       const pageH = doc.page.height;
-      const baseY = pageH - 50;
+      const baseY = pageH - 42;
       doc.moveTo(margem, baseY).lineTo(pageW - margem, baseY).lineWidth(0.5).strokeColor('#aaa').stroke();
       doc.fontSize(8).font('Helvetica').fillColor('#555')
-         .text(rodapeInfo, margem, baseY + 6, { width: conteudoW - 60, align: 'left', lineBreak: false });
-      doc.text(`Página ${i + 1} de ${range.count}`, margem, baseY + 6, { width: conteudoW, align: 'right', lineBreak: false });
+         .text(rodapeInfo, margem, baseY + 6, { width: conteudoW - 70, align: 'left', lineBreak: false });
+      doc.text(`Página ${i + 1} de ${total}`, margem, baseY + 6, { width: conteudoW, align: 'right', lineBreak: false });
     }
 
     doc.flushPages();
