@@ -200,7 +200,7 @@ exports.exportarPDF = async (req, res) => {
     doc.fontSize(16).font('Helvetica-Bold')
        .text('GUARDA CIVIL MUNICIPAL', { width: conteudoW, align: 'center' });
     doc.fontSize(12).font('Helvetica')
-       .text('Secretaria de Segurança Pública Municipal', { width: conteudoW, align: 'center' });
+       .text('Secretaria de Administração Pública Municipal', { width: conteudoW, align: 'center' });
 
     // Linha separadora após brasões
     const posAposBrasao = Math.max(doc.y + 4, 98);
