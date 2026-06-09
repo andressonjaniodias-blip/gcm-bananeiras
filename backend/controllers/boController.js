@@ -14,7 +14,8 @@ const LABELS = {
   dataHoraSolicitacao:  'Data e Hora da Solicitação',
   natureza:             'Natureza da Solicitação',
   nomeSolicitante:      'Nome do Solicitante',
-  documentoSolicitante: 'RG / CPF / CNH',
+  cpfSolicitante:       'CPF do Solicitante',
+  rgSolicitante:        'RG do Solicitante',
   telefoneSolicitante:  'Telefone',
   // Ocorrência
   tipificacao:     'Tipificação',
@@ -31,7 +32,8 @@ const LABELS = {
   // Pessoa (vítima / suspeito)
   nome:            'Nome',
   alcunha:         'Alcunha',
-  documento:       'CPF / RG / CNH',
+  cpf:             'CPF',
+  rg:              'RG',
   nascimento:      'Data de Nascimento',
   idade:           'Idade',
   genero:          'Gênero',
