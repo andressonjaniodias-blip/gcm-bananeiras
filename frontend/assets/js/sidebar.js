@@ -100,10 +100,22 @@
     const sbNome   = document.getElementById('sbNome');
     const sbAvatar = document.getElementById('sbAvatar');
     const sbRole   = document.getElementById('sbRole');
-    if (sbNome && perfil.usuario)  sbNome.textContent   = perfil.usuario;
+    if (sbNome && perfil.usuario)   sbNome.textContent   = perfil.usuario;
     if (sbAvatar && perfil.usuario) sbAvatar.textContent = perfil.usuario[0].toUpperCase();
     if (sbRole && perfil.role) {
       sbRole.textContent = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' }[perfil.role] || perfil.role;
+    }
+
+    // Reconstrói o nav com os itens corretos para o role recém-carregado
+    const nav = document.querySelector('.sb-nav');
+    if (nav && perfil.role) {
+      const currentPath = window.location.pathname;
+      nav.innerHTML = MENU
+        .filter(item => item.roles.includes(perfil.role))
+        .map(item => {
+          const active = currentPath.includes(item.href.replace('/pages/', '')) ? ' active' : '';
+          return `<a href="${item.href}" class="sb-link${active}">${item.label}</a>`;
+        }).join('');
     }
   };
 
