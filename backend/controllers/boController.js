@@ -2,10 +2,93 @@ const db = require('../config/db');
 const { registrarAuditoria } = require('../middleware/auth');
 const PDFDocument = require('pdfkit');
 const path = require('path');
-const fs = require('fs');
+const fs   = require('fs');
 
 const brasaoGCM        = path.join(__dirname, '../../public/brasao-gcm.png');
 const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.png');
+
+// ── Mapeamento de chaves → rótulos em português ──────────────────────────────
+const LABELS = {
+  // Solicitação
+  canal:                'Canal da Solicitação',
+  dataHoraSolicitacao:  'Data e Hora da Solicitação',
+  natureza:             'Natureza da Solicitação',
+  nomeSolicitante:      'Nome do Solicitante',
+  documentoSolicitante: 'RG / CPF / CNH',
+  telefoneSolicitante:  'Telefone',
+  // Ocorrência
+  tipificacao:     'Tipificação',
+  dataHoraOcorrencia: 'Data e Hora da Ocorrência',
+  rua:             'Rua / Logradouro',
+  numero:          'Número',
+  cidade:          'Cidade',
+  complemento:     'Complemento / Bairro',
+  viatura:         'Código da Viatura',
+  comandante:      'Comandante',
+  motorista:       'Motorista',
+  patrulheiroI:    'Patrulheiro I',
+  patrulheiroII:   'Patrulheiro II',
+  // Pessoa (vítima / suspeito)
+  nome:            'Nome',
+  alcunha:         'Alcunha',
+  documento:       'CPF / RG / CNH',
+  nascimento:      'Data de Nascimento',
+  idade:           'Idade',
+  genero:          'Gênero',
+  nacionalidade:   'Nacionalidade',
+  naturalidade:    'Naturalidade',
+  estadoCivil:     'Estado Civil',
+  ocupacao:        'Ocupação',
+  escolaridade:    'Escolaridade',
+  nomePai:         'Nome do Pai',
+  nomeMae:         'Nome da Mãe',
+  endereco:        'Endereço',
+  telefone:        'Telefone',
+  // Objetos
+  tipoObjeto:      'Tipo de Objeto',
+  quantidade:      'Quantidade',
+  descricaoObjeto: 'Descrição',
+  // Autoridade
+  dataHoraAutoridade: 'Data e Hora do Recebimento',
+  nomeAutoridade:     'Nome da Autoridade',
+  cargo:              'Cargo',
+  matricula:          'Matrícula',
+  localAutoridade:    'Local',
+};
+
+// Campos cujo valor deve ser exibido em CAIXA ALTA
+const MAIUSCULO = new Set([
+  'nomeSolicitante', 'comandante', 'motorista',
+  'patrulheiroI', 'patrulheiroII',
+  'nome', 'nomePai', 'nomeMae', 'nomeAutoridade',
+]);
+
+// Campos de data/hora para formatar
+const CAMPOS_DATA = new Set([
+  'dataHoraSolicitacao', 'dataHoraOcorrencia',
+  'dataHoraAutoridade', 'nascimento',
+]);
+
+function formatarData(valor) {
+  try {
+    const d = new Date(valor);
+    if (isNaN(d.getTime())) return valor;
+    return d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  } catch { return valor; }
+}
+
+function prepararValor(chave, valor) {
+  if (!valor) return '';
+  if (CAMPOS_DATA.has(chave)) return formatarData(valor);
+  if (MAIUSCULO.has(chave))   return String(valor).toUpperCase();
+  return String(valor);
+}
+
+function rotulo(chave) {
+  return LABELS[chave] || chave;
+}
+
+// ── Exports ──────────────────────────────────────────────────────────────────
 
 exports.criarBO = async (req, res) => {
   if (!req.body || Object.keys(req.body).length === 0) {
@@ -38,17 +121,13 @@ exports.listarBOs = async (req, res) => {
   try {
     const { usuario, role } = req.usuario;
     let rows;
-
     if (role === 'agente') {
-      // Agente vê apenas os próprios BOs
       ({ rows } = await db.query(
-        'SELECT * FROM boletins WHERE criado_por = $1 ORDER BY id DESC',
-        [usuario]
+        'SELECT * FROM boletins WHERE criado_por = $1 ORDER BY id DESC', [usuario]
       ));
     } else {
       ({ rows } = await db.query('SELECT * FROM boletins ORDER BY id DESC'));
     }
-
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -64,8 +143,6 @@ exports.consultarBO = async (req, res) => {
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
 
     const { usuario, role } = req.usuario;
-
-    // Agente só pode acessar os próprios BOs
     if (role === 'agente' && rows[0].criado_por !== usuario) {
       return res.status(403).json({ error: 'Acesso negado a este BO' });
     }
@@ -95,93 +172,136 @@ exports.exportarPDF = async (req, res) => {
     const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
     await registrarAuditoria(usuario, 'EXPORTAR_PDF', rows[0].numero, ip);
 
-    const row = rows[0];
-    let dados = {};
-    try { dados = JSON.parse(row.dados); } catch (e) { dados = {}; }
+    const row  = rows[0];
+    let dados  = {};
+    try { dados = JSON.parse(row.dados); } catch { dados = {}; }
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="bo_${row.numero}.pdf"`);
 
-    const doc = new PDFDocument({ margin: 50 });
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
     doc.pipe(res);
 
-    // Cabeçalho com brasões
+    const pageW  = doc.page.width;
+    const margem = 50;
+    const conteudoW = pageW - margem * 2;
+    const imgSize   = 62;
+
+    // ── Cabeçalho com brasões ─────────────────────────────────────────────────
     const temGCM        = fs.existsSync(brasaoGCM);
     const temPrefeitura = fs.existsSync(brasaoPrefeitura);
-    const imgSize = 60;
-    const pageWidth = doc.page.width - 100; // descontando margens
 
-    if (temGCM)        doc.image(brasaoGCM,        50,  30, { width: imgSize });
-    if (temPrefeitura) doc.image(brasaoPrefeitura, doc.page.width - 50 - imgSize, 30, { width: imgSize });
+    if (temGCM)        doc.image(brasaoGCM,        margem, 30, { width: imgSize });
+    if (temPrefeitura) doc.image(brasaoPrefeitura, pageW - margem - imgSize, 30, { width: imgSize });
 
-    const topoY = temGCM || temPrefeitura ? 35 : doc.y;
-    doc.fontSize(16).font('Helvetica-Bold')
-       .text('GUARDA CIVIL MUNICIPAL', 50, topoY, { width: pageWidth, align: 'center' });
-    doc.fontSize(13).font('Helvetica')
-       .text('Boletim de Ocorrência', { width: pageWidth, align: 'center' });
-    doc.fontSize(11)
-       .text(`Número: ${row.numero}   |   Data: ${new Date(row.data).toLocaleDateString('pt-BR')}`, { width: pageWidth, align: 'center' });
+    const topoTextoY = 32;
+    doc.fontSize(15).font('Helvetica-Bold')
+       .text('PREFEITURA MUNICIPAL DE BANANEIRAS', margem, topoTextoY, { width: conteudoW, align: 'center' });
+    doc.fontSize(13).font('Helvetica-Bold')
+       .text('GUARDA CIVIL MUNICIPAL', { width: conteudoW, align: 'center' });
+    doc.fontSize(10).font('Helvetica')
+       .text('Secretaria de Segurança Pública Municipal', { width: conteudoW, align: 'center' });
 
-    doc.moveDown(temGCM || temPrefeitura ? 3 : 1);
-    doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).lineWidth(1.5).stroke();
-    doc.moveDown();
+    // Linha separadora após brasões
+    const posAposBrasao = Math.max(doc.y + 4, 98);
+    doc.moveTo(margem, posAposBrasao).lineTo(pageW - margem, posAposBrasao).lineWidth(2).stroke('#000');
+
+    // Título do documento
+    doc.y = posAposBrasao + 8;
+    doc.fontSize(14).font('Helvetica-Bold')
+       .text('BOLETIM DE OCORRÊNCIA', { width: conteudoW, align: 'center' });
+    doc.fontSize(10).font('Helvetica')
+       .text(
+         `Nº ${row.numero}     |     Registrado em: ${new Date(row.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}     |     Por: ${String(row.criado_por).toUpperCase()}`,
+         { width: conteudoW, align: 'center' }
+       );
+    doc.moveDown(0.5);
+    doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(0.5).stroke('#444');
+    doc.moveDown(0.8);
+
+    // ── Funções auxiliares de renderização ───────────────────────────────────
+    function tituloSecao(texto) {
+      doc.fontSize(11).font('Helvetica-Bold')
+         .fillColor('#000')
+         .text(texto.toUpperCase(), { width: conteudoW });
+      doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(1).stroke('#222');
+      doc.moveDown(0.5);
+    }
+
+    function campoLinha(chave, valor) {
+      if (!valor) return;
+      const label = rotulo(chave);
+      const val   = prepararValor(chave, valor);
+      doc.fontSize(10).font('Helvetica-Bold').fillColor('#333')
+         .text(`${label}: `, { continued: true })
+         .font('Helvetica').fillColor('#000')
+         .text(val);
+    }
 
     function secao(titulo, obj) {
       if (!obj || Object.keys(obj).length === 0) return;
-      doc.fontSize(13).font('Helvetica-Bold').text(titulo);
-      doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-      doc.moveDown(0.3);
-      doc.fontSize(11).font('Helvetica');
-      Object.entries(obj).forEach(([campo, valor]) => {
-        if (valor) doc.text(`${campo}: ${valor}`);
-      });
-      doc.moveDown();
+      tituloSecao(titulo);
+      Object.entries(obj).forEach(([k, v]) => campoLinha(k, v));
+      doc.moveDown(0.8);
     }
 
-    function secaoArray(titulo, arr) {
+    function secaoArray(tituloPlural, tituloSingular, arr) {
       if (!arr || arr.length === 0) return;
-      doc.fontSize(13).font('Helvetica-Bold').text(titulo);
-      doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-      doc.moveDown(0.3);
+      tituloSecao(tituloPlural);
       arr.forEach((item, i) => {
-        doc.fontSize(11).font('Helvetica-Bold').text(`${titulo.replace('s', '')} ${i + 1}:`);
+        if (!Object.values(item).some(v => v)) return;
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('#000')
+           .text(`${tituloSingular} ${i + 1}:`);
         doc.font('Helvetica');
-        Object.entries(item).forEach(([campo, valor]) => {
-          if (valor) doc.fontSize(11).text(`${campo}: ${valor}`);
-        });
-        doc.moveDown(0.5);
+        Object.entries(item).forEach(([k, v]) => campoLinha(k, v));
+        if (i < arr.length - 1) doc.moveDown(0.3);
       });
-      doc.moveDown();
+      doc.moveDown(0.8);
     }
 
+    // ── Seções do BO ──────────────────────────────────────────────────────────
     secao('Dados da Solicitação', dados.dadosSolicitacao);
-    secao('Dados da Ocorrência', dados.dadosOcorrencia);
-    secaoArray('Vítimas', dados.vitimas);
-    secaoArray('Suspeitos', dados.suspeitos);
-    secaoArray('Objetos Apreendidos', dados.objetos);
+    secao('Dados da Ocorrência',  dados.dadosOcorrencia);
+    secaoArray('Vítimas',              'Vítima',   dados.vitimas);
+    secaoArray('Suspeitos',            'Suspeito', dados.suspeitos);
+    secaoArray('Objetos Apreendidos',  'Objeto',   dados.objetos);
 
     if (dados.relato) {
-      doc.fontSize(13).font('Helvetica-Bold').text('Relato da Ocorrência');
-      doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-      doc.moveDown(0.3);
-      doc.fontSize(11).font('Helvetica').text(dados.relato, { align: 'justify' });
-      doc.moveDown();
+      tituloSecao('Relato da Ocorrência');
+      doc.fontSize(10).font('Helvetica').fillColor('#000')
+         .text(dados.relato, { align: 'justify', lineGap: 3 });
+      doc.moveDown(0.8);
     }
 
     secao('Autoridade Policial', dados.autoridade);
 
-    // Assinatura
-    doc.moveDown();
-    doc.fontSize(11).font('Helvetica').text(
-      'Declaro que recebi a presente ocorrência, bem como as informações das pessoas e objetos envolvidos.',
-      { align: 'justify' }
-    );
+    // ── Rodapé / Assinatura ───────────────────────────────────────────────────
+    doc.moveDown(1.5);
+    doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(0.5).stroke('#444');
+    doc.moveDown(0.5);
+    doc.fontSize(9).font('Helvetica').fillColor('#333')
+       .text(
+         'Declaro que recebi a presente ocorrência, bem como as informações das pessoas e objetos envolvidos.',
+         { align: 'justify' }
+       );
     doc.moveDown(2);
-    doc.text('Assinatura: ___________________________________', { align: 'center' });
+
+    const centroX = pageW / 2;
+    const linhaY  = doc.y;
+    doc.moveTo(centroX - 100, linhaY).lineTo(centroX + 100, linhaY).lineWidth(0.8).stroke('#000');
+    doc.moveDown(0.3);
+    doc.fontSize(9).font('Helvetica-Bold').fillColor('#000')
+       .text(String(row.criado_por).toUpperCase(), { align: 'center' });
+    doc.fontSize(9).font('Helvetica').fillColor('#333')
+       .text('Agente GCM — Guarda Civil Municipal de Bananeiras/PB', { align: 'center' });
+    doc.text(
+      `Bananeiras/PB, ${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}`,
+      { align: 'center' }
+    );
 
     doc.end();
   } catch (err) {
-    console.error('Erro ao gerar PDF:', err);
+    console.error('Erro ao gerar PDF do BO:', err);
     if (!res.headersSent) res.status(500).json({ error: err.message });
   }
 };
