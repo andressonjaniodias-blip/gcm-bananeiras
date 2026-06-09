@@ -38,7 +38,8 @@
     }
 
     .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
-    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-grid-agente { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } .form-grid-agente { grid-template-columns: 1fr; } }
 
     .field label {
       display: block; font-size: 0.78rem; font-weight: 600;
@@ -137,7 +138,9 @@
     <div class="card" id="cardNovoUsuario" style="display:none;">
       <div class="card-title">➕ Novo Usuário</div>
       <form onsubmit="criarUsuario(event)">
-        <div class="form-grid">
+
+        <p style="font-size:0.8rem;font-weight:700;color:var(--color-label);letter-spacing:0.05em;margin-bottom:8px;">ACESSO AO SISTEMA</p>
+        <div class="form-grid" style="margin-bottom:16px;">
           <div class="field">
             <label>Nome de usuário</label>
             <input type="text" id="novoUsuario" placeholder="ex: joao.silva" required autocomplete="off">
@@ -154,11 +157,32 @@
               <option value="admin">Administrador</option>
             </select>
           </div>
+        </div>
+
+        <p style="font-size:0.8rem;font-weight:700;color:var(--color-label);letter-spacing:0.05em;margin-bottom:8px;">DADOS DO AGENTE</p>
+        <div class="form-grid-agente" style="margin-bottom:16px;">
           <div class="field">
-            <label>&nbsp;</label>
-            <button type="submit" class="btn-primary">Adicionar</button>
+            <label>Nome completo <span style="color:var(--color-danger)">*</span></label>
+            <input type="text" id="novoNome" placeholder="Nome completo do agente" maxlength="150" required>
+          </div>
+          <div class="field">
+            <label>Matrícula <span style="color:var(--color-danger)">*</span></label>
+            <input type="text" id="novaMatricula" placeholder="Ex: GCM-001" maxlength="30" required>
+          </div>
+          <div class="field">
+            <label>Cargo</label>
+            <input type="text" id="novoCargo" placeholder="Guarda Civil Municipal" maxlength="100">
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <select id="novoAtivo">
+              <option value="true">Ativo</option>
+              <option value="false">Inativo</option>
+            </select>
           </div>
         </div>
+
+        <button type="submit" class="btn-primary">Adicionar Usuário</button>
       </form>
     </div>
 
@@ -171,13 +195,15 @@
             <tr>
               <th>#</th>
               <th>Usuário</th>
+              <th>Nome</th>
+              <th>Matrícula</th>
               <th>Perfil</th>
               <th>Alterar Perfil</th>
               <th>Ação</th>
             </tr>
           </thead>
           <tbody id="tabelaUsuarios">
-            <tr class="empty-row"><td colspan="5">Carregando...</td></tr>
+            <tr class="empty-row"><td colspan="7">Carregando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -221,22 +247,28 @@
     async function carregarUsuarios() {
       const tbody = document.getElementById('tabelaUsuarios');
       try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, { credentials: 'include' });
-        const lista = await res.json();
+        const [resU, resA] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/auth/usuarios`, { credentials: 'include' }),
+          fetch(`${API_BASE_URL}/api/agentes`,        { credentials: 'include' }),
+        ]);
+        const lista   = await resU.json();
+        const agentes = resA.ok ? await resA.json() : [];
+        const agentePorUsuario = Object.fromEntries(agentes.map(a => [a.usuario, a]));
+
         if (!lista.length) {
-          tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum usuário encontrado</td></tr>';
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Nenhum usuário encontrado</td></tr>';
           return;
         }
         const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente' };
         tbody.innerHTML = lista.map(u => {
-          const sou = u.usuario === meUsuario;
+          const sou    = u.usuario === meUsuario;
+          const agente = agentePorUsuario[u.usuario];
           return `
             <tr>
               <td style="color:var(--color-hint);font-size:0.82rem;">${u.id}</td>
-              <td>
-                ${u.usuario}
-                ${sou ? '<span class="tag-voce">(você)</span>' : ''}
-              </td>
+              <td>${u.usuario}${sou ? '<span class="tag-voce">(você)</span>' : ''}</td>
+              <td style="color:var(--color-text-muted)">${agente ? agente.nome : '<span style="color:var(--color-hint)">—</span>'}</td>
+              <td style="color:var(--color-text-muted)">${agente ? agente.matricula : '<span style="color:var(--color-hint)">—</span>'}</td>
               <td><span class="badge badge-${u.role}">${roleLabel[u.role] || u.role}</span></td>
               <td>
                 ${sou ? '<span style="color:var(--color-hint);font-size:0.82rem;">—</span>' : `
@@ -260,21 +292,33 @@
 
     async function criarUsuario(e) {
       e.preventDefault();
-      const usuario = document.getElementById('novoUsuario').value.trim();
-      const senha   = document.getElementById('novaSenha').value;
-      const role    = document.getElementById('novoRole').value;
+      const usuario   = document.getElementById('novoUsuario').value.trim();
+      const senha     = document.getElementById('novaSenha').value;
+      const role      = document.getElementById('novoRole').value;
+      const nome      = document.getElementById('novoNome').value.trim();
+      const matricula = document.getElementById('novaMatricula').value.trim();
+      const cargo     = document.getElementById('novoCargo').value.trim();
+      const ativo     = document.getElementById('novoAtivo').value === 'true';
       try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
+        // 1. Cria o usuário
+        const resU = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ usuario, senha, role })
         });
-        const data = await res.json();
-        if (res.ok) {
-          toast('Usuário criado com sucesso!', 'ok');
-          e.target.reset();
-          carregarUsuarios();
-        } else { toast(data.error || 'Erro ao criar usuário.', 'erro'); }
+        const dataU = await resU.json();
+        if (!resU.ok) { toast(dataU.error || 'Erro ao criar usuário.', 'erro'); return; }
+
+        // 2. Cria o registro de agente vinculado
+        await fetch(`${API_BASE_URL}/api/agentes`, {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, matricula, cargo: cargo || 'Guarda Civil Municipal', usuario, ativo })
+        });
+
+        toast('Usuário e agente cadastrados com sucesso!', 'ok');
+        e.target.reset();
+        carregarUsuarios();
       } catch { toast('Erro de conexão.', 'erro'); }
     }
 

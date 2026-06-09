@@ -75,6 +75,17 @@ pool.connect()
         criado_em     TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS agentes (
+        id        SERIAL PRIMARY KEY,
+        nome      TEXT NOT NULL,
+        matricula TEXT NOT NULL,
+        cargo     TEXT DEFAULT 'Guarda Civil Municipal',
+        usuario   TEXT,
+        ativo     BOOLEAN DEFAULT true,
+        criado_em TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
     client.release();
   })
   .catch(err => console.error('Erro ao conectar ao banco:', err.message));

@@ -11,6 +11,7 @@ const authRoutes      = require('./routes/authRoutes');
 const relatorioRoutes = require('./routes/relatorioRoutes');
 const viaturaRoutes   = require('./routes/viaturaRoutes');
 const documentoRoutes = require('./routes/documentoRoutes');
+const agentesRoutes   = require('./routes/agentesRoutes');
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
@@ -54,6 +55,7 @@ app.use('/api/bo',        boRoutes);
 app.use('/api/relatorio', relatorioRoutes);
 app.use('/api/viatura',   viaturaRoutes);
 app.use('/api/documentos', documentoRoutes);
+app.use('/api/agentes',   agentesRoutes);
 
 // ✅ Health check endpoint (Render verifica isso)
 app.get('/health', (req, res) => {
