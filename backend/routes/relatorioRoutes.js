@@ -116,7 +116,7 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     // Título do relatório
     doc.y = posLinha + 8;
     doc.fontSize(16).font('Helvetica-Bold')
-       .text('RELATÓRIO INTERNO', { width: conteudoW, align: 'center' });
+       .text(`RELATÓRIO INTERNO  Nº ${r.numero}`, { width: conteudoW, align: 'center' });
     doc.fontSize(12).font('Helvetica-Bold')
        .text(r.titulo.toUpperCase(), { width: conteudoW, align: 'center' });
     doc.moveDown(0.6);
