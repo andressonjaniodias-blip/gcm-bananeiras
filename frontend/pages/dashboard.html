@@ -59,8 +59,12 @@
         <input type="text" name="nomeSolicitante" placeholder="Nome completo" maxlength="150">
       </div>
       <div class="campo-group">
-        <label>RG / CPF / CNH</label>
-        <input type="text" name="documentoSolicitante" placeholder="000.000.000-00" maxlength="20" oninput="mascararCPF(this)">
+        <label>CPF</label>
+        <input type="text" name="cpfSolicitante" placeholder="000.000.000-00" maxlength="14" oninput="mascararCPF(this)">
+      </div>
+      <div class="campo-group">
+        <label>RG</label>
+        <input type="text" name="rgSolicitante" placeholder="00.000.000-0" maxlength="12" oninput="mascararRG(this)">
       </div>
       <div class="campo-group">
         <label>Telefone</label>
