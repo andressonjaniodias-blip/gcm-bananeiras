@@ -1,7 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
-const { verificarToken } = require('../middleware/auth');
+const { verificarToken, verificarSupervisor } = require('../middleware/auth');
 
 // Listar documentos (sem o blob do arquivo)
 router.get('/', verificarToken, async (req, res) => {
@@ -16,8 +16,8 @@ router.get('/', verificarToken, async (req, res) => {
   }
 });
 
-// Publicar documento
-router.post('/', verificarToken, async (req, res) => {
+// Publicar documento (supervisor e admin apenas)
+router.post('/', verificarToken, verificarSupervisor, async (req, res) => {
   try {
     const { tipo, titulo, data, numero, descricao, arquivo, arquivoNome, arquivoMime } = req.body;
     if (!tipo || !titulo || !data || !arquivo) {
