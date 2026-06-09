@@ -68,7 +68,7 @@
     document.body.classList.add('has-sidebar');
 
     // Remove elementos duplicados do cabeçalho que agora ficam no sidebar
-    const headerActionDiv = document.querySelector('.header > div');
+    const headerActionDiv = document.querySelector('.header > div:not(.header-titulo)');
     if (headerActionDiv) headerActionDiv.remove();
     const legacyUserSpan = document.getElementById('usuarioLogado');
     if (legacyUserSpan) legacyUserSpan.closest('div')?.remove();
