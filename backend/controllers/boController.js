@@ -66,22 +66,26 @@ const MAIUSCULO = new Set([
 ]);
 
 // Campos de data/hora para formatar
+const CAMPOS_DATA_HORA = new Set([
+  'dataHoraSolicitacao', 'dataHoraOcorrencia', 'dataHoraAutoridade',
+]);
 const CAMPOS_DATA = new Set([
-  'dataHoraSolicitacao', 'dataHoraOcorrencia',
-  'dataHoraAutoridade', 'nascimento',
+  'nascimento',
 ]);
 
-function formatarData(valor) {
+function formatarData(valor, soData = false) {
   try {
     const d = new Date(valor);
     if (isNaN(d.getTime())) return valor;
+    if (soData) return d.toLocaleDateString('pt-BR', { dateStyle: 'short' });
     return d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
   } catch { return valor; }
 }
 
 function prepararValor(chave, valor) {
   if (!valor) return '';
-  if (CAMPOS_DATA.has(chave)) return formatarData(valor);
+  if (CAMPOS_DATA_HORA.has(chave)) return formatarData(valor, false);
+  if (CAMPOS_DATA.has(chave))      return formatarData(valor, true);
   if (MAIUSCULO.has(chave))   return String(valor).toUpperCase();
   return String(valor);
 }
