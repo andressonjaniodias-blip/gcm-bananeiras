@@ -5,7 +5,7 @@
 /* Gov Modern (padrão) — azul institucional, fundo claro */
 :root,
 [data-theme="gov-modern"] {
-  --header-h: 88px;
+  --header-h: 110px;
   --bg-page:         #F0F4FB;
   --bg-card:         #FFFFFF;
   --bg-header-from:  #0D1B2A;
@@ -120,8 +120,8 @@ body {
   background: linear-gradient(135deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%);
   border-bottom: 3px solid var(--header-accent);
   color: var(--header-text);
-  padding: clamp(10px, 2vw, 18px) clamp(14px, 3vw, 28px);
-  gap: 10px;
+  padding: clamp(13px, 2.5vw, 23px) clamp(18px, 3.75vw, 35px);
+  gap: 13px;
 }
 
 .header h1 {
@@ -144,7 +144,7 @@ body {
 }
 
 .header-linha-1 {
-  font-size: clamp(1.05rem, 2.4vw, 1.55rem);
+  font-size: clamp(1.31rem, 3vw, 1.94rem);
   font-weight: 800;
   letter-spacing: 0.06em;
   line-height: 1.2;
@@ -152,7 +152,7 @@ body {
 }
 
 .header-linha-2 {
-  font-size: clamp(0.7rem, 1.4vw, 0.95rem);
+  font-size: clamp(0.88rem, 1.75vw, 1.19rem);
   font-weight: 500;
   letter-spacing: 0.18em;
   line-height: 1.2;
@@ -161,7 +161,7 @@ body {
 }
 
 .header-linha-3 {
-  font-size: clamp(0.62rem, 1.2vw, 0.82rem);
+  font-size: clamp(0.78rem, 1.5vw, 1.03rem);
   font-weight: 400;
   letter-spacing: 0.04em;
   line-height: 1.2;
@@ -170,7 +170,7 @@ body {
 }
 
 .header .logo {
-  height: clamp(40px, 7vw, 58px);
+  height: clamp(50px, 8.75vw, 73px);
   width: auto;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
@@ -1344,7 +1344,7 @@ body.has-sidebar #app-content {
    MEDIA QUERIES
    ============================================================ */
 @media (max-width: 1024px) {
-  :root { --header-h: 72px; }
+  :root { --header-h: 90px; }
 
   /* Sidebar vira drawer no mobile/tablet */
   body.has-sidebar #sidebar {
@@ -1368,7 +1368,7 @@ body.has-sidebar #app-content {
 }
 
 @media (max-width: 768px) {
-  .header { padding: 10px 14px; }
+  .header { padding: 13px 18px; }
 
   .tabs button,
   .tabs .tab-btn {
@@ -1390,22 +1390,22 @@ body.has-sidebar #app-content {
 }
 
 @media (max-width: 480px) {
-  :root { --header-h: 64px; }
+  :root { --header-h: 80px; }
 
   .header {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 10px;
-    gap: 6px;
+    padding: 10px 13px;
+    gap: 8px;
   }
 
-  .header .logo { height: 36px; }
+  .header .logo { height: 45px; }
 
   .header-titulo { text-align: center; }
-  .header-linha-1 { font-size: 0.68rem; }
-  .header-linha-2 { font-size: 0.54rem; }
-  .header-linha-3 { font-size: 0.5rem; }
+  .header-linha-1 { font-size: 0.85rem; }
+  .header-linha-2 { font-size: 0.68rem; }
+  .header-linha-3 { font-size: 0.63rem; }
 
   .header h1 { font-size: 1rem; }
 
