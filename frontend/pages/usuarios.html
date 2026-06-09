@@ -11,39 +11,108 @@
   <script src="../assets/js/theme-switcher.js"></script>
   <script src="../assets/js/sidebar.js"></script>
   <style>
-    .page-container { width: 90%; max-width: 700px; margin: 24px auto; }
-    .page-container h2 { margin-bottom: 20px; color: #003366; }
+    .page-wrap { width: 92%; max-width: 800px; margin: 28px auto; }
+
+    .page-title {
+      font-size: 1.25rem; font-weight: 700;
+      color: var(--color-text); margin-bottom: 22px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .page-title span { font-size: 1.4rem; }
+
     .card {
-      background: #fff; border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-      padding: 20px; margin-bottom: 24px;
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      padding: 22px 24px;
+      margin-bottom: 22px;
+      border: 1px solid var(--color-border);
     }
-    .card h3 { margin-bottom: 14px; color: #003366; font-size: 1rem; }
-    .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
-    .form-row input, .form-row select {
-      flex: 1; min-width: 140px;
-      padding: 8px 10px; border: 1px solid #ccc;
-      border-radius: 4px; font-size: 0.95rem;
+    .card-title {
+      font-size: 0.95rem; font-weight: 700;
+      color: var(--color-primary);
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex; align-items: center; gap: 8px;
     }
-    .form-row button {
-      padding: 8px 18px; background: #003366; color: #fff;
-      border: none; border-radius: 4px; cursor: pointer; font-size: 0.95rem;
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+
+    .field label {
+      display: block; font-size: 0.78rem; font-weight: 600;
+      color: var(--color-label); margin-bottom: 5px; letter-spacing: 0.03em;
     }
-    .form-row button:hover { background: #00509e; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
-    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #eee; }
-    th { background: #f0f4f8; color: #003366; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; }
-    .badge-admin { background: #003366; color: #fff; }
-    .badge-supervisor { background: #1a6e2e; color: #fff; }
-    .badge-agente { background: #e0e7ef; color: #333; }
-    .badge-usuario { background: #e0e7ef; color: #333; }
-    .btn-excluir { background: #c0392b; color: #fff; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.85rem; }
-    .btn-excluir:hover { background: #96281b; }
-    .msg { display: none; padding: 10px; border-radius: 4px; margin-bottom: 14px; text-align: center; }
-    .voltar { display: inline-block; margin-bottom: 16px; color: #003366; text-decoration: none; font-size: 0.9rem; }
-    .voltar:hover { text-decoration: underline; }
-    .secao-senha { border-top: 1px solid #eee; margin-top: 14px; padding-top: 14px; }
+    .field input, .field select {
+      width: 100%; padding: 9px 11px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      background: var(--color-input-bg);
+      color: var(--color-text);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field input:focus, .field select:focus {
+      outline: none; border-color: var(--color-primary);
+      box-shadow: var(--shadow-input);
+    }
+
+    .btn-primary {
+      background: var(--color-primary); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      padding: 9px 20px; cursor: pointer; font-size: 0.9rem;
+      font-weight: 600; transition: background 0.2s; white-space: nowrap;
+    }
+    .btn-primary:hover { background: var(--color-primary-hover); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    thead th {
+      background: var(--color-row-alt); color: var(--color-label);
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em;
+      padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--color-border);
+    }
+    tbody tr { border-bottom: 1px solid var(--color-border); transition: background 0.15s; }
+    tbody tr:hover { background: var(--color-row-hover); }
+    tbody td { padding: 10px 12px; vertical-align: middle; }
+
+    .badge {
+      display: inline-block; padding: 3px 10px;
+      border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 700;
+    }
+    .badge-admin      { background: #1E3A5F; color: #fff; }
+    .badge-supervisor { background: #14532D; color: #fff; }
+    .badge-agente     { background: var(--color-primary-light); color: var(--color-primary); }
+
+    .select-role {
+      padding: 4px 8px; border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm); font-size: 0.82rem;
+      background: var(--color-input-bg); color: var(--color-text); cursor: pointer;
+    }
+    .btn-acao {
+      border: none; border-radius: var(--radius-sm);
+      padding: 5px 12px; cursor: pointer; font-size: 0.82rem; font-weight: 600;
+      transition: background 0.2s;
+    }
+    .btn-salvar  { background: var(--color-success); color: #fff; margin-right: 4px; }
+    .btn-salvar:hover { background: var(--color-success-hover); }
+    .btn-excluir { background: var(--color-danger); color: #fff; }
+    .btn-excluir:hover { background: var(--color-danger-hover); }
+
+    .lgpd-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 8px; }
+    .lgpd-stat { font-size: 0.92rem; color: var(--color-text-muted); }
+    .lgpd-stat strong { color: var(--color-danger); font-size: 1.05rem; }
+
+    .msg-toast {
+      display: none; padding: 11px 16px; border-radius: var(--radius-sm);
+      margin-bottom: 18px; font-size: 0.9rem; font-weight: 600;
+      border-left: 4px solid;
+    }
+    .msg-ok    { background: #D1FAE5; color: #065F46; border-color: var(--color-success); }
+    .msg-erro  { background: #FEE2E2; color: #991B1B; border-color: var(--color-danger); }
+
+    .empty-row td { text-align: center; color: var(--color-hint); padding: 20px; }
+    .tag-voce { font-size: 0.75rem; color: var(--color-hint); margin-left: 4px; }
   </style>
 </head>
 <body>
@@ -54,102 +123,81 @@
       <span class="header-linha-2">SISTEMA ONLINE</span>
       <span class="header-linha-3">PREFEITURA MUNICIPAL DE BANANEIRAS</span>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;">
-      <span id="usuarioLogado" style="font-size:0.85rem;color:#cce;"></span>
-      <button onclick="logout()" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:6px 12px;cursor:pointer;font-size:0.85rem;">Sair</button>
-    </div>
     <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
   </header>
 
-  <div class="page-container">
-    <a href="/pages/dashboard.html" class="voltar">← Voltar ao Dashboard</a>
+  <div class="page-wrap">
+    <div class="page-title"><span>👥</span> Gerenciamento de Usuários</div>
 
-    <div id="msgGlobal" class="msg"></div>
+    <div id="msgToast" class="msg-toast"></div>
 
-    <!-- Novo usuário (só admin vê) -->
+    <!-- Criar novo usuário -->
     <div class="card" id="cardNovoUsuario" style="display:none;">
-      <h3>Novo Usuário</h3>
+      <div class="card-title">➕ Novo Usuário</div>
       <form onsubmit="criarUsuario(event)">
-        <div class="form-row">
-          <input type="text" id="novoUsuario" placeholder="Nome de usuário" required autocomplete="off">
-          <input type="password" id="novaSenha" placeholder="Senha" required>
-          <select id="novoRole">
-            <option value="agente">Agente</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="admin">Administrador</option>
-          </select>
-          <button type="submit">Adicionar</button>
+        <div class="form-grid">
+          <div class="field">
+            <label>Nome de usuário</label>
+            <input type="text" id="novoUsuario" placeholder="ex: joao.silva" required autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Senha</label>
+            <input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres" required minlength="6">
+          </div>
+          <div class="field">
+            <label>Perfil</label>
+            <select id="novoRole">
+              <option value="agente">Agente</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn-primary">Adicionar</button>
+          </div>
         </div>
       </form>
     </div>
 
-    <!-- Lista de usuários (só admin vê) -->
+    <!-- Lista de usuários -->
     <div class="card" id="cardListaUsuarios" style="display:none;">
-      <h3>Usuários Cadastrados</h3>
+      <div class="card-title">📋 Usuários Cadastrados</div>
       <table>
         <thead>
-          <tr><th>#</th><th>Usuário</th><th>Perfil</th><th>Ação</th></tr>
+          <tr>
+            <th>#</th>
+            <th>Usuário</th>
+            <th>Perfil</th>
+            <th>Alterar Perfil</th>
+            <th>Ação</th>
+          </tr>
         </thead>
         <tbody id="tabelaUsuarios">
-          <tr><td colspan="4" style="text-align:center;color:#999;">Carregando...</td></tr>
+          <tr class="empty-row"><td colspan="5">Carregando...</td></tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Retenção de dados LGPD (só admin vê) -->
+    <!-- Retenção LGPD -->
     <div class="card" id="cardRetencao" style="display:none;">
-      <h3>Retenção de Dados (LGPD)</h3>
-      <p style="font-size:0.9rem;color:#555;margin-bottom:12px;">
+      <div class="card-title">🔒 Retenção de Dados — LGPD</div>
+      <p style="font-size:0.88rem;color:var(--color-text-muted);margin-bottom:14px;">
         Conforme a LGPD, dados pessoais devem ser conservados apenas pelo tempo necessário.
-        O prazo configurado é de <strong id="retencaoAnos">—</strong> ano(s).
+        O prazo configurado é de <strong id="retencaoAnos" style="color:var(--color-text);">—</strong> ano(s).
       </p>
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-        <span style="font-size:0.95rem;">BOs para arquivar: <strong id="retencaoTotal" style="color:#c0392b;">—</strong></span>
-        <button id="btnArquivar" onclick="arquivarBOs()"
-          style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:7px 16px;cursor:pointer;font-size:0.9rem;">
+      <div class="lgpd-row">
+        <span class="lgpd-stat">BOs para arquivar: <strong id="retencaoTotal">—</strong></span>
+        <button id="btnArquivar" onclick="arquivarBOs()" class="btn-acao btn-excluir" style="padding:7px 18px;font-size:0.88rem;">
           Arquivar BOs vencidos
         </button>
       </div>
-    </div>
-
-    <!-- Log de auditoria (só admin vê) -->
-    <div class="card" id="cardAuditoria" style="display:none;">
-      <h3>Log de Auditoria</h3>
-      <table>
-        <thead>
-          <tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Recurso</th><th>IP</th></tr>
-        </thead>
-        <tbody id="tabelaAuditoria">
-          <tr><td colspan="5" style="text-align:center;color:#999;">Carregando...</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Trocar senha (todos os usuários) -->
-    <div class="card">
-      <h3>Alterar Minha Senha</h3>
-      <form onsubmit="trocarSenha(event)">
-        <div class="form-row secao-senha" style="flex-direction:column;">
-          <input type="password" id="senhaAtual" placeholder="Senha atual" required>
-          <input type="password" id="senhaNova" placeholder="Nova senha" required minlength="6">
-          <input type="password" id="senhaConfirmar" placeholder="Confirmar nova senha" required>
-          <button type="submit" style="width:100%;margin-top:4px;">Alterar Senha</button>
-        </div>
-      </form>
     </div>
   </div>
 
   <script src="../assets/js/config.js"></script>
   <script>
     let meUsuario = '';
-    let meRole = '';
-
-    async function logout() {
-      try { await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' }); } catch {}
-      sessionStorage.removeItem('perfil');
-      localStorage.removeItem('authToken');
-      window.location.href = '/';
-    }
 
     (async () => {
       try {
@@ -157,46 +205,53 @@
         if (!res.ok) { window.location.href = '/'; return; }
         const perfil = await res.json();
         meUsuario = perfil.usuario;
-        meRole = perfil.role;
-        document.getElementById('usuarioLogado').textContent = meUsuario;
-      } catch { window.location.href = '/'; return; }
-
-      // Exibe seções de admin
-      if (meRole === 'admin') {
-        document.getElementById('cardNovoUsuario').style.display = 'block';
-        document.getElementById('cardListaUsuarios').style.display = 'block';
-        document.getElementById('cardRetencao').style.display = 'block';
-        document.getElementById('cardAuditoria').style.display = 'block';
+        if (perfil.role !== 'admin') { window.location.href = '/pages/home.html'; return; }
+        document.getElementById('cardNovoUsuario').style.display = '';
+        document.getElementById('cardListaUsuarios').style.display = '';
+        document.getElementById('cardRetencao').style.display = '';
         carregarUsuarios();
         carregarRetencao();
-        carregarAuditoria();
-      }
+      } catch { window.location.href = '/'; }
     })();
 
     async function carregarUsuarios() {
+      const tbody = document.getElementById('tabelaUsuarios');
       try {
         const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, { credentials: 'include' });
-        const usuarios = await res.json();
-        const tbody = document.getElementById('tabelaUsuarios');
-
-        if (!usuarios.length) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;">Nenhum usuário encontrado</td></tr>';
+        const lista = await res.json();
+        if (!lista.length) {
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum usuário encontrado</td></tr>';
           return;
         }
-
-        const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente', usuario: 'Agente' };
-        tbody.innerHTML = usuarios.map(u => `
-          <tr>
-            <td>${u.id}</td>
-            <td>${u.usuario} ${u.usuario === meUsuario ? '<em style="color:#999;font-size:0.8rem;">(você)</em>' : ''}</td>
-            <td><span class="badge badge-${u.role}">${roleLabel[u.role] || u.role}</span></td>
-            <td>
-              ${u.usuario !== meUsuario
-                ? `<button class="btn-excluir" onclick="excluirUsuario(${u.id}, '${u.usuario}')">Remover</button>`
-                : '—'}
-            </td>
-          </tr>`).join('');
-      } catch { mostrarMsg('Erro ao carregar usuários.', 'erro'); }
+        const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente' };
+        tbody.innerHTML = lista.map(u => {
+          const sou = u.usuario === meUsuario;
+          return `
+            <tr>
+              <td style="color:var(--color-hint);font-size:0.82rem;">${u.id}</td>
+              <td>
+                ${u.usuario}
+                ${sou ? '<span class="tag-voce">(você)</span>' : ''}
+              </td>
+              <td><span class="badge badge-${u.role}">${roleLabel[u.role] || u.role}</span></td>
+              <td>
+                ${sou ? '<span style="color:var(--color-hint);font-size:0.82rem;">—</span>' : `
+                  <select class="select-role" id="role-${u.id}">
+                    <option value="agente"     ${u.role==='agente'     ?'selected':''}>Agente</option>
+                    <option value="supervisor" ${u.role==='supervisor' ?'selected':''}>Supervisor</option>
+                    <option value="admin"      ${u.role==='admin'      ?'selected':''}>Administrador</option>
+                  </select>
+                `}
+              </td>
+              <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                ${sou ? '<span style="color:var(--color-hint);font-size:0.82rem;">—</span>' : `
+                  <button class="btn-acao btn-salvar" onclick="alterarRole(${u.id})">Salvar</button>
+                  <button class="btn-acao btn-excluir" onclick="excluirUsuario(${u.id},'${u.usuario}')">Remover</button>
+                `}
+              </td>
+            </tr>`;
+        }).join('');
+      } catch { toast('Erro ao carregar usuários.', 'erro'); }
     }
 
     async function criarUsuario(e) {
@@ -204,70 +259,47 @@
       const usuario = document.getElementById('novoUsuario').value.trim();
       const senha   = document.getElementById('novaSenha').value;
       const role    = document.getElementById('novoRole').value;
-
       try {
         const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
-          method: 'POST',
-          credentials: 'include',
+          method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ usuario, senha, role })
         });
         const data = await res.json();
-
         if (res.ok) {
-          mostrarMsg('Usuário criado com sucesso!', 'ok');
-          document.getElementById('novoUsuario').value = '';
-          document.getElementById('novaSenha').value = '';
+          toast('Usuário criado com sucesso!', 'ok');
+          e.target.reset();
           carregarUsuarios();
-        } else {
-          mostrarMsg(data.error || 'Erro ao criar usuário.', 'erro');
+        } else { toast(data.error || 'Erro ao criar usuário.', 'erro'); }
+      } catch { toast('Erro de conexão.', 'erro'); }
+    }
+
+    async function alterarRole(id) {
+      const role = document.getElementById(`role-${id}`).value;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${id}`, {
+          method: 'PUT', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role })
+        });
+        if (res.ok) { toast('Perfil atualizado!', 'ok'); carregarUsuarios(); }
+        else {
+          const data = await res.json();
+          toast(data.error || 'Erro ao alterar perfil.', 'erro');
         }
-      } catch { mostrarMsg('Erro de conexão.', 'erro'); }
+      } catch { toast('Erro de conexão.', 'erro'); }
     }
 
     async function excluirUsuario(id, nome) {
-      if (!confirm(`Remover o usuário "${nome}"?`)) return;
+      if (!confirm(`Remover o usuário "${nome}"? Esta ação não pode ser desfeita.`)) return;
       try {
         const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${id}`, {
-          method: 'DELETE',
-          credentials: 'include'
+          method: 'DELETE', credentials: 'include'
         });
         const data = await res.json();
-        if (res.ok) { mostrarMsg('Usuário removido.', 'ok'); carregarUsuarios(); }
-        else mostrarMsg(data.error || 'Erro ao remover.', 'erro');
-      } catch { mostrarMsg('Erro de conexão.', 'erro'); }
-    }
-
-    async function trocarSenha(e) {
-      e.preventDefault();
-      const senhaAtual    = document.getElementById('senhaAtual').value;
-      const senhaNova     = document.getElementById('senhaNova').value;
-      const senhaConfirmar = document.getElementById('senhaConfirmar').value;
-
-      if (senhaNova !== senhaConfirmar) {
-        mostrarMsg('As senhas novas não coincidem.', 'erro'); return;
-      }
-      if (senhaNova.length < 6) {
-        mostrarMsg('A nova senha deve ter pelo menos 6 caracteres.', 'erro'); return;
-      }
-
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/trocar-senha`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ senhaAtual, senhaNova })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          mostrarMsg('Senha alterada com sucesso!', 'ok');
-          document.getElementById('senhaAtual').value = '';
-          document.getElementById('senhaNova').value = '';
-          document.getElementById('senhaConfirmar').value = '';
-        } else {
-          mostrarMsg(data.error || 'Erro ao alterar senha.', 'erro');
-        }
-      } catch { mostrarMsg('Erro de conexão.', 'erro'); }
+        if (res.ok) { toast('Usuário removido.', 'ok'); carregarUsuarios(); }
+        else toast(data.error || 'Erro ao remover.', 'erro');
+      } catch { toast('Erro de conexão.', 'erro'); }
     }
 
     async function carregarRetencao() {
@@ -277,53 +309,28 @@
         document.getElementById('retencaoAnos').textContent = data.retencao_anos;
         document.getElementById('retencaoTotal').textContent = data.bos_para_arquivar;
         document.getElementById('btnArquivar').disabled = data.bos_para_arquivar === 0;
-      } catch { mostrarMsg('Erro ao carregar informações de retenção.', 'erro'); }
+      } catch {}
     }
 
     async function arquivarBOs() {
-      if (!confirm(`Remover permanentemente todos os BOs com mais de ${document.getElementById('retencaoAnos').textContent} ano(s)? Esta ação não pode ser desfeita.`)) return;
+      const anos = document.getElementById('retencaoAnos').textContent;
+      if (!confirm(`Remover permanentemente todos os BOs com mais de ${anos} ano(s)? Esta ação não pode ser desfeita.`)) return;
       try {
         const res = await fetch(`${API_BASE_URL}/api/auth/retencao/arquivar`, {
-          method: 'DELETE',
-          credentials: 'include'
+          method: 'DELETE', credentials: 'include'
         });
         const data = await res.json();
-        if (res.ok) {
-          mostrarMsg(`${data.arquivados.length} BO(s) arquivado(s) com sucesso.`, 'ok');
-          carregarRetencao();
-        } else {
-          mostrarMsg(data.error || 'Erro ao arquivar.', 'erro');
-        }
-      } catch { mostrarMsg('Erro de conexão.', 'erro'); }
+        if (res.ok) { toast(`${data.arquivados.length} BO(s) arquivado(s).`, 'ok'); carregarRetencao(); }
+        else toast(data.error || 'Erro ao arquivar.', 'erro');
+      } catch { toast('Erro de conexão.', 'erro'); }
     }
 
-    async function carregarAuditoria() {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/auditoria`, { credentials: 'include' });
-        const logs = await res.json();
-        const tbody = document.getElementById('tabelaAuditoria');
-        if (!logs.length) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">Nenhum registro</td></tr>';
-          return;
-        }
-        tbody.innerHTML = logs.map(l => `
-          <tr>
-            <td style="white-space:nowrap;font-size:0.82rem;">${new Date(l.data).toLocaleString('pt-BR')}</td>
-            <td>${l.usuario}</td>
-            <td><span style="font-size:0.82rem;background:#f0f4f8;padding:2px 6px;border-radius:4px;">${l.acao}</span></td>
-            <td>${l.recurso || '—'}</td>
-            <td style="font-size:0.8rem;color:#666;">${l.ip || '—'}</td>
-          </tr>`).join('');
-      } catch { mostrarMsg('Erro ao carregar auditoria.', 'erro'); }
-    }
-
-    function mostrarMsg(texto, tipo) {
-      const msg = document.getElementById('msgGlobal');
-      msg.textContent = texto;
-      msg.style.display = 'block';
-      msg.style.background = tipo === 'ok' ? '#d4edda' : '#f8d7da';
-      msg.style.color      = tipo === 'ok' ? '#155724' : '#721c24';
-      setTimeout(() => msg.style.display = 'none', 4000);
+    function toast(texto, tipo) {
+      const el = document.getElementById('msgToast');
+      el.textContent = texto;
+      el.className = `msg-toast msg-${tipo}`;
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 4000);
     }
   </script>
 </body>
