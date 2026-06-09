@@ -80,58 +80,105 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Relatório não encontrado.' });
     const r = rows[0];
 
+    const path = require('path');
+    const fs   = require('fs');
+    const brasaoGCM        = path.join(__dirname, '../../public/brasao-gcm.png');
+    const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.png');
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="relatorio_${r.numero.replace(/\//g, '-')}.pdf"`);
 
-    const doc = new PDFDocument({ margin: 60, size: 'A4' });
+    const doc = new PDFDocument({ margin: 55, size: 'A4' });
     doc.pipe(res);
 
-    // Cabeçalho
+    const pageW     = doc.page.width;
+    const margem    = 55;
+    const conteudoW = pageW - margem * 2;
+    const imgSize   = 60;
+
+    // ── Cabeçalho com brasões ─────────────────────────────────────────────────
+    const temGCM        = fs.existsSync(brasaoGCM);
+    const temPrefeitura = fs.existsSync(brasaoPrefeitura);
+
+    if (temGCM)        doc.image(brasaoGCM,        margem, 30, { width: imgSize });
+    if (temPrefeitura) doc.image(brasaoPrefeitura, pageW - margem - imgSize, 30, { width: imgSize });
+
     doc.fontSize(14).font('Helvetica-Bold')
-       .text('GUARDA CIVIL MUNICIPAL — BANANEIRAS/PB', { align: 'center' });
-    doc.moveDown(0.3);
-    doc.fontSize(11).font('Helvetica')
-       .text('RELATÓRIO INTERNO', { align: 'center' });
-    doc.moveDown(0.5);
-    doc.moveTo(60, doc.y).lineTo(535, doc.y).stroke();
-    doc.moveDown(0.5);
+       .text('PREFEITURA MUNICIPAL DE BANANEIRAS', margem, 33, { width: conteudoW, align: 'center' });
+    doc.fontSize(12).font('Helvetica-Bold')
+       .text('GUARDA CIVIL MUNICIPAL', { width: conteudoW, align: 'center' });
+    doc.fontSize(9).font('Helvetica')
+       .text('Secretaria de Segurança Pública Municipal', { width: conteudoW, align: 'center' });
 
-    // Metadados
+    const posLinha = Math.max(doc.y + 4, 96);
+    doc.moveTo(margem, posLinha).lineTo(pageW - margem, posLinha).lineWidth(2).stroke('#000');
+
+    // Título do relatório
+    doc.y = posLinha + 8;
+    doc.fontSize(13).font('Helvetica-Bold')
+       .text('RELATÓRIO INTERNO', { width: conteudoW, align: 'center' });
+    doc.fontSize(10).font('Helvetica-Bold')
+       .text(r.titulo.toUpperCase(), { width: conteudoW, align: 'center' });
+    doc.moveDown(0.6);
+    doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(0.5).stroke('#555');
+    doc.moveDown(0.7);
+
+    // ── Metadados em tabela de duas colunas ───────────────────────────────────
     const campo = (label, valor) => {
-      doc.fontSize(10).font('Helvetica-Bold').text(`${label}: `, { continued: true })
-         .font('Helvetica').text(valor || '—');
+      doc.fontSize(10).font('Helvetica-Bold').fillColor('#333')
+         .text(`${label}: `, { continued: true })
+         .font('Helvetica').fillColor('#000')
+         .text(valor || '—');
     };
-    campo('Número',    r.numero);
-    campo('Tipo',      r.tipo);
-    campo('Título',    r.titulo);
-    campo('Data',      new Date(r.data).toLocaleDateString('pt-BR'));
-    campo('Relator',   r.criado_por);
-    if (r.local)  campo('Local / Área', r.local);
-    if (r.equipe) campo('Viatura / Equipe', r.equipe);
-    doc.moveDown(0.5);
-    doc.moveTo(60, doc.y).lineTo(535, doc.y).stroke();
-    doc.moveDown(0.5);
 
-    // Conteúdo
-    doc.fontSize(10).font('Helvetica-Bold').text('CONTEÚDO DO RELATÓRIO');
-    doc.moveDown(0.3);
-    doc.fontSize(10).font('Helvetica').text(r.conteudo || '', { align: 'justify', lineGap: 4 });
+    campo('Número',          r.numero);
+    campo('Tipo',            r.tipo ? r.tipo.toUpperCase() : '—');
+    campo('Data',            new Date(r.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }));
+    campo('Relator',         String(r.criado_por).toUpperCase());
+    if (r.local)  campo('Local / Área',     r.local);
+    if (r.equipe) campo('Viatura / Equipe', r.equipe.toUpperCase());
+    campo('Status',          r.status ? r.status.toUpperCase() : '—');
+
+    doc.moveDown(0.5);
+    doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(0.5).stroke('#555');
+    doc.moveDown(0.7);
+
+    // ── Conteúdo ──────────────────────────────────────────────────────────────
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#000')
+       .text('CONTEÚDO DO RELATÓRIO');
+    doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(0.8).stroke('#222');
+    doc.moveDown(0.5);
+    doc.fontSize(10).font('Helvetica').fillColor('#000')
+       .text(r.conteudo || '(sem conteúdo)', { align: 'justify', lineGap: 3 });
 
     if (r.obs) {
+      doc.moveDown(0.8);
+      doc.fontSize(10).font('Helvetica-Bold').fillColor('#000')
+         .text('OBSERVAÇÕES');
+      doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(0.8).stroke('#222');
       doc.moveDown(0.5);
-      doc.fontSize(10).font('Helvetica-Bold').text('OBSERVAÇÕES');
-      doc.moveDown(0.3);
-      doc.font('Helvetica').text(r.obs, { align: 'justify', lineGap: 4 });
+      doc.font('Helvetica').fillColor('#000')
+         .text(r.obs, { align: 'justify', lineGap: 3 });
     }
 
-    // Rodapé com assinatura
-    doc.moveDown(2);
-    doc.moveTo(60, doc.y).lineTo(535, doc.y).stroke();
-    doc.moveDown(0.4);
-    doc.fontSize(9).font('Helvetica')
-       .text(`${r.criado_por} — Agente GCM`, { align: 'center' });
-    doc.text(`Bananeiras/PB, ${new Date().toLocaleDateString('pt-BR')}`, { align: 'center' });
-    doc.text(`Status: ${r.status}`, { align: 'center' });
+    // ── Rodapé / Assinatura ───────────────────────────────────────────────────
+    doc.moveDown(2.5);
+    const centroX = pageW / 2;
+    const linhaY  = doc.y;
+    doc.moveTo(centroX - 110, linhaY).lineTo(centroX + 110, linhaY).lineWidth(0.8).stroke('#000');
+    doc.moveDown(0.3);
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#000')
+       .text(String(r.criado_por).toUpperCase(), { align: 'center' });
+    doc.fontSize(9).font('Helvetica').fillColor('#333')
+       .text('Agente GCM — Guarda Civil Municipal de Bananeiras/PB', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(0.3).stroke('#aaa');
+    doc.moveDown(0.3);
+    doc.fontSize(8).font('Helvetica').fillColor('#666')
+       .text(
+         `Documento gerado em ${new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })} — ${r.numero}`,
+         { align: 'center' }
+       );
 
     doc.end();
   } catch (err) {
