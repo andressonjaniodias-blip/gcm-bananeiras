@@ -185,13 +185,16 @@ exports.exportarPDF = async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="bo_${row.numero}.pdf"`);
 
-    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const doc = new PDFDocument({ margins: { top: 50, bottom: 65, left: 50, right: 50 }, size: 'A4', bufferPages: true });
     doc.pipe(res);
 
     const pageW  = doc.page.width;
     const margem = 50;
     const conteudoW = pageW - margem * 2;
     const imgSize   = 62;
+
+    const dataDocRodape = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const rodapeInfo = `BO Nº ${row.numero}  —  Bananeiras/PB, ${dataDocRodape}`;
 
     // ── Cabeçalho com brasões ─────────────────────────────────────────────────
     const temGCM        = fs.existsSync(brasaoGCM);
@@ -273,6 +276,7 @@ exports.exportarPDF = async (req, res) => {
     secaoArray('Objetos Apreendidos',  'Objeto',   dados.objetos);
 
     if (dados.relato) {
+      doc.addPage();
       tituloSecao('Relato da Ocorrência');
       doc.fontSize(12).font('Helvetica').fillColor('#000')
          .text(dados.relato, { align: 'justify', lineGap: 3 });
@@ -343,6 +347,19 @@ exports.exportarPDF = async (req, res) => {
     doc.fontSize(11).font('Helvetica').fillColor('#444')
        .text(`Bananeiras/PB, ${dataDoc}`, margem, doc.y, { width: conteudoW, align: 'center' });
 
+    // ── Rodapé em todas as páginas ────────────────────────────────────────────
+    const range = doc.bufferedPageRange();
+    for (let i = 0; i < range.count; i++) {
+      doc.switchToPage(i);
+      const pageH = doc.page.height;
+      const baseY = pageH - 50;
+      doc.moveTo(margem, baseY).lineTo(pageW - margem, baseY).lineWidth(0.5).strokeColor('#aaa').stroke();
+      doc.fontSize(8).font('Helvetica').fillColor('#555')
+         .text(rodapeInfo, margem, baseY + 6, { width: conteudoW - 60, align: 'left', lineBreak: false });
+      doc.text(`Página ${i + 1} de ${range.count}`, margem, baseY + 6, { width: conteudoW, align: 'right', lineBreak: false });
+    }
+
+    doc.flushPages();
     doc.end();
   } catch (err) {
     console.error('Erro ao gerar PDF do BO:', err);
