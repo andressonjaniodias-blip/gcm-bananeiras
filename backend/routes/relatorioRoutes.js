@@ -88,13 +88,17 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="relatorio_${r.numero.replace(/\//g, '-')}.pdf"`);
 
-    const doc = new PDFDocument({ margin: 55, size: 'A4' });
+    const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 55, right: 55 }, size: 'A4', bufferPages: true });
     doc.pipe(res);
 
     const pageW     = doc.page.width;
     const margem    = 55;
     const conteudoW = pageW - margem * 2;
     const imgSize   = 60;
+
+    const dataRodape  = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const localRodape = r.local ? `${r.local}, ` : 'Bananeiras/PB, ';
+    const rodapeInfo  = `Relatório Nº ${r.numero}  —  ${localRodape}${dataRodape}`;
 
     // ── Cabeçalho com brasões ─────────────────────────────────────────────────
     const temGCM        = fs.existsSync(brasaoGCM);
@@ -180,6 +184,19 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
          { align: 'center' }
        );
 
+    // ── Rodapé em todas as páginas ────────────────────────────────────────────
+    const range = doc.bufferedPageRange();
+    for (let i = 0; i < range.count; i++) {
+      doc.switchToPage(i);
+      const pageH = doc.page.height;
+      const baseY = pageH - 50;
+      doc.moveTo(margem, baseY).lineTo(pageW - margem, baseY).lineWidth(0.5).strokeColor('#aaa').stroke();
+      doc.fontSize(8).font('Helvetica').fillColor('#555')
+         .text(rodapeInfo, margem, baseY + 6, { width: conteudoW - 60, align: 'left', lineBreak: false });
+      doc.text(`Página ${i + 1} de ${range.count}`, margem, baseY + 6, { width: conteudoW, align: 'right', lineBreak: false });
+    }
+
+    doc.flushPages();
     doc.end();
   } catch (err) {
     res.status(500).json({ error: err.message });
