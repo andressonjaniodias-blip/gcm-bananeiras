@@ -119,7 +119,11 @@ function htmlPessoa(tipo, idx) {
     <div class="campo-group"><label>Nome da Mãe</label>
       <input type="text" name="nomeMae" placeholder="Nome da mãe" maxlength="150"></div>
     <div class="campo-group"><label>Endereço</label>
-      <input type="text" name="endereco" placeholder="Rua, Nº, Bairro, Cidade" maxlength="250"></div>
+      <input type="text" name="endereco" placeholder="Rua, Nº" maxlength="250"></div>
+    <div class="campo-group"><label>Bairro</label>
+      <input type="text" name="bairro" placeholder="Bairro" maxlength="100"></div>
+    <div class="campo-group"><label>Cidade</label>
+      <input type="text" name="cidade" placeholder="Cidade" maxlength="100"></div>
     <div class="campo-group"><label>Telefone</label>
       <input type="tel" name="telefone" placeholder="(00) 00000-0000" maxlength="15" oninput="mascararTelefone(this)"></div>
   </div>`;
