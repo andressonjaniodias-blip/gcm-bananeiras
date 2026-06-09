@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log de Auditoria - GCM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="../assets/js/theme-switcher.js"></script>
+  <script src="../assets/js/sidebar.js"></script>
+  <style>
+    .page-wrap { width: 96%; max-width: 1100px; margin: 28px auto; }
+
+    .page-title {
+      font-size: 1.25rem; font-weight: 700;
+      color: var(--color-text); margin-bottom: 22px;
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      padding: 20px 24px;
+      margin-bottom: 22px;
+      border: 1px solid var(--color-border);
+    }
+    .card-title {
+      font-size: 0.95rem; font-weight: 700;
+      color: var(--color-primary);
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* Filtros */
+    .filtros-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr auto auto;
+      gap: 10px; align-items: end;
+    }
+    @media (max-width: 900px) { .filtros-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 500px) { .filtros-grid { grid-template-columns: 1fr; } }
+
+    .field label {
+      display: block; font-size: 0.75rem; font-weight: 600;
+      color: var(--color-label); margin-bottom: 5px; letter-spacing: 0.03em;
+    }
+    .field input, .field select {
+      width: 100%; padding: 8px 10px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      background: var(--color-input-bg);
+      color: var(--color-text);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field input:focus, .field select:focus {
+      outline: none; border-color: var(--color-primary);
+      box-shadow: var(--shadow-input);
+    }
+
+    .btn-filtrar {
+      background: var(--color-primary); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      padding: 9px 18px; cursor: pointer; font-size: 0.88rem;
+      font-weight: 600; transition: background 0.2s; white-space: nowrap;
+    }
+    .btn-filtrar:hover { background: var(--color-primary-hover); }
+
+    .btn-limpar {
+      background: transparent; color: var(--color-text-muted);
+      border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+      padding: 9px 14px; cursor: pointer; font-size: 0.88rem;
+      transition: background 0.2s, color 0.2s; white-space: nowrap;
+    }
+    .btn-limpar:hover { background: var(--color-row-alt); color: var(--color-text); }
+
+    /* Estatísticas rápidas */
+    .stats-row {
+      display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px;
+    }
+    .stat-pill {
+      background: var(--color-row-alt); border: 1px solid var(--color-border);
+      border-radius: var(--radius-pill); padding: 6px 14px;
+      font-size: 0.82rem; color: var(--color-text-muted);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .stat-pill strong { color: var(--color-text); font-size: 0.92rem; }
+
+    /* Tabela */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 700px; }
+    thead th {
+      background: var(--color-row-alt); color: var(--color-label);
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em;
+      padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--color-border);
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--color-border); transition: background 0.15s; }
+    tbody tr:hover { background: var(--color-row-hover); }
+    tbody td { padding: 9px 12px; vertical-align: middle; }
+
+    .acao-tag {
+      display: inline-block; padding: 2px 8px;
+      border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 600;
+      background: var(--color-row-alt); color: var(--color-text-muted);
+      white-space: nowrap;
+    }
+    .acao-login    { background: #D1FAE5; color: #065F46; }
+    .acao-logout   { background: #FEE2E2; color: #991B1B; }
+    .acao-criar    { background: #DBEAFE; color: #1E40AF; }
+    .acao-editar   { background: #FEF9C3; color: #854D0E; }
+    .acao-excluir  { background: #FFE4E6; color: #9F1239; }
+    .acao-exportar { background: #EDE9FE; color: #5B21B6; }
+
+    .empty-row td  { text-align: center; color: var(--color-hint); padding: 30px; }
+
+    /* Paginação */
+    .paginacao {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 16px; flex-wrap: wrap; gap: 10px;
+    }
+    .paginacao-info { font-size: 0.82rem; color: var(--color-text-muted); }
+    .paginacao-btns { display: flex; gap: 6px; }
+    .pg-btn {
+      padding: 5px 12px; border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border);
+      background: var(--color-input-bg); color: var(--color-text);
+      cursor: pointer; font-size: 0.82rem; transition: background 0.15s;
+    }
+    .pg-btn:hover:not(:disabled) { background: var(--color-row-hover); }
+    .pg-btn:disabled { opacity: 0.4; cursor: default; }
+    .pg-btn.ativo { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+
+    /* Exportar CSV */
+    .btn-csv {
+      background: #14532D; color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      padding: 6px 14px; cursor: pointer; font-size: 0.82rem;
+      font-weight: 600; transition: background 0.2s;
+    }
+    .btn-csv:hover { background: #166534; }
+
+    .msg-toast {
+      display: none; padding: 11px 16px; border-radius: var(--radius-sm);
+      margin-bottom: 18px; font-size: 0.9rem; font-weight: 600;
+      border-left: 4px solid;
+    }
+    .msg-ok   { background: #D1FAE5; color: #065F46; border-color: var(--color-success); }
+    .msg-erro { background: #FEE2E2; color: #991B1B; border-color: var(--color-danger); }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <img src="/brasao-gcm.png" alt="Brasão GCM" class="logo">
+    <div class="header-titulo">
+      <span class="header-linha-1">GUARDA CIVIL MUNICIPAL</span>
+      <span class="header-linha-2">SISTEMA ONLINE</span>
+      <span class="header-linha-3">PREFEITURA MUNICIPAL DE BANANEIRAS</span>
+    </div>
+    <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+  </header>
+
+  <div class="page-wrap">
+    <div class="page-title">📋 Log de Auditoria</div>
+
+    <div id="msgToast" class="msg-toast"></div>
+
+    <!-- Filtros -->
+    <div class="card">
+      <div class="card-title">🔍 Filtros</div>
+      <div class="filtros-grid">
+        <div class="field">
+          <label>Usuário</label>
+          <input type="text" id="filtroUsuario" placeholder="Nome do usuário">
+        </div>
+        <div class="field">
+          <label>Tipo de Ação</label>
+          <select id="filtroAcao">
+            <option value="">Todas as ações</option>
+            <option value="login">Login</option>
+            <option value="logout">Logout</option>
+            <option value="criar">Criar</option>
+            <option value="editar">Editar</option>
+            <option value="excluir">Excluir</option>
+            <option value="exportar">Exportar</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Data início</label>
+          <input type="date" id="filtroInicio">
+        </div>
+        <div class="field">
+          <label>Data fim</label>
+          <input type="date" id="filtroFim">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="btn-filtrar" onclick="aplicarFiltros()">Filtrar</button>
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="btn-limpar" onclick="limparFiltros()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card">
+      <div class="card-title">
+        <span>📄 Registros</span>
+        <button class="btn-csv" onclick="exportarCSV()">⬇ Exportar CSV</button>
+      </div>
+
+      <!-- Estatísticas -->
+      <div class="stats-row" id="statsRow" style="display:none;">
+        <div class="stat-pill">Total: <strong id="statTotal">0</strong></div>
+        <div class="stat-pill">Logins: <strong id="statLogins">0</strong></div>
+        <div class="stat-pill">Ações críticas: <strong id="statCriticas">0</strong></div>
+        <div class="stat-pill">Usuários distintos: <strong id="statUsuarios">0</strong></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Data / Hora</th>
+              <th>Usuário</th>
+              <th>Ação</th>
+              <th>Recurso / Descrição</th>
+              <th>IP</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaLogs">
+            <tr class="empty-row"><td colspan="6">Carregando registros...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="paginacao">
+        <span class="paginacao-info" id="pgInfo">—</span>
+        <div class="paginacao-btns" id="pgBtns"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script>
+    const POR_PAGINA = 25;
+    let todosLogs = [];
+    let logsFiltrados = [];
+    let paginaAtual = 1;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
+        if (!res.ok) { window.location.href = '/'; return; }
+        const perfil = await res.json();
+        if (perfil.role !== 'admin') { window.location.href = '/pages/home.html'; return; }
+      } catch { window.location.href = '/'; return; }
+
+      await carregarLogs();
+    })();
+
+    async function carregarLogs() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/auditoria`, { credentials: 'include' });
+        if (!res.ok) { toast('Sem permissão para acessar os logs.', 'erro'); return; }
+        todosLogs = await res.json();
+        logsFiltrados = [...todosLogs];
+        atualizarStats();
+        renderizar();
+      } catch { toast('Erro ao carregar logs.', 'erro'); }
+    }
+
+    function aplicarFiltros() {
+      const usuario = document.getElementById('filtroUsuario').value.trim().toLowerCase();
+      const acao    = document.getElementById('filtroAcao').value.toLowerCase();
+      const inicio  = document.getElementById('filtroInicio').value;
+      const fim     = document.getElementById('filtroFim').value;
+
+      logsFiltrados = todosLogs.filter(l => {
+        if (usuario && !(l.usuario || '').toLowerCase().includes(usuario)) return false;
+        if (acao    && !(l.acao   || '').toLowerCase().includes(acao))    return false;
+        if (inicio) {
+          const d = new Date(l.data);
+          if (d < new Date(inicio)) return false;
+        }
+        if (fim) {
+          const d = new Date(l.data);
+          const fimDia = new Date(fim); fimDia.setHours(23,59,59,999);
+          if (d > fimDia) return false;
+        }
+        return true;
+      });
+
+      paginaAtual = 1;
+      atualizarStats();
+      renderizar();
+    }
+
+    function limparFiltros() {
+      document.getElementById('filtroUsuario').value = '';
+      document.getElementById('filtroAcao').value    = '';
+      document.getElementById('filtroInicio').value  = '';
+      document.getElementById('filtroFim').value     = '';
+      logsFiltrados = [...todosLogs];
+      paginaAtual = 1;
+      atualizarStats();
+      renderizar();
+    }
+
+    function atualizarStats() {
+      const el = document.getElementById('statsRow');
+      if (!logsFiltrados.length) { el.style.display = 'none'; return; }
+      el.style.display = 'flex';
+      document.getElementById('statTotal').textContent    = logsFiltrados.length;
+      document.getElementById('statLogins').textContent   = logsFiltrados.filter(l => (l.acao||'').toLowerCase().includes('login')).length;
+      document.getElementById('statCriticas').textContent = logsFiltrados.filter(l => /excluir|deletar|remover|arquivar/i.test(l.acao||'')).length;
+      document.getElementById('statUsuarios').textContent = new Set(logsFiltrados.map(l => l.usuario)).size;
+    }
+
+    function renderizar() {
+      const tbody  = document.getElementById('tabelaLogs');
+      const total  = logsFiltrados.length;
+      const totalPg = Math.ceil(total / POR_PAGINA) || 1;
+      if (paginaAtual > totalPg) paginaAtual = totalPg;
+
+      const inicio = (paginaAtual - 1) * POR_PAGINA;
+      const pagina = logsFiltrados.slice(inicio, inicio + POR_PAGINA);
+
+      if (!pagina.length) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Nenhum registro encontrado</td></tr>';
+      } else {
+        tbody.innerHTML = pagina.map((l, i) => {
+          const acaoLow  = (l.acao || '').toLowerCase();
+          const acaoClass = acaoLow.includes('login')    ? 'acao-login'
+                          : acaoLow.includes('logout')   ? 'acao-logout'
+                          : acaoLow.includes('criar')    ? 'acao-criar'
+                          : acaoLow.includes('edit')     ? 'acao-editar'
+                          : /excluir|deletar|remover|arquivar/.test(acaoLow) ? 'acao-excluir'
+                          : acaoLow.includes('export')   ? 'acao-exportar'
+                          : '';
+          return `
+            <tr>
+              <td style="color:var(--color-hint);font-size:0.78rem;">${inicio + i + 1}</td>
+              <td style="white-space:nowrap;font-size:0.82rem;">${new Date(l.data).toLocaleString('pt-BR')}</td>
+              <td style="font-weight:600;">${l.usuario || '—'}</td>
+              <td><span class="acao-tag ${acaoClass}">${l.acao || '—'}</span></td>
+              <td style="color:var(--color-text-muted);font-size:0.84rem;">${l.recurso || '—'}</td>
+              <td style="font-size:0.78rem;font-family:monospace;color:var(--color-hint);">${l.ip || '—'}</td>
+            </tr>`;
+        }).join('');
+      }
+
+      // Info de paginação
+      const fim2 = Math.min(inicio + POR_PAGINA, total);
+      document.getElementById('pgInfo').textContent =
+        total ? `Exibindo ${inicio + 1}–${fim2} de ${total} registros` : 'Nenhum registro';
+
+      // Botões de página
+      const pgBtns = document.getElementById('pgBtns');
+      pgBtns.innerHTML = '';
+      const addBtn = (label, pg, ativo = false, disabled = false) => {
+        const b = document.createElement('button');
+        b.className = `pg-btn${ativo ? ' ativo' : ''}`;
+        b.textContent = label;
+        b.disabled = disabled;
+        b.onclick = () => { paginaAtual = pg; renderizar(); };
+        pgBtns.appendChild(b);
+      };
+
+      addBtn('‹ Ant.', paginaAtual - 1, false, paginaAtual === 1);
+      const janela = 2;
+      for (let p = 1; p <= totalPg; p++) {
+        if (p === 1 || p === totalPg || Math.abs(p - paginaAtual) <= janela) {
+          addBtn(p, p, p === paginaAtual);
+        } else if (Math.abs(p - paginaAtual) === janela + 1) {
+          const el = document.createElement('span');
+          el.textContent = '…';
+          el.style.cssText = 'padding:5px 4px;color:var(--color-hint);font-size:0.82rem;';
+          pgBtns.appendChild(el);
+        }
+      }
+      addBtn('Prox. ›', paginaAtual + 1, false, paginaAtual === totalPg);
+    }
+
+    function exportarCSV() {
+      if (!logsFiltrados.length) { toast('Nenhum registro para exportar.', 'erro'); return; }
+      const cols = ['#', 'Data/Hora', 'Usuário', 'Ação', 'Recurso', 'IP'];
+      const linhas = logsFiltrados.map((l, i) => [
+        i + 1,
+        new Date(l.data).toLocaleString('pt-BR'),
+        l.usuario || '',
+        l.acao    || '',
+        l.recurso || '',
+        l.ip      || ''
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'));
+
+      const csv = '﻿' + [cols.join(';'), ...linhas].join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url;
+      a.download = `log-auditoria-${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function toast(texto, tipo) {
+      const el = document.getElementById('msgToast');
+      el.textContent = texto;
+      el.className = `msg-toast msg-${tipo}`;
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 4000);
+    }
+  </script>
+</body>
+</html>
