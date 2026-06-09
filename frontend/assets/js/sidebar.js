@@ -5,15 +5,17 @@
   if (path === '/' || skipPages.some(p => path.endsWith(p))) return;
 
   const MENU = [
-    { href: '/pages/home.html',       label: 'Início' },
-    { href: '/pages/dashboard.html',  label: 'Novo BO' },
-    { href: '/pages/consulta.html',   label: 'Histórico de BOs' },
-    { href: '/pages/relatorio.html',  label: 'Relatório Interno' },
-    { href: '/pages/viatura.html',    label: 'Controle de Viatura' },
-    { href: '/pages/documentos.html', label: 'Documentos' },
+    { href: '/pages/home.html',       label: '🏠 Início' },
+    { href: '/pages/dashboard.html',  label: '📝 Novo BO' },
+    { href: '/pages/consulta.html',   label: '🔍 Histórico de BOs' },
+    { href: '/pages/relatorio.html',  label: '📊 Relatório Interno' },
+    { href: '/pages/viatura.html',    label: '🚗 Controle de Viatura' },
+    { href: '/pages/documentos.html', label: '📁 Documentos' },
+    { href: '/pages/perfil.html',     label: '👤 Meu Perfil' },
   ];
   const ADMIN_MENU = [
-    { href: '/pages/usuarios.html', label: 'Usuários' },
+    { href: '/pages/usuarios.html', label: '👥 Usuários' },
+    { href: '/pages/logs.html',     label: '📋 Log de Auditoria' },
   ];
 
   function buildSidebar() {
