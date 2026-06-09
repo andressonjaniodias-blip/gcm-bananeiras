@@ -5,23 +5,20 @@
   if (path === '/' || skipPages.some(p => path.endsWith(p))) return;
 
   const MENU = [
-    { href: '/pages/home.html',       label: '🏠 Início' },
-    { href: '/pages/dashboard.html',  label: '📝 Novo BO' },
-    { href: '/pages/consulta.html',   label: '🔍 Histórico de BOs' },
-    { href: '/pages/relatorio.html',  label: '📊 Relatório Interno' },
-    { href: '/pages/viatura.html',    label: '🚗 Controle de Viatura' },
-    { href: '/pages/documentos.html', label: '📁 Documentos' },
-    { href: '/pages/perfil.html',     label: '👤 Meu Perfil' },
-  ];
-  const ADMIN_MENU = [
-    { href: '/pages/usuarios.html', label: '👥 Usuários' },
-    { href: '/pages/logs.html',     label: '📋 Log de Auditoria' },
+    { href: '/pages/home.html',       label: '🏠 Início',              roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/dashboard.html',  label: '📝 Novo BO',             roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/consulta.html',   label: '🔍 Histórico de BOs',    roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/relatorio.html',  label: '📊 Relatório Interno',   roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/viatura.html',    label: '🚗 Controle de Viatura', roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/documentos.html', label: '📁 Documentos',          roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/perfil.html',     label: '👤 Meu Perfil',          roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/logs.html',       label: '📋 Log de Auditoria',    roles: ['supervisor', 'admin'] },
+    { href: '/pages/usuarios.html',   label: '👥 Usuários',            roles: ['admin'] },
   ];
 
   function buildSidebar() {
     const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
-    const isPrivileged = perfil.role === 'admin' || perfil.role === 'supervisor';
-    const allMenu = isPrivileged ? [...MENU, ...ADMIN_MENU] : MENU;
+    const allMenu = MENU.filter(item => item.roles.includes(perfil.role));
 
     const navHTML = allMenu.map(item => {
       const active = window.location.pathname.includes(item.href.replace('/pages/', '')) ? ' active' : '';
@@ -107,13 +104,6 @@
     if (sbAvatar && perfil.usuario) sbAvatar.textContent = perfil.usuario[0].toUpperCase();
     if (sbRole && perfil.role) {
       sbRole.textContent = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' }[perfil.role] || perfil.role;
-    }
-    // Adiciona link de Usuários para perfis privilegiados
-    if (perfil.role === 'admin' || perfil.role === 'supervisor') {
-      const nav = document.querySelector('.sb-nav');
-      if (nav && !nav.querySelector('[href*="usuarios"]')) {
-        nav.insertAdjacentHTML('beforeend', `<a href="/pages/usuarios.html" class="sb-link">Usuários</a>`);
-      }
     }
   };
 
