@@ -640,12 +640,19 @@ form textarea {
 /* ============================================================
    TABELAS
    ============================================================ */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: clamp(0.82rem, 1.1vw, 0.95rem);
   border-radius: var(--radius-sm);
   overflow: hidden;
+  min-width: 540px;
 }
 
 table th,
