@@ -284,7 +284,7 @@
       const el = document.getElementById('listaViatura');
       if (!lista.length) { el.innerHTML = '<p style="text-align:center;color:var(--color-hint);">Nenhum registro encontrado.</p>'; return; }
       const tipoLabel = { abastecimento: 'Abastecimento', revisao: 'Revisão', manutencao: 'Manutenção' };
-      el.innerHTML = `<table>
+      el.innerHTML = `<div class="table-wrap"><table>
         <thead><tr><th>Data/Hora</th><th>Viatura</th><th>Tipo</th><th>KM</th><th>Responsável</th><th>Detalhe</th></tr></thead>
         <tbody>${lista.map(r => {
           const dados = typeof r.dados === 'string' ? JSON.parse(r.dados) : (r.dados || {});
@@ -301,7 +301,7 @@
             <td style="font-size:0.8rem;color:var(--color-text-muted);">${detalhe}</td>
           </tr>`;
         }).join('')}</tbody>
-      </table>`;
+      </table></div>`;
     }
 
     function filtrarViatura() {
