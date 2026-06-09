@@ -40,7 +40,7 @@
           <th>Nº do BO</th>
           <th>Data</th>
           <th>Natureza</th>
-          <th>Registrado por</th>
+          <th id="thRegistradoPor">Registrado por</th>
           <th>PDF</th>
         </tr>
       </thead>
@@ -55,14 +55,23 @@
   <script>
     let todosOsBOs = [];
 
+    let perfilRole = 'agente';
+
     (async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
         if (!res.ok) { window.location.href = '/'; return; }
         const perfil = await res.json();
         sessionStorage.setItem('perfil', JSON.stringify(perfil));
+        perfilRole = perfil.role;
         if (typeof updateSidebarUser === 'function') updateSidebarUser(perfil);
       } catch { window.location.href = '/'; return; }
+
+      if (perfilRole === 'agente') {
+        const th = document.getElementById('thRegistradoPor');
+        if (th) th.style.display = 'none';
+      }
+
       carregarBOs();
     })();
 
@@ -91,11 +100,14 @@
           natureza = dados.dadosOcorrencia?.tipificacao || dados.dadosSolicitacao?.natureza || '—';
         } catch {}
         const data = new Date(bo.data).toLocaleDateString('pt-BR');
+        const tdRegistradoPor = perfilRole !== 'agente'
+          ? `<td>${bo.criado_por || '—'}</td>`
+          : '';
         return `<tr>
           <td>${bo.numero}</td>
           <td>${data}</td>
           <td>${natureza}</td>
-          <td>${bo.criado_por || '—'}</td>
+          ${tdRegistradoPor}
           <td><button class="btn-pdf" onclick="baixarPDF(${bo.id}, '${bo.numero}')">PDF</button></td>
         </tr>`;
       }).join('');
