@@ -18,14 +18,16 @@
 
   function buildSidebar() {
     const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
-    const allMenu = MENU.filter(item => item.roles.includes(perfil.role));
+    const ROLES_VALIDOS = ['admin', 'supervisor', 'agente'];
+    const roleEfetivo = ROLES_VALIDOS.includes(perfil.role) ? perfil.role : 'agente';
+    const allMenu = MENU.filter(item => item.roles.includes(roleEfetivo));
 
     const navHTML = allMenu.map(item => {
       const active = window.location.pathname.includes(item.href.replace('/pages/', '')) ? ' active' : '';
       return `<a href="${item.href}" class="sb-link${active}">${item.label}</a>`;
     }).join('');
 
-    const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' }[perfil.role] || 'GCM';
+    const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' }[roleEfetivo] || 'Agente GCM';
     const initial = (perfil.usuario || '?')[0].toUpperCase();
 
     const aside = document.createElement('aside');
@@ -109,9 +111,11 @@
     // Reconstrói o nav com os itens corretos para o role recém-carregado
     const nav = document.querySelector('.sb-nav');
     if (nav && perfil.role) {
+      const ROLES_VALIDOS = ['admin', 'supervisor', 'agente'];
+      const roleEfetivo = ROLES_VALIDOS.includes(perfil.role) ? perfil.role : 'agente';
       const currentPath = window.location.pathname;
       nav.innerHTML = MENU
-        .filter(item => item.roles.includes(perfil.role))
+        .filter(item => item.roles.includes(roleEfetivo))
         .map(item => {
           const active = currentPath.includes(item.href.replace('/pages/', '')) ? ' active' : '';
           return `<a href="${item.href}" class="sb-link${active}">${item.label}</a>`;
