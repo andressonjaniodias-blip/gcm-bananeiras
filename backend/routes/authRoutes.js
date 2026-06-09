@@ -136,6 +136,35 @@ router.delete('/usuarios/:id', verificarToken, verificarAdmin, async (req, res) 
   }
 });
 
+// Alterar role de usuário (admin)
+router.put('/usuarios/:id', verificarToken, verificarAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    if (!ROLES.includes(role)) {
+      return res.status(400).json({ error: `Role inválido. Valores aceitos: ${ROLES.join(', ')}` });
+    }
+
+    const { rows } = await db.query('SELECT usuario, role FROM usuarios WHERE id = $1', [id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    // Impede remover o último admin
+    if (rows[0].role === 'admin' && role !== 'admin') {
+      const { rows: admins } = await db.query("SELECT COUNT(*) AS total FROM usuarios WHERE role = 'admin'");
+      if (parseInt(admins[0].total) <= 1) {
+        return res.status(400).json({ error: 'Não é possível rebaixar o único administrador' });
+      }
+    }
+
+    await db.query('UPDATE usuarios SET role = $1 WHERE id = $2', [role, id]);
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
+    await registrarAuditoria(req.usuario.usuario, 'ALTERAR_ROLE', `${rows[0].usuario} → ${role}`, ip);
+    res.json({ message: 'Perfil atualizado com sucesso' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Estatísticas de retenção (admin)
 router.get('/retencao', verificarToken, verificarAdmin, async (req, res) => {
   try {
