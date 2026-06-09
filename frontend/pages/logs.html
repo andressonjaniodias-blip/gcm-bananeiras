@@ -261,7 +261,7 @@
         const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
         if (!res.ok) { window.location.href = '/'; return; }
         const perfil = await res.json();
-        if (perfil.role !== 'admin') { window.location.href = '/pages/home.html'; return; }
+        if (perfil.role !== 'admin' && perfil.role !== 'supervisor') { window.location.href = '/pages/home.html'; return; }
       } catch { window.location.href = '/'; return; }
 
       await carregarLogs();
