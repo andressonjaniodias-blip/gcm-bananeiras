@@ -108,7 +108,7 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     doc.fontSize(14).font('Helvetica-Bold')
        .text('GUARDA CIVIL MUNICIPAL', { width: conteudoW, align: 'center' });
     doc.fontSize(11).font('Helvetica')
-       .text('Secretaria de Segurança Pública Municipal', { width: conteudoW, align: 'center' });
+       .text('Secretaria de Administração Pública Municipal', { width: conteudoW, align: 'center' });
 
     const posLinha = Math.max(doc.y + 4, 96);
     doc.moveTo(margem, posLinha).lineTo(pageW - margem, posLinha).lineWidth(2).stroke('#000');
