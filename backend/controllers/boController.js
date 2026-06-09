@@ -275,64 +275,67 @@ exports.exportarPDF = async (req, res) => {
 
     secao('Autoridade Policial', dados.autoridade);
 
-    // ── Rodapé / Assinaturas ─────────────────────────────────────────────────
-    doc.moveDown(1.5);
+    // ── Declaração ────────────────────────────────────────────────────────────
     doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(0.5).stroke('#444');
-    doc.moveDown(0.5);
+    doc.moveDown(0.6);
     doc.fontSize(9).font('Helvetica').fillColor('#333')
        .text(
          'Declaro que recebi a presente ocorrência, bem como as informações das pessoas e objetos envolvidos.',
          { align: 'justify' }
        );
-    doc.moveDown(2.5);
+    doc.moveDown(2);
 
-    // Dois blocos de assinatura lado a lado
-    const autoridade  = dados.autoridade || {};
-    const nomeAut     = autoridade.nomeAutoridade ? String(autoridade.nomeAutoridade).toUpperCase() : null;
-    const cargoAut    = autoridade.cargo     || 'Autoridade Policial';
-    const matricAut   = autoridade.matricula || null;
-    const localAut    = autoridade.localAutoridade || null;
-    const dataDoc     = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    // ── Assinaturas (dois blocos lado a lado, no corpo do documento) ──────────
+    const autoridade = dados.autoridade || {};
+    const nomeAut    = autoridade.nomeAutoridade
+                       ? String(autoridade.nomeAutoridade).toUpperCase()
+                       : null;
+    const cargoAut   = autoridade.cargo            ? String(autoridade.cargo).toUpperCase()   : 'AUTORIDADE POLICIAL';
+    const matricAut  = autoridade.matricula         || null;
+    const localAut   = autoridade.localAutoridade   || null;
+    const nomeAgente = String(row.criado_por || req.usuario.usuario || 'Agente GCM').toUpperCase();
 
-    const linhaAssinY = doc.y;
-    const largAssin   = 160;
-    const xAgente     = margem;
-    const xAutoridade = pageW - margem - largAssin;
+    const largAssin   = 180;
+    const xEsq        = margem;
+    const xDir        = pageW - margem - largAssin;
+    const yLinha      = doc.y;
 
-    // Linha agente (esquerda)
-    doc.moveTo(xAgente, linhaAssinY).lineTo(xAgente + largAssin, linhaAssinY).lineWidth(0.8).stroke('#000');
-    // Linha autoridade (direita)
-    doc.moveTo(xAutoridade, linhaAssinY).lineTo(xAutoridade + largAssin, linhaAssinY).lineWidth(0.8).stroke('#000');
+    // Linha de assinatura esquerda (Agente GCM)
+    doc.moveTo(xEsq, yLinha).lineTo(xEsq + largAssin, yLinha).lineWidth(0.8).stroke('#000');
+    // Linha de assinatura direita (Autoridade)
+    doc.moveTo(xDir, yLinha).lineTo(xDir + largAssin, yLinha).lineWidth(0.8).stroke('#000');
 
-    doc.moveDown(0.3);
-    const yNomes = doc.y;
+    const yTexto = yLinha + 5;
 
-    // Nome do agente GCM
+    // Bloco esquerdo — Agente GCM
     doc.fontSize(9).font('Helvetica-Bold').fillColor('#000')
-       .text(String(row.criado_por).toUpperCase(), xAgente, yNomes, { width: largAssin, align: 'center' });
-    doc.fontSize(8).font('Helvetica').fillColor('#333')
-       .text('Agente GCM', xAgente, doc.y, { width: largAssin, align: 'center' });
-    doc.fontSize(8).font('Helvetica').fillColor('#333')
-       .text('Guarda Civil Municipal', xAgente, doc.y, { width: largAssin, align: 'center' });
+       .text(nomeAgente, xEsq, yTexto, { width: largAssin, align: 'center', lineBreak: false });
+    doc.fontSize(8).font('Helvetica').fillColor('#444')
+       .text('Agente GCM — Guarda Civil Municipal', xEsq, yTexto + 13, { width: largAssin, align: 'center', lineBreak: false });
 
-    // Nome da autoridade policial
+    // Bloco direito — Autoridade Policial
     doc.fontSize(9).font('Helvetica-Bold').fillColor('#000')
-       .text(nomeAut || '_______________________________', xAutoridade, yNomes, { width: largAssin, align: 'center' });
-    doc.fontSize(8).font('Helvetica').fillColor('#333')
-       .text(cargoAut, xAutoridade, doc.y, { width: largAssin, align: 'center' });
+       .text(nomeAut || '________________________________', xDir, yTexto, { width: largAssin, align: 'center', lineBreak: false });
+    doc.fontSize(8).font('Helvetica').fillColor('#444')
+       .text(cargoAut, xDir, yTexto + 13, { width: largAssin, align: 'center', lineBreak: false });
+
+    let extraY = yTexto + 26;
     if (matricAut) {
-      doc.fontSize(8).font('Helvetica').fillColor('#333')
-         .text(`Matrícula: ${matricAut}`, xAutoridade, doc.y, { width: largAssin, align: 'center' });
+      doc.fontSize(8).font('Helvetica').fillColor('#555')
+         .text(`Matrícula: ${matricAut}`, xDir, extraY, { width: largAssin, align: 'center', lineBreak: false });
+      extraY += 11;
     }
     if (localAut) {
       doc.fontSize(8).font('Helvetica').fillColor('#555')
-         .text(localAut, xAutoridade, doc.y, { width: largAssin, align: 'center' });
+         .text(localAut.toUpperCase(), xDir, extraY, { width: largAssin, align: 'center', lineBreak: false });
+      extraY += 11;
     }
 
-    // Data centralizada abaixo dos dois blocos
-    doc.moveDown(1.2);
+    // ── Local e data — apenas no final ───────────────────────────────────────
+    const dataDoc = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    doc.y = Math.max(extraY, yTexto + 40) + 18;
     doc.fontSize(9).font('Helvetica').fillColor('#444')
-       .text(`Bananeiras/PB, ${dataDoc}`, { align: 'center' });
+       .text(`Bananeiras/PB, ${dataDoc}`, margem, doc.y, { width: conteudoW, align: 'center' });
 
     doc.end();
   } catch (err) {
