@@ -377,6 +377,51 @@ exports.exportarPDF = async (req, res) => {
          .text(localAut.toUpperCase(), xDir, yTexto + (matricAut ? 43 : 30), { width: largAssin, align: 'center', lineBreak: false });
     }
 
+    // ── Anexos (imagens) no final do PDF ─────────────────────────────────────
+    const incluirAnexos = req.query.anexos === 'true';
+    if (incluirAnexos) {
+      const { rows: anexos } = await db.query(
+        `SELECT * FROM anexos WHERE tipo_ref='bo' AND ref_id=$1 ORDER BY criado_em ASC`,
+        [id]
+      );
+      const imageMimes = new Set(['image/jpeg','image/png','image/gif','image/webp','image/bmp','image/tiff']);
+      const imgs = anexos.filter(a => imageMimes.has(a.mime_type));
+      const outros = anexos.filter(a => !imageMimes.has(a.mime_type));
+
+      if (anexos.length) {
+        doc.addPage();
+        tituloSecao('Anexos');
+        let numAnexo = 0;
+
+        for (const img of imgs) {
+          numAnexo++;
+          const filePath = path.join(__dirname, '../uploads/bo', img.nome_arquivo);
+          if (!fs.existsSync(filePath)) continue;
+          doc.addPage();
+          doc.fontSize(11).font('Helvetica-Bold').fillColor('#333')
+             .text(`Anexo ${numAnexo}: ${img.nome_original}`, { align: 'center' });
+          doc.moveDown(0.4);
+          const maxW = conteudoW;
+          const maxH = doc.page.height - doc.y - 80;
+          try {
+            doc.image(filePath, margem, doc.y, { fit: [maxW, maxH], align: 'center' });
+          } catch {}
+        }
+
+        if (outros.length) {
+          if (imgs.length) doc.addPage();
+          tituloSecao('Outros Anexos (não incorporados ao PDF)');
+          outros.forEach((a, i) => {
+            doc.fontSize(11).font('Helvetica').fillColor('#444')
+               .text(`${imgs.length + i + 1}. ${a.nome_original} — ${a.mime_type || 'desconhecido'}`);
+          });
+          doc.moveDown(0.5);
+          doc.fontSize(10).font('Helvetica-Oblique').fillColor('#888')
+             .text('Arquivos não-imagem não podem ser incorporados ao PDF. Consulte o sistema para acessá-los.');
+        }
+      }
+    }
+
     // ── Rodapé em todas as páginas ────────────────────────────────────────────
     const range = doc.bufferedPageRange();
     const total = range.count;
