@@ -165,6 +165,55 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
          .text(r.obs, { align: 'justify', lineGap: 3 });
     }
 
+    // ── Anexos (imagens) no final do PDF ─────────────────────────────────────
+    const incluirAnexos = req.query.anexos === 'true';
+    if (incluirAnexos) {
+      const { rows: anexos } = await pool.query(
+        `SELECT * FROM anexos WHERE tipo_ref='relatorio' AND ref_id=$1 ORDER BY criado_em ASC`,
+        [req.params.id]
+      );
+      const imageMimes = new Set(['image/jpeg','image/png','image/gif','image/webp','image/bmp','image/tiff']);
+      const imgs   = anexos.filter(a => imageMimes.has(a.mime_type));
+      const outros = anexos.filter(a => !imageMimes.has(a.mime_type));
+
+      if (anexos.length) {
+        const tituloSec = (txt) => {
+          doc.fontSize(12).font('Helvetica-Bold').fillColor('#000').text(txt.toUpperCase());
+          doc.moveTo(margem, doc.y+1).lineTo(pageW-margem, doc.y+1).lineWidth(0.8).stroke('#222');
+          doc.moveDown(0.5);
+        };
+
+        doc.addPage();
+        tituloSec('Anexos');
+        let numAnexo = 0;
+
+        for (const img of imgs) {
+          numAnexo++;
+          const filePath = path.join(__dirname, '../uploads/relatorio', img.nome_arquivo);
+          if (!fs.existsSync(filePath)) continue;
+          doc.addPage();
+          doc.fontSize(11).font('Helvetica-Bold').fillColor('#333')
+             .text(`Anexo ${numAnexo}: ${img.nome_original}`, { align: 'center' });
+          doc.moveDown(0.4);
+          const maxW = conteudoW;
+          const maxH = doc.page.height - doc.y - 80;
+          try { doc.image(filePath, margem, doc.y, { fit: [maxW, maxH], align: 'center' }); } catch {}
+        }
+
+        if (outros.length) {
+          if (imgs.length) doc.addPage();
+          tituloSec('Outros Anexos (não incorporados ao PDF)');
+          outros.forEach((a, i) => {
+            doc.fontSize(11).font('Helvetica').fillColor('#444')
+               .text(`${imgs.length + i + 1}. ${a.nome_original} — ${a.mime_type || 'desconhecido'}`);
+          });
+          doc.moveDown(0.3);
+          doc.fontSize(10).font('Helvetica-Oblique').fillColor('#888')
+             .text('Arquivos não-imagem não podem ser incorporados ao PDF. Consulte o sistema para acessá-los.');
+        }
+      }
+    }
+
     // ── Rodapé / Assinatura ───────────────────────────────────────────────────
     doc.moveDown(2.5);
     const centroX = pageW / 2;
