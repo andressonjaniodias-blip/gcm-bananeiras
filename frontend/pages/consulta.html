@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -10,6 +10,137 @@
   <link rel="stylesheet" href="../assets/css/style.css">
   <script src="../assets/js/theme-switcher.js"></script>
   <script src="../assets/js/sidebar.js"></script>
+  <style>
+    /* ── Pesquisa avançada ─────────────────────────────────────────────────── */
+    .search-wrap { margin-bottom: 16px; }
+
+    .search-bar {
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+      margin-bottom: 8px;
+    }
+    .search-bar input {
+      flex: 1; min-width: 180px;
+      padding: 9px 12px; border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm); font-size: 0.9rem;
+      background: var(--color-input-bg); color: var(--color-text);
+    }
+    .search-bar input:focus { outline: none; border-color: var(--color-primary); box-shadow: var(--shadow-input); }
+
+    .btn-adv-toggle {
+      padding: 9px 14px; background: transparent;
+      border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+      font-size: 0.85rem; font-weight: 600; color: var(--color-text-muted);
+      cursor: pointer; white-space: nowrap; transition: all 0.2s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-adv-toggle:hover, .btn-adv-toggle.ativo {
+      background: var(--color-primary); color: #fff; border-color: var(--color-primary);
+    }
+    .btn-adv-toggle .chevron { transition: transform 0.2s; display: inline-block; }
+    .btn-adv-toggle.ativo .chevron { transform: rotate(180deg); }
+
+    .adv-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      display: none;
+      animation: fadeIn 0.18s ease;
+    }
+    .adv-panel.aberto { display: block; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+    .adv-panel-title {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--color-primary);
+      margin-bottom: 14px; padding-bottom: 8px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .adv-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .adv-field { display: flex; flex-direction: column; gap: 4px; }
+    .adv-field label {
+      font-size: 0.72rem; font-weight: 700; color: var(--color-label);
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .adv-field input, .adv-field select {
+      padding: 8px 10px; border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm); font-size: 0.88rem;
+      background: var(--color-input-bg); color: var(--color-text);
+    }
+    .adv-field input:focus, .adv-field select:focus {
+      outline: none; border-color: var(--color-primary); box-shadow: var(--shadow-input);
+    }
+
+    .adv-sep {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--color-text-muted);
+      margin: 10px 0 4px; grid-column: 1 / -1;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .adv-sep::after { content: ''; flex: 1; height: 1px; background: var(--color-border); }
+
+    .adv-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+    .btn-buscar {
+      padding: 9px 20px; background: var(--color-primary); color: #fff;
+      border: none; border-radius: var(--radius-sm); font-weight: 700;
+      font-size: 0.9rem; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-buscar:hover { background: var(--color-primary-hover); }
+    .btn-limpar-adv {
+      padding: 9px 16px; background: transparent;
+      border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+      font-size: 0.88rem; color: var(--color-text-muted); cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-limpar-adv:hover { background: var(--color-danger-bg, #FEE2E2); color: var(--color-danger); border-color: var(--color-danger); }
+
+    /* ── Barra de resultados ─────────────────────────────────────────────────── */
+    .result-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px;
+      padding: 8px 12px; border-radius: var(--radius-sm);
+      background: var(--color-row-alt); font-size: 0.85rem;
+      margin-bottom: 10px; border: 1px solid var(--color-border);
+    }
+    .result-count { font-weight: 700; color: var(--color-text); }
+    .result-count span { color: var(--color-primary); }
+    .filtro-ativo-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; background: var(--color-primary-light);
+      color: var(--color-primary); border-radius: var(--radius-pill);
+      font-size: 0.75rem; font-weight: 700;
+    }
+    .filtros-ativos { display: flex; flex-wrap: wrap; gap: 4px; }
+
+    /* ── Tabela ──────────────────────────────────────────────────────────────── */
+    .col-local { max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .col-envolvidos { text-align: center; }
+    .badge-count {
+      display: inline-block; padding: 2px 8px;
+      border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 700;
+    }
+    .badge-vitima   { background: #FEF3C7; color: #92400E; }
+    .badge-suspeito { background: #FEE2E2; color: #991B1B; }
+    .badge-zero     { color: var(--color-hint); }
+
+    mark {
+      background: #FEF08A; color: #713F12;
+      border-radius: 2px; padding: 0 2px;
+    }
+
+    @media (max-width: 600px) {
+      .adv-grid { grid-template-columns: 1fr; }
+      .col-local, .col-envolvidos { display: none; }
+    }
+  </style>
 </head>
 <body>
   <header class="header">
@@ -25,13 +156,111 @@
   <div class="consulta">
     <h2>Boletins de Ocorrência</h2>
 
-    <div class="filters">
-      <label>Buscar:</label>
-      <input type="text" id="buscar" placeholder="Número do BO (ex: BO-GCM-0001)">
-      <label>Data:</label>
-      <input type="date" id="data">
-      <button onclick="filtrar()">Filtrar</button>
-      <button class="btn-limpar" onclick="limparFiltro()">Limpar</button>
+    <div class="search-wrap">
+      <!-- Barra rápida -->
+      <div class="search-bar">
+        <input type="text" id="qRapido" placeholder="Busca rápida: Nº BO, nome, tipificação, local..."
+               oninput="filtrar()" onkeydown="if(event.key==='Enter')filtrar()">
+        <button class="btn-adv-toggle" id="btnAdv" onclick="toggleAdv()">
+          <span>🔍 Pesquisa Avançada</span>
+          <span class="chevron">▼</span>
+        </button>
+      </div>
+
+      <!-- Painel avançado -->
+      <div class="adv-panel" id="advPanel">
+        <div class="adv-panel-title">🔎 Filtros de Inteligência</div>
+
+        <div class="adv-grid">
+          <!-- Período -->
+          <span class="adv-sep">📅 Período da Ocorrência</span>
+          <div class="adv-field">
+            <label>De</label>
+            <input type="date" id="fDataDe" onchange="filtrar()">
+          </div>
+          <div class="adv-field">
+            <label>Até</label>
+            <input type="date" id="fDataAte" onchange="filtrar()">
+          </div>
+
+          <!-- Ocorrência -->
+          <span class="adv-sep">🚨 Dados da Ocorrência</span>
+          <div class="adv-field">
+            <label>Tipificação / Natureza</label>
+            <input type="text" id="fTipificacao" placeholder="Ex: Furto, Lesão corporal" oninput="filtrar()">
+          </div>
+          <div class="adv-field">
+            <label>Logradouro / Rua</label>
+            <input type="text" id="fRua" placeholder="Nome da rua" oninput="filtrar()">
+          </div>
+          <div class="adv-field">
+            <label>Bairro / Complemento</label>
+            <input type="text" id="fBairro" placeholder="Bairro ou ponto de referência" oninput="filtrar()">
+          </div>
+          <div class="adv-field">
+            <label>Canal de Solicitação</label>
+            <input type="text" id="fCanal" placeholder="Ex: Rádio, Telefone" oninput="filtrar()">
+          </div>
+          <div class="adv-field">
+            <label>Viatura</label>
+            <input type="text" id="fViatura" placeholder="Ex: GCM-01" oninput="filtrar()">
+          </div>
+          <div class="adv-field">
+            <label>Comandante / Agente</label>
+            <input type="text" id="fComandante" placeholder="Nome do comandante" oninput="filtrar()">
+          </div>
+
+          <!-- Vítimas -->
+          <span class="adv-sep">🧑 Vítimas</span>
+          <div class="adv-field">
+            <label>Nome da Vítima</label>
+            <input type="text" id="fNomeVitima" placeholder="Nome completo ou parcial" oninput="filtrar()">
+          </div>
+          <div class="adv-field">
+            <label>CPF da Vítima</label>
+            <input type="text" id="fCpfVitima" placeholder="000.000.000-00" oninput="filtrar()">
+          </div>
+
+          <!-- Suspeitos -->
+          <span class="adv-sep">🎭 Suspeitos</span>
+          <div class="adv-field">
+            <label>Nome do Suspeito</label>
+            <input type="text" id="fNomeSuspeito" placeholder="Nome completo ou parcial" oninput="filtrar()">
+          </div>
+          <div class="adv-field">
+            <label>Alcunha / Apelido</label>
+            <input type="text" id="fAlcunha" placeholder="Apelido do suspeito" oninput="filtrar()">
+          </div>
+          <div class="adv-field">
+            <label>CPF do Suspeito</label>
+            <input type="text" id="fCpfSuspeito" placeholder="000.000.000-00" oninput="filtrar()">
+          </div>
+          <div class="adv-field">
+            <label>RG do Suspeito</label>
+            <input type="text" id="fRgSuspeito" placeholder="00.000.000-0" oninput="filtrar()">
+          </div>
+
+          <!-- Relato -->
+          <span class="adv-sep">📝 Relato</span>
+          <div class="adv-field" style="grid-column: 1 / -1;">
+            <label>Palavra-chave no Relato</label>
+            <input type="text" id="fRelato" placeholder="Busca livre no texto do relato da ocorrência" oninput="filtrar()">
+          </div>
+        </div>
+
+        <div class="adv-actions">
+          <button class="btn-buscar" onclick="filtrar()">Aplicar Filtros</button>
+          <button class="btn-limpar-adv" onclick="limparTudo()">Limpar Tudo</button>
+        </div>
+      </div>
+
+      <!-- Barra de resultados -->
+      <div class="result-bar" id="resultBar" style="display:none;">
+        <div class="result-count">
+          <span id="resultCount">0</span> resultado(s) encontrado(s)
+        </div>
+        <div class="filtros-ativos" id="filtrosAtivosWrap"></div>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -39,14 +268,16 @@
         <thead>
           <tr>
             <th>Nº do BO</th>
-            <th>Data</th>
-            <th>Natureza</th>
+            <th>Data Ocorr.</th>
+            <th>Tipificação / Natureza</th>
+            <th class="col-local">Local</th>
+            <th class="col-envolvidos">Envolvidos</th>
             <th id="thRegistradoPor">Registrado por</th>
             <th>PDF</th>
           </tr>
         </thead>
         <tbody id="listaBOs">
-          <tr><td colspan="5" style="text-align:center;color:var(--color-hint);">Carregando...</td></tr>
+          <tr><td colspan="7" style="text-align:center;color:var(--color-hint);">Carregando...</td></tr>
         </tbody>
       </table>
     </div>
@@ -56,8 +287,8 @@
   <script src="../assets/js/main.js"></script>
   <script>
     let todosOsBOs = [];
-
     let perfilRole = 'agente';
+    let advAberto  = false;
 
     (async () => {
       try {
@@ -70,8 +301,7 @@
       } catch { window.location.href = '/'; return; }
 
       if (perfilRole === 'agente') {
-        const th = document.getElementById('thRegistradoPor');
-        if (th) th.style.display = 'none';
+        document.getElementById('thRegistradoPor').style.display = 'none';
       }
 
       carregarBOs();
@@ -82,53 +312,196 @@
         const res = await fetch(`${API_BASE_URL}/api/bo`, { credentials: 'include' });
         if (res.status === 401) { logout(); return; }
         todosOsBOs = await res.json();
-        renderizar(todosOsBOs);
+        filtrar();
       } catch {
         document.getElementById('listaBOs').innerHTML =
-          '<tr><td colspan="5" style="text-align:center;color:var(--color-danger);">Erro ao carregar boletins.</td></tr>';
+          '<tr><td colspan="7" style="text-align:center;color:var(--color-danger);">Erro ao carregar boletins.</td></tr>';
       }
     }
 
-    function renderizar(bos) {
+    function toggleAdv() {
+      advAberto = !advAberto;
+      document.getElementById('advPanel').classList.toggle('aberto', advAberto);
+      document.getElementById('btnAdv').classList.toggle('ativo', advAberto);
+    }
+
+    function coletarFiltros() {
+      return {
+        rapido:       v('qRapido'),
+        dataDe:       v('fDataDe'),
+        dataAte:      v('fDataAte'),
+        tipificacao:  v('fTipificacao'),
+        rua:          v('fRua'),
+        bairro:       v('fBairro'),
+        canal:        v('fCanal'),
+        viatura:      v('fViatura'),
+        comandante:   v('fComandante'),
+        nomeVitima:   v('fNomeVitima'),
+        cpfVitima:    v('fCpfVitima'),
+        nomeSuspeito: v('fNomeSuspeito'),
+        alcunha:      v('fAlcunha'),
+        cpfSuspeito:  v('fCpfSuspeito'),
+        rgSuspeito:   v('fRgSuspeito'),
+        relato:       v('fRelato'),
+      };
+    }
+
+    function v(id) {
+      return (document.getElementById(id)?.value || '').trim().toLowerCase();
+    }
+
+    function parseDados(bo) {
+      try { return JSON.parse(bo.dados); } catch { return {}; }
+    }
+
+    function contemStr(haystack, needle) {
+      if (!needle) return true;
+      return (haystack || '').toLowerCase().includes(needle);
+    }
+
+    function arrayContem(arr, campos, needle) {
+      if (!needle || !arr?.length) return !needle;
+      return arr.some(item => campos.some(c => contemStr(item[c], needle)));
+    }
+
+    function dataOcorrencia(dados) {
+      const dh = dados.dadosOcorrencia?.dataHoraOcorrencia || dados.dadosSolicitacao?.dataHoraSolicitacao;
+      return dh ? dh.slice(0, 10) : null;
+    }
+
+    function filtrar() {
+      const f = coletarFiltros();
+      const ativo = Object.values(f).some(x => x);
+
+      const resultado = todosOsBOs.filter(bo => {
+        const d = parseDados(bo);
+        const sol = d.dadosSolicitacao || {};
+        const oc  = d.dadosOcorrencia  || {};
+        const vitimas   = d.vitimas   || [];
+        const suspeitos = d.suspeitos || [];
+        const relato    = (d.relato   || '').toLowerCase();
+        const dataOc    = dataOcorrencia(d);
+
+        // Busca rápida — percorre campos-chave
+        if (f.rapido) {
+          const haystack = [
+            bo.numero, bo.criado_por,
+            sol.natureza, sol.nomeSolicitante, sol.canal,
+            oc.tipificacao, oc.rua, oc.complemento, oc.cidade, oc.viatura, oc.comandante,
+            ...vitimas.flatMap(v => [v.nome, v.cpf, v.alcunha]),
+            ...suspeitos.flatMap(s => [s.nome, s.cpf, s.alcunha, s.rg]),
+            relato,
+          ].join(' ').toLowerCase();
+          if (!haystack.includes(f.rapido)) return false;
+        }
+
+        // Período
+        if (f.dataDe  && dataOc && dataOc < f.dataDe)  return false;
+        if (f.dataAte && dataOc && dataOc > f.dataAte)  return false;
+
+        // Ocorrência
+        if (!contemStr(oc.tipificacao + ' ' + sol.natureza, f.tipificacao)) return false;
+        if (!contemStr(oc.rua,         f.rua))         return false;
+        if (!contemStr(oc.complemento, f.bairro))       return false;
+        if (!contemStr(sol.canal,      f.canal))        return false;
+        if (!contemStr(oc.viatura,     f.viatura))      return false;
+        if (!contemStr([oc.comandante, oc.motorista, oc.patrulheiroI, oc.patrulheiroII].join(' '), f.comandante)) return false;
+
+        // Vítimas
+        if (f.nomeVitima && !arrayContem(vitimas, ['nome'], f.nomeVitima)) return false;
+        if (f.cpfVitima  && !arrayContem(vitimas, ['cpf'],  f.cpfVitima))  return false;
+
+        // Suspeitos
+        if (f.nomeSuspeito && !arrayContem(suspeitos, ['nome'],    f.nomeSuspeito)) return false;
+        if (f.alcunha      && !arrayContem(suspeitos, ['alcunha'], f.alcunha))      return false;
+        if (f.cpfSuspeito  && !arrayContem(suspeitos, ['cpf'],     f.cpfSuspeito))  return false;
+        if (f.rgSuspeito   && !arrayContem(suspeitos, ['rg'],      f.rgSuspeito))   return false;
+
+        // Relato
+        if (!contemStr(relato, f.relato)) return false;
+
+        return true;
+      });
+
+      renderizar(resultado, f.rapido || f.relato || f.tipificacao);
+      atualizarResultBar(resultado.length, f, ativo);
+    }
+
+    function renderizar(bos, destaque) {
       const tbody = document.getElementById('listaBOs');
       if (!bos.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--color-hint);">Nenhum BO encontrado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--color-hint);">Nenhum BO encontrado com os filtros aplicados.</td></tr>';
         return;
       }
       tbody.innerHTML = bos.map(bo => {
-        let natureza = '';
-        try {
-          const dados = JSON.parse(bo.dados);
-          natureza = dados.dadosOcorrencia?.tipificacao || dados.dadosSolicitacao?.natureza || '—';
-        } catch {}
-        const data = new Date(bo.data).toLocaleDateString('pt-BR');
-        const tdRegistradoPor = perfilRole !== 'agente'
-          ? `<td>${bo.criado_por || '—'}</td>`
+        const d   = parseDados(bo);
+        const oc  = d.dadosOcorrencia  || {};
+        const sol = d.dadosSolicitacao || {};
+        const vitimas   = (d.vitimas   || []).filter(v => v.nome);
+        const suspeitos = (d.suspeitos || []).filter(s => s.nome);
+
+        const tip  = hl(oc.tipificacao || sol.natureza || '—', destaque);
+        const local = hl([oc.rua, oc.complemento].filter(Boolean).join(', ') || '—', destaque);
+        const dataOc = dataOcorrencia(d);
+        const dataStr = dataOc ? new Date(dataOc + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+
+        const envolvidos = [
+          vitimas.length   ? `<span class="badge-count badge-vitima">${vitimas.length} vít.</span>`   : '',
+          suspeitos.length ? `<span class="badge-count badge-suspeito">${suspeitos.length} susp.</span>` : '',
+          (!vitimas.length && !suspeitos.length) ? '<span class="badge-zero">—</span>' : '',
+        ].join(' ');
+
+        const tdReg = perfilRole !== 'agente'
+          ? `<td>${hl(bo.criado_por || '—', destaque)}</td>`
           : '';
+
         return `<tr>
-          <td>${bo.numero}</td>
-          <td>${data}</td>
-          <td>${natureza}</td>
-          ${tdRegistradoPor}
+          <td><strong>${bo.numero}</strong></td>
+          <td>${dataStr}</td>
+          <td>${tip}</td>
+          <td class="col-local" title="${oc.rua || ''}">${local}</td>
+          <td class="col-envolvidos">${envolvidos}</td>
+          ${tdReg}
           <td><button class="btn-pdf" onclick="baixarPDF(${bo.id}, '${bo.numero}')">PDF</button></td>
         </tr>`;
       }).join('');
     }
 
-    function filtrar() {
-      const termo = document.getElementById('buscar').value.trim().toLowerCase();
-      const data  = document.getElementById('data').value;
-      renderizar(todosOsBOs.filter(bo => {
-        const matchNumero = !termo || bo.numero.toLowerCase().includes(termo);
-        const matchData   = !data  || bo.data.startsWith(data);
-        return matchNumero && matchData;
-      }));
+    function hl(texto, termo) {
+      if (!termo || !texto) return texto || '';
+      const escaped = termo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return String(texto).replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>');
     }
 
-    function limparFiltro() {
-      document.getElementById('buscar').value = '';
-      document.getElementById('data').value   = '';
-      renderizar(todosOsBOs);
+    const LABELS_FILTRO = {
+      rapido: 'Busca rápida', dataDe: 'De', dataAte: 'Até',
+      tipificacao: 'Tipificação', rua: 'Rua', bairro: 'Bairro',
+      canal: 'Canal', viatura: 'Viatura', comandante: 'Agente',
+      nomeVitima: 'Vítima', cpfVitima: 'CPF vít.',
+      nomeSuspeito: 'Suspeito', alcunha: 'Alcunha',
+      cpfSuspeito: 'CPF susp.', rgSuspeito: 'RG susp.', relato: 'Relato',
+    };
+
+    function atualizarResultBar(total, f, ativo) {
+      const bar  = document.getElementById('resultBar');
+      const wrap = document.getElementById('filtrosAtivosWrap');
+      document.getElementById('resultCount').textContent = total;
+      const tags = Object.entries(f)
+        .filter(([, v]) => v)
+        .map(([k, v]) => `<span class="filtro-ativo-tag">${LABELS_FILTRO[k]}: ${v}</span>`)
+        .join('');
+      wrap.innerHTML = tags;
+      bar.style.display = ativo ? 'flex' : 'none';
+    }
+
+    function limparTudo() {
+      ['qRapido','fDataDe','fDataAte','fTipificacao','fRua','fBairro','fCanal',
+       'fViatura','fComandante','fNomeVitima','fCpfVitima','fNomeSuspeito',
+       'fAlcunha','fCpfSuspeito','fRgSuspeito','fRelato'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      filtrar();
     }
 
     async function baixarPDF(id, numero) {
