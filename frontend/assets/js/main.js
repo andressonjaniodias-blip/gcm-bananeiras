@@ -289,6 +289,10 @@ async function finalizarBO() {
     if (response.ok) {
       const result = await response.json();
       localStorage.removeItem('boTemp');
+      // Enviar anexos vinculados ao BO recém-criado
+      if (_anexosBO.length) {
+        await enviarAnexosBO(result.id);
+      }
       alert(`BO finalizado com sucesso!\nNúmero: ${result.numero}`);
       window.location.href = '/pages/consulta.html';
     } else {
@@ -317,6 +321,97 @@ function restaurarRascunho(dados) {
     const rel = document.querySelector('#relato textarea');
     if (rel) rel.value = dados.relato;
   }
+}
+
+// ── Anexos do BO ─────────────────────────────────────────────────────────────
+let _anexosBO    = [];   // File[] pendentes (antes de criar o BO)
+let _boIdAtual   = null; // ID do BO após criação (para upload real)
+
+function adicionarAnexosBO(files) {
+  for (const f of Array.from(files)) {
+    if (_anexosBO.some(x => x.name === f.name && x.size === f.size)) continue; // evita dup
+    _anexosBO.push(f);
+  }
+  renderizarAnexosBO();
+}
+
+function removerAnexoBO(idx) {
+  _anexosBO.splice(idx, 1);
+  renderizarAnexosBO();
+}
+
+function renderizarAnexosBO() {
+  const lista = document.getElementById('listaAnexosBO');
+  if (!lista) return;
+  if (!_anexosBO.length) { lista.innerHTML = ''; return; }
+  lista.innerHTML = _anexosBO.map((f, i) => {
+    const isImg = f.type.startsWith('image/');
+    const thumb = isImg
+      ? `<img class="anexo-thumb" src="${URL.createObjectURL(f)}" alt="">`
+      : `<div class="anexo-thumb" style="background:var(--color-row-alt);display:flex;align-items:center;justify-content:center;font-size:1.4rem;">📄</div>`;
+    const kb = (f.size / 1024).toFixed(0);
+    return `<div class="anexo-item">
+      ${thumb}
+      <div class="anexo-info">
+        <div class="anexo-nome">${f.name}</div>
+        <div class="anexo-meta">${f.type || 'arquivo'} — ${kb} KB</div>
+      </div>
+      <button class="btn-rm-anexo" onclick="removerAnexoBO(${i})">Remover</button>
+    </div>`;
+  }).join('');
+}
+
+async function enviarAnexosBO(boId) {
+  if (!_anexosBO.length) return;
+  const fd = new FormData();
+  _anexosBO.forEach(f => fd.append('arquivos', f));
+  await fetch(`${API_BASE_URL}/api/anexos/bo/${boId}`, {
+    method: 'POST', credentials: 'include', body: fd
+  });
+}
+
+// Drag & drop helpers
+function dzOver(e, dzId) {
+  e.preventDefault();
+  document.getElementById(dzId)?.classList.add('dz-over');
+}
+function dzOut(dzId) {
+  document.getElementById(dzId)?.classList.remove('dz-over');
+}
+function dzDrop(e, inputId, dzId) {
+  e.preventDefault();
+  dzOut(dzId);
+  const files = e.dataTransfer?.files;
+  if (files?.length) {
+    const input = document.getElementById(inputId);
+    if (input) {
+      // Simular seleção no input para reutilizar handler
+      const dt = new DataTransfer();
+      Array.from(files).forEach(f => dt.items.add(f));
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change'));
+    }
+  }
+}
+
+// Modal de opções de PDF para BO
+let _pdfBOId = null;
+function abrirModalPdfBO(boId) {
+  _pdfBOId = boId;
+  document.getElementById('modal-pdf-opts')?.classList.add('show');
+}
+async function confirmarPdfBO(comAnexos) {
+  document.getElementById('modal-pdf-opts')?.classList.remove('show');
+  if (!_pdfBOId) return;
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/bo/${_pdfBOId}/pdf?anexos=${comAnexos}`, { credentials: 'include' });
+    if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `bo_${_pdfBOId}.pdf`; a.click();
+    URL.revokeObjectURL(url);
+  } catch { alert('Erro ao exportar PDF.'); }
 }
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
