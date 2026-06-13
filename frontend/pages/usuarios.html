@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -11,7 +11,7 @@
   <script src="../assets/js/theme-switcher.js"></script>
   <script src="../assets/js/sidebar.js"></script>
   <style>
-    .page-wrap { width: 92%; max-width: 800px; margin: 28px auto; }
+    .page-wrap { width: 92%; max-width: 900px; margin: 28px auto; }
 
     .page-title {
       font-size: 1.25rem; font-weight: 700;
@@ -37,9 +37,28 @@
       display: flex; align-items: center; gap: 8px;
     }
 
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
-    .form-grid-agente { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } .form-grid-agente { grid-template-columns: 1fr; } }
+    /* Seção interna do formulário */
+    .secao-label {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--color-label);
+      margin: 18px 0 10px; padding-bottom: 6px;
+      border-bottom: 1px dashed var(--color-border);
+    }
+    .secao-label:first-child { margin-top: 0; }
+
+    /* Grids de campos */
+    .fg-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .fg-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .fg-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+    .fg-3x1 { display: grid; grid-template-columns: 3fr 1fr; gap: 12px; }
+    .fg-acesso { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    @media (max-width: 700px) {
+      .fg-2, .fg-3, .fg-4, .fg-3x1, .fg-acesso { grid-template-columns: 1fr; }
+    }
+    @media (min-width: 701px) and (max-width: 900px) {
+      .fg-4 { grid-template-columns: 1fr 1fr; }
+      .fg-3 { grid-template-columns: 1fr 1fr; }
+    }
 
     .field label {
       display: block; font-size: 0.78rem; font-weight: 600;
@@ -58,34 +77,48 @@
       outline: none; border-color: var(--color-primary);
       box-shadow: var(--shadow-input);
     }
+    .field input::placeholder { color: var(--color-hint); }
 
+    .obrig { color: var(--color-danger); }
+
+    .row-submit { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     .btn-primary {
       background: var(--color-primary); color: #fff;
       border: none; border-radius: var(--radius-sm);
-      padding: 9px 20px; cursor: pointer; font-size: 0.9rem;
-      font-weight: 600; transition: background 0.2s; white-space: nowrap;
+      padding: 10px 24px; cursor: pointer; font-size: 0.92rem;
+      font-weight: 600; transition: background 0.2s;
     }
     .btn-primary:hover { background: var(--color-primary-hover); }
+    .btn-secondary {
+      background: transparent; color: var(--color-text-muted);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 10px 20px; cursor: pointer; font-size: 0.9rem;
+      font-weight: 500; transition: all 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
+    /* Tabela */
     .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 480px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 560px; }
     thead th {
       background: var(--color-row-alt); color: var(--color-label);
-      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em;
+      font-size: 0.76rem; font-weight: 700; letter-spacing: 0.04em;
       padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--color-border);
       white-space: nowrap;
     }
     tbody tr { border-bottom: 1px solid var(--color-border); transition: background 0.15s; }
     tbody tr:hover { background: var(--color-row-hover); }
-    tbody td { padding: 10px 12px; vertical-align: middle; white-space: nowrap; }
+    tbody td { padding: 9px 12px; vertical-align: middle; }
 
     .badge {
       display: inline-block; padding: 3px 10px;
-      border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 700;
+      border-radius: var(--radius-pill); font-size: 0.74rem; font-weight: 700;
     }
     .badge-admin      { background: #1E3A5F; color: #fff; }
     .badge-supervisor { background: #14532D; color: #fff; }
     .badge-agente     { background: var(--color-primary-light); color: var(--color-primary); }
+    .badge-inativo    { background: #F3F4F6; color: #6B7280; }
 
     .select-role {
       padding: 4px 8px; border: 1px solid var(--color-border);
@@ -94,18 +127,21 @@
     }
     .btn-acao {
       border: none; border-radius: var(--radius-sm);
-      padding: 5px 12px; cursor: pointer; font-size: 0.82rem; font-weight: 600;
-      transition: background 0.2s;
+      padding: 5px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600;
+      transition: background 0.2s; white-space: nowrap;
     }
     .btn-salvar  { background: var(--color-success); color: #fff; margin-right: 4px; }
     .btn-salvar:hover { background: var(--color-success-hover); }
     .btn-excluir { background: var(--color-danger); color: #fff; }
     .btn-excluir:hover { background: var(--color-danger-hover); }
+    .acoes-cell { display: flex; gap: 5px; flex-wrap: wrap; }
 
+    /* LGPD */
     .lgpd-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 8px; }
     .lgpd-stat { font-size: 0.92rem; color: var(--color-text-muted); }
     .lgpd-stat strong { color: var(--color-danger); font-size: 1.05rem; }
 
+    /* Toast */
     .msg-toast {
       display: none; padding: 11px 16px; border-radius: var(--radius-sm);
       margin-bottom: 18px; font-size: 0.9rem; font-weight: 600;
@@ -115,7 +151,8 @@
     .msg-erro  { background: #FEE2E2; color: #991B1B; border-color: var(--color-danger); }
 
     .empty-row td { text-align: center; color: var(--color-hint); padding: 20px; }
-    .tag-voce { font-size: 0.75rem; color: var(--color-hint); margin-left: 4px; }
+    .tag-voce { font-size: 0.74rem; color: var(--color-hint); margin-left: 4px; }
+    .td-sec { color: var(--color-text-muted); white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -134,23 +171,24 @@
 
     <div id="msgToast" class="msg-toast"></div>
 
-    <!-- Criar novo usuário -->
+    <!-- Formulário de cadastro -->
     <div class="card" id="cardNovoUsuario" style="display:none;">
-      <div class="card-title">➕ Novo Usuário</div>
-      <form onsubmit="criarUsuario(event)">
+      <div class="card-title">➕ Cadastrar Novo Servidor</div>
+      <form onsubmit="criarUsuario(event)" autocomplete="off">
 
-        <p style="font-size:0.8rem;font-weight:700;color:var(--color-label);letter-spacing:0.05em;margin-bottom:8px;">ACESSO AO SISTEMA</p>
-        <div class="form-grid" style="margin-bottom:16px;">
+        <!-- 1. Acesso ao sistema -->
+        <p class="secao-label">🔐 Acesso ao Sistema</p>
+        <div class="fg-acesso" style="margin-bottom:4px;">
           <div class="field">
-            <label>Nome de usuário</label>
+            <label>Usuário <span class="obrig">*</span></label>
             <input type="text" id="novoUsuario" placeholder="ex: joao.silva" required autocomplete="off">
           </div>
           <div class="field">
-            <label>Senha</label>
-            <input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres" required minlength="6">
+            <label>Senha <span class="obrig">*</span></label>
+            <input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
           </div>
           <div class="field">
-            <label>Perfil</label>
+            <label>Perfil de Acesso</label>
             <select id="novoRole">
               <option value="agente">Agente</option>
               <option value="supervisor">Supervisor</option>
@@ -159,19 +197,67 @@
           </div>
         </div>
 
-        <p style="font-size:0.8rem;font-weight:700;color:var(--color-label);letter-spacing:0.05em;margin-bottom:8px;">DADOS DO AGENTE</p>
-        <div class="form-grid-agente" style="margin-bottom:16px;">
+        <!-- 2. Identificação do servidor -->
+        <p class="secao-label">🪪 Identificação do Servidor</p>
+        <div class="fg-2" style="margin-bottom:12px;">
+          <div class="field" style="grid-column:1/-1;">
+            <label>Nome Completo <span class="obrig">*</span></label>
+            <input type="text" id="novoNome" placeholder="Nome completo conforme documento oficial" maxlength="150" required>
+          </div>
+        </div>
+        <div class="fg-4" style="margin-bottom:4px;">
           <div class="field">
-            <label>Nome completo <span style="color:var(--color-danger)">*</span></label>
-            <input type="text" id="novoNome" placeholder="Nome completo do agente" maxlength="150" required>
+            <label>CPF</label>
+            <input type="text" id="novoCpf" placeholder="000.000.000-00" maxlength="14" oninput="mascaraCpf(this)">
           </div>
           <div class="field">
-            <label>Matrícula <span style="color:var(--color-danger)">*</span></label>
+            <label>RG</label>
+            <input type="text" id="novoRg" placeholder="0000000" maxlength="20">
+          </div>
+          <div class="field">
+            <label>Data de Nascimento</label>
+            <input type="date" id="novoNascimento">
+          </div>
+          <div class="field">
+            <label>Sexo</label>
+            <select id="novoSexo">
+              <option value="">Não informado</option>
+              <option value="M">Masculino</option>
+              <option value="F">Feminino</option>
+              <option value="O">Outro</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 3. Dados funcionais -->
+        <p class="secao-label">🏛️ Dados Funcionais</p>
+        <div class="fg-3" style="margin-bottom:12px;">
+          <div class="field">
+            <label>Matrícula <span class="obrig">*</span></label>
             <input type="text" id="novaMatricula" placeholder="Ex: GCM-001" maxlength="30" required>
           </div>
           <div class="field">
-            <label>Cargo</label>
-            <input type="text" id="novoCargo" placeholder="Guarda Civil Municipal" maxlength="100">
+            <label>Cargo / Função</label>
+            <input type="text" id="novoCargo" placeholder="Guarda Civil Municipal" maxlength="100" value="Guarda Civil Municipal">
+          </div>
+          <div class="field">
+            <label>Lotação / Setor</label>
+            <input type="text" id="novaLotacao" placeholder="Ex: Rondas, Comando..." maxlength="100">
+          </div>
+          <div class="field">
+            <label>Turno</label>
+            <select id="novoTurno">
+              <option value="">Não definido</option>
+              <option value="Matutino">Matutino</option>
+              <option value="Vespertino">Vespertino</option>
+              <option value="Noturno">Noturno</option>
+              <option value="Integral">Integral</option>
+              <option value="Escala 12x36">Escala 12×36</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Data de Admissão / Posse</label>
+            <input type="date" id="novoAdmissao">
           </div>
           <div class="field">
             <label>Status</label>
@@ -182,13 +268,72 @@
           </div>
         </div>
 
-        <button type="submit" class="btn-primary">Adicionar Usuário</button>
+        <!-- 4. Contato e endereço -->
+        <p class="secao-label">📞 Contato e Endereço</p>
+        <div class="fg-3" style="margin-bottom:12px;">
+          <div class="field">
+            <label>E-mail Institucional</label>
+            <input type="email" id="novoEmail" placeholder="servidor@bananeiras.pb.gov.br" maxlength="150">
+          </div>
+          <div class="field">
+            <label>Telefone / WhatsApp</label>
+            <input type="text" id="novoTelefone" placeholder="(83) 99999-9999" maxlength="20" oninput="mascaraTelefone(this)">
+          </div>
+          <div class="field">
+            <label>CEP</label>
+            <input type="text" id="novoCep" placeholder="58000-000" maxlength="9" oninput="mascaraCep(this)" onblur="buscarCep(this.value)">
+          </div>
+        </div>
+        <div class="fg-3x1" style="margin-bottom:12px;">
+          <div class="field">
+            <label>Logradouro</label>
+            <input type="text" id="novoLogradouro" placeholder="Rua, Av., Travessa..." maxlength="200">
+          </div>
+          <div class="field">
+            <label>Número</label>
+            <input type="text" id="novoNumeroEnd" placeholder="S/N" maxlength="20">
+          </div>
+        </div>
+        <div class="fg-4" style="margin-bottom:4px;">
+          <div class="field">
+            <label>Complemento</label>
+            <input type="text" id="novoComplemento" placeholder="Apto, Bloco..." maxlength="100">
+          </div>
+          <div class="field">
+            <label>Bairro</label>
+            <input type="text" id="novoBairro" placeholder="Bairro" maxlength="100">
+          </div>
+          <div class="field">
+            <label>Cidade</label>
+            <input type="text" id="novoCidade" placeholder="Bananeiras" maxlength="100">
+          </div>
+          <div class="field">
+            <label>UF</label>
+            <select id="novoUf">
+              <option value="">—</option>
+              <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+              <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+              <option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option>
+              <option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+              <option value="MG">MG</option><option value="PA">PA</option><option value="PB" selected>PB</option>
+              <option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+              <option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+              <option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+              <option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row-submit">
+          <button type="submit" class="btn-primary">✔ Cadastrar Servidor</button>
+          <button type="button" class="btn-secondary" onclick="this.closest('form').reset(); document.getElementById('novoUf').value='PB';">Limpar</button>
+        </div>
       </form>
     </div>
 
     <!-- Lista de usuários -->
     <div class="card" id="cardListaUsuarios" style="display:none;">
-      <div class="card-title">📋 Usuários Cadastrados</div>
+      <div class="card-title">📋 Servidores Cadastrados</div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -197,13 +342,14 @@
               <th>Usuário</th>
               <th>Nome</th>
               <th>Matrícula</th>
+              <th>Cargo / Lotação</th>
               <th>Perfil</th>
               <th>Alterar Perfil</th>
               <th>Ação</th>
             </tr>
           </thead>
           <tbody id="tabelaUsuarios">
-            <tr class="empty-row"><td colspan="7">Carregando...</td></tr>
+            <tr class="empty-row"><td colspan="8">Carregando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -256,19 +402,22 @@
         const agentePorUsuario = Object.fromEntries(agentes.map(a => [a.usuario, a]));
 
         if (!lista.length) {
-          tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Nenhum usuário encontrado</td></tr>';
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Nenhum usuário encontrado</td></tr>';
           return;
         }
         const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente' };
         tbody.innerHTML = lista.map(u => {
           const sou    = u.usuario === meUsuario;
-          const agente = agentePorUsuario[u.usuario];
+          const ag     = agentePorUsuario[u.usuario];
+          const lotStr = ag?.lotacao ? `<br><span style="font-size:0.75rem;color:var(--color-hint);">${ag.lotacao}</span>` : '';
+          const ativoTag = ag && !ag.ativo ? ' <span class="badge badge-inativo" style="font-size:0.7rem;padding:2px 7px;">Inativo</span>' : '';
           return `
             <tr>
-              <td style="color:var(--color-hint);font-size:0.82rem;">${u.id}</td>
+              <td style="color:var(--color-hint);font-size:0.8rem;">${u.id}</td>
               <td>${u.usuario}${sou ? '<span class="tag-voce">(você)</span>' : ''}</td>
-              <td style="color:var(--color-text-muted)">${agente ? agente.nome : '<span style="color:var(--color-hint)">—</span>'}</td>
-              <td style="color:var(--color-text-muted)">${agente ? agente.matricula : '<span style="color:var(--color-hint)">—</span>'}</td>
+              <td class="td-sec">${ag ? ag.nome + ativoTag : '<span style="color:var(--color-hint)">—</span>'}</td>
+              <td class="td-sec">${ag?.matricula || '<span style="color:var(--color-hint)">—</span>'}</td>
+              <td class="td-sec">${ag ? (ag.cargo || '—') + lotStr : '<span style="color:var(--color-hint)">—</span>'}</td>
               <td><span class="badge badge-${u.role}">${roleLabel[u.role] || u.role}</span></td>
               <td>
                 ${sou ? '<span style="color:var(--color-hint);font-size:0.82rem;">—</span>' : `
@@ -279,11 +428,13 @@
                   </select>
                 `}
               </td>
-              <td style="display:flex;gap:6px;flex-wrap:wrap;">
-                ${sou ? '<span style="color:var(--color-hint);font-size:0.82rem;">—</span>' : `
-                  <button class="btn-acao btn-salvar" onclick="alterarRole(${u.id})">Salvar</button>
-                  <button class="btn-acao btn-excluir" onclick="excluirUsuario(${u.id},'${u.usuario}')">Remover</button>
-                `}
+              <td>
+                <div class="acoes-cell">
+                  ${sou ? '<span style="color:var(--color-hint);font-size:0.82rem;">—</span>' : `
+                    <button class="btn-acao btn-salvar" onclick="alterarRole(${u.id})">Salvar</button>
+                    <button class="btn-acao btn-excluir" onclick="excluirUsuario(${u.id},'${u.usuario}')">Remover</button>
+                  `}
+                </div>
               </td>
             </tr>`;
         }).join('');
@@ -292,15 +443,31 @@
 
     async function criarUsuario(e) {
       e.preventDefault();
-      const usuario   = document.getElementById('novoUsuario').value.trim();
-      const senha     = document.getElementById('novaSenha').value;
-      const role      = document.getElementById('novoRole').value;
-      const nome      = document.getElementById('novoNome').value.trim();
-      const matricula = document.getElementById('novaMatricula').value.trim();
-      const cargo     = document.getElementById('novoCargo').value.trim();
-      const ativo     = document.getElementById('novoAtivo').value === 'true';
+      const usuario       = document.getElementById('novoUsuario').value.trim();
+      const senha         = document.getElementById('novaSenha').value;
+      const role          = document.getElementById('novoRole').value;
+      const nome          = document.getElementById('novoNome').value.trim();
+      const cpf           = document.getElementById('novoCpf').value.trim();
+      const rg            = document.getElementById('novoRg').value.trim();
+      const data_nascimento = document.getElementById('novoNascimento').value || null;
+      const sexo          = document.getElementById('novoSexo').value || null;
+      const matricula     = document.getElementById('novaMatricula').value.trim();
+      const cargo         = document.getElementById('novoCargo').value.trim();
+      const lotacao       = document.getElementById('novaLotacao').value.trim();
+      const turno         = document.getElementById('novoTurno').value || null;
+      const data_admissao = document.getElementById('novoAdmissao').value || null;
+      const ativo         = document.getElementById('novoAtivo').value === 'true';
+      const email         = document.getElementById('novoEmail').value.trim();
+      const telefone      = document.getElementById('novoTelefone').value.trim();
+      const cep           = document.getElementById('novoCep').value.trim();
+      const logradouro    = document.getElementById('novoLogradouro').value.trim();
+      const numero_end    = document.getElementById('novoNumeroEnd').value.trim();
+      const complemento   = document.getElementById('novoComplemento').value.trim();
+      const bairro        = document.getElementById('novoBairro').value.trim();
+      const cidade        = document.getElementById('novoCidade').value.trim();
+      const uf            = document.getElementById('novoUf').value;
+
       try {
-        // 1. Cria o usuário
         const resU = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -309,15 +476,23 @@
         const dataU = await resU.json();
         if (!resU.ok) { toast(dataU.error || 'Erro ao criar usuário.', 'erro'); return; }
 
-        // 2. Cria o registro de agente vinculado
         await fetch(`${API_BASE_URL}/api/agentes`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nome, matricula, cargo: cargo || 'Guarda Civil Municipal', usuario, ativo })
+          body: JSON.stringify({
+            nome, matricula, cargo: cargo || 'Guarda Civil Municipal', usuario, ativo,
+            cpf: cpf || null, rg: rg || null, data_nascimento, sexo,
+            lotacao: lotacao || null, turno, data_admissao,
+            email: email || null, telefone: telefone || null,
+            cep: cep || null, logradouro: logradouro || null,
+            numero_end: numero_end || null, complemento: complemento || null,
+            bairro: bairro || null, cidade: cidade || null, uf: uf || null
+          })
         });
 
-        toast('Usuário e agente cadastrados com sucesso!', 'ok');
+        toast('Servidor cadastrado com sucesso!', 'ok');
         e.target.reset();
+        document.getElementById('novoUf').value = 'PB';
         carregarUsuarios();
       } catch { toast('Erro de conexão.', 'erro'); }
     }
@@ -373,12 +548,48 @@
       } catch { toast('Erro de conexão.', 'erro'); }
     }
 
+    // Busca endereço pelo CEP via ViaCEP
+    async function buscarCep(cep) {
+      const v = cep.replace(/\D/g, '');
+      if (v.length !== 8) return;
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${v}/json/`);
+        const data = await res.json();
+        if (data.erro) return;
+        document.getElementById('novoLogradouro').value = data.logradouro || '';
+        document.getElementById('novoBairro').value     = data.bairro || '';
+        document.getElementById('novoCidade').value     = data.localidade || '';
+        document.getElementById('novoUf').value         = data.uf || 'PB';
+      } catch {}
+    }
+
+    // Máscaras
+    function mascaraCpf(el) {
+      let v = el.value.replace(/\D/g, '').slice(0, 11);
+      if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+      else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+      else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+      el.value = v;
+    }
+    function mascaraTelefone(el) {
+      let v = el.value.replace(/\D/g, '').slice(0, 11);
+      if (v.length > 10)     v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+      else if (v.length > 6) v = v.replace(/(\d{2})(\d{4})(\d{1,4})/, '($1) $2-$3');
+      else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,5})/, '($1) $2');
+      el.value = v;
+    }
+    function mascaraCep(el) {
+      let v = el.value.replace(/\D/g, '').slice(0, 8);
+      if (v.length > 5) v = v.replace(/(\d{5})(\d{1,3})/, '$1-$2');
+      el.value = v;
+    }
+
     function toast(texto, tipo) {
       const el = document.getElementById('msgToast');
       el.textContent = texto;
       el.className = `msg-toast msg-${tipo}`;
       el.style.display = 'block';
-      setTimeout(() => el.style.display = 'none', 4000);
+      setTimeout(() => el.style.display = 'none', 4500);
     }
   </script>
 </body>
