@@ -12,6 +12,7 @@ const relatorioRoutes = require('./routes/relatorioRoutes');
 const viaturaRoutes   = require('./routes/viaturaRoutes');
 const documentoRoutes = require('./routes/documentoRoutes');
 const agentesRoutes   = require('./routes/agentesRoutes');
+const anexosRoutes    = require('./routes/anexosRoutes');
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
@@ -31,7 +32,7 @@ const allowedOrigins = process.env.CORS_ORIGIN
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -48,6 +49,10 @@ app.use(express.static(frontendPath));
 const publicPath = path.join(__dirname, '../public');
 app.use(express.static(publicPath));
 
+// ✅ Servir arquivos de upload (anexos)
+const uploadsPath = path.join(__dirname, 'uploads');
+app.use('/uploads', require('./middleware/auth').verificarToken, express.static(uploadsPath));
+
 // Rotas da API
 app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth',      authRoutes);
@@ -56,6 +61,7 @@ app.use('/api/relatorio', relatorioRoutes);
 app.use('/api/viatura',   viaturaRoutes);
 app.use('/api/documentos', documentoRoutes);
 app.use('/api/agentes',   agentesRoutes);
+app.use('/api/anexos',    anexosRoutes);
 
 // ✅ Health check endpoint (Render verifica isso)
 app.get('/health', (req, res) => {
