@@ -4,12 +4,17 @@ const db       = require('../config/db');
 const { verificarToken, verificarAdmin } = require('../middleware/auth');
 const exigirAdmin = verificarAdmin;
 
+const CAMPOS_AGENTE = `
+  id, nome, matricula, cargo, usuario, ativo, criado_em,
+  cpf, rg, data_nascimento, sexo, lotacao, turno, data_admissao,
+  email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf
+`;
+
 // Listar agentes
 router.get('/', verificarToken, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT id, nome, matricula, cargo, usuario, ativo, criado_em
-       FROM agentes ORDER BY nome ASC`
+      `SELECT ${CAMPOS_AGENTE} FROM agentes ORDER BY nome ASC`
     );
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -18,28 +23,89 @@ router.get('/', verificarToken, async (req, res) => {
 // Criar agente
 router.post('/', verificarToken, exigirAdmin, async (req, res) => {
   try {
-    const { nome, matricula, cargo, usuario, ativo } = req.body;
+    const {
+      nome, matricula, cargo, usuario, ativo,
+      cpf, rg, data_nascimento, sexo, lotacao, turno, data_admissao,
+      email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf
+    } = req.body;
     if (!nome || !matricula) return res.status(400).json({ error: 'Nome e matrícula são obrigatórios.' });
     const { rows } = await db.query(
-      `INSERT INTO agentes (nome, matricula, cargo, usuario, ativo)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [nome.trim(), matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal', usuario?.trim() || null, ativo !== false]
+      `INSERT INTO agentes
+        (nome, matricula, cargo, usuario, ativo,
+         cpf, rg, data_nascimento, sexo, lotacao, turno, data_admissao,
+         email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+       RETURNING ${CAMPOS_AGENTE}`,
+      [
+        nome.trim(), matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal',
+        usuario?.trim() || null, ativo !== false,
+        cpf?.trim() || null, rg?.trim() || null,
+        data_nascimento || null, sexo || null,
+        lotacao?.trim() || null, turno || null, data_admissao || null,
+        email?.trim() || null, telefone?.trim() || null,
+        cep?.trim() || null, logradouro?.trim() || null,
+        numero_end?.trim() || null, complemento?.trim() || null,
+        bairro?.trim() || null, cidade?.trim() || null, uf?.trim() || null,
+      ]
     );
     res.status(201).json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Atualizar agente
+// Atualizar agente (admin)
 router.put('/:id', verificarToken, exigirAdmin, async (req, res) => {
   try {
-    const { nome, matricula, cargo, usuario, ativo } = req.body;
+    const {
+      nome, matricula, cargo, usuario, ativo,
+      cpf, rg, data_nascimento, sexo, lotacao, turno, data_admissao,
+      email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf
+    } = req.body;
     if (!nome || !matricula) return res.status(400).json({ error: 'Nome e matrícula são obrigatórios.' });
     const { rows } = await db.query(
-      `UPDATE agentes SET nome=$1, matricula=$2, cargo=$3, usuario=$4, ativo=$5
-       WHERE id=$6 RETURNING *`,
-      [nome.trim(), matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal', usuario?.trim() || null, ativo !== false, req.params.id]
+      `UPDATE agentes SET
+        nome=$1, matricula=$2, cargo=$3, usuario=$4, ativo=$5,
+        cpf=$6, rg=$7, data_nascimento=$8, sexo=$9,
+        lotacao=$10, turno=$11, data_admissao=$12,
+        email=$13, telefone=$14, cep=$15, logradouro=$16,
+        numero_end=$17, complemento=$18, bairro=$19, cidade=$20, uf=$21
+       WHERE id=$22 RETURNING ${CAMPOS_AGENTE}`,
+      [
+        nome.trim(), matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal',
+        usuario?.trim() || null, ativo !== false,
+        cpf?.trim() || null, rg?.trim() || null,
+        data_nascimento || null, sexo || null,
+        lotacao?.trim() || null, turno || null, data_admissao || null,
+        email?.trim() || null, telefone?.trim() || null,
+        cep?.trim() || null, logradouro?.trim() || null,
+        numero_end?.trim() || null, complemento?.trim() || null,
+        bairro?.trim() || null, cidade?.trim() || null, uf?.trim() || null,
+        req.params.id
+      ]
     );
     if (!rows.length) return res.status(404).json({ error: 'Agente não encontrado.' });
+    res.json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Auto-edição de contato — qualquer usuário autenticado atualiza os próprios dados mutáveis
+router.patch('/meu-contato', verificarToken, async (req, res) => {
+  try {
+    const usuario = req.usuario?.usuario;
+    const { telefone, email, cep, logradouro, numero_end, complemento, bairro, cidade, uf } = req.body;
+    const { rows } = await db.query(
+      `UPDATE agentes
+       SET telefone=$1, email=$2, cep=$3, logradouro=$4,
+           numero_end=$5, complemento=$6, bairro=$7, cidade=$8, uf=$9
+       WHERE usuario=$10 RETURNING ${CAMPOS_AGENTE}`,
+      [
+        telefone?.trim() || null, email?.trim() || null,
+        cep?.trim() || null, logradouro?.trim() || null,
+        numero_end?.trim() || null, complemento?.trim() || null,
+        bairro?.trim() || null, cidade?.trim() || null, uf?.trim() || null,
+        usuario
+      ]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Agente vinculado ao usuário não encontrado.' });
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
