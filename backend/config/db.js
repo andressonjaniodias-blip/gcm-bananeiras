@@ -92,6 +92,21 @@ pool.connect()
       );
     `);
     // Colunas adicionais de dados funcionais e contato
+    // Tabela de anexos (BO e Relatório)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS anexos (
+        id            SERIAL PRIMARY KEY,
+        tipo_ref      TEXT NOT NULL,        -- 'bo' ou 'relatorio'
+        ref_id        INTEGER NOT NULL,
+        nome_arquivo  TEXT NOT NULL,        -- nome no disco
+        nome_original TEXT NOT NULL,        -- nome original do usuário
+        mime_type     TEXT,
+        tamanho       INTEGER,
+        criado_por    TEXT,
+        criado_em     TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
     // Colunas adicionais de log (para bancos existentes)
     const colunasLog = [
       `ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS user_agent  TEXT`,
