@@ -417,8 +417,12 @@
           body: JSON.stringify(payload)
         });
         const data = await res.json();
-        if (res.ok) toast('Dados de contato salvos com sucesso!', 'ok');
-        else toast(data.error || 'Erro ao salvar.', 'erro');
+        if (res.ok) {
+          toast('Dados de contato salvos com sucesso!', 'ok');
+          // Remove banner de aviso caso esteja visível
+          const banner = document.getElementById('banner-dados');
+          if (banner) banner.remove();
+        } else { toast(data.error || 'Erro ao salvar.', 'erro'); }
       } catch { toast('Erro de conexão.', 'erro'); }
     }
 
