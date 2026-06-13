@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -10,6 +10,172 @@
   <link rel="stylesheet" href="../assets/css/style.css">
   <script src="../assets/js/theme-switcher.js"></script>
   <script src="../assets/js/sidebar.js"></script>
+  <style>
+    /* ── Layout da home ──────────────────────────────────────────────────────── */
+    .home-body {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .home-body { grid-template-columns: 1fr; }
+    }
+
+    /* ── Cards de estatística ────────────────────────────────────────────────── */
+    .stat-section-title {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--color-text-muted);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .stat-section-title::after { content: ''; flex: 1; height: 1px; background: var(--color-border); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      padding: 16px 14px 14px;
+      border: 1px solid var(--color-bloco-border);
+      border-left: 4px solid var(--color-primary);
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .stat-card .stat-num {
+      font-size: 1.9rem; font-weight: 700;
+      color: var(--color-primary); line-height: 1;
+    }
+    .stat-card .stat-label {
+      font-size: 0.72rem; color: var(--color-text-muted); font-weight: 600;
+    }
+    .stat-card .stat-sub {
+      font-size: 0.7rem; color: var(--color-hint); margin-top: 2px;
+    }
+    .stat-card.accent-verde  { border-left-color: #059669; }
+    .stat-card.accent-verde  .stat-num { color: #059669; }
+    .stat-card.accent-amber  { border-left-color: #D97706; }
+    .stat-card.accent-amber  .stat-num { color: #D97706; }
+    .stat-card.accent-roxo   { border-left-color: #7C3AED; }
+    .stat-card.accent-roxo   .stat-num { color: #7C3AED; }
+    .stat-card.accent-slate  { border-left-color: #64748B; }
+    .stat-card.accent-slate  .stat-num { color: #64748B; }
+    .stat-card.accent-rose   { border-left-color: #E11D48; }
+    .stat-card.accent-rose   .stat-num { color: #E11D48; }
+
+    /* ── Ranking de tipificações ─────────────────────────────────────────────── */
+    .ranking-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--color-bloco-border);
+      padding: 16px 18px;
+      margin-bottom: 24px;
+    }
+    .ranking-title {
+      font-size: 0.85rem; font-weight: 700; color: var(--color-text);
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+    .ranking-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 0; border-bottom: 1px solid var(--color-border);
+      font-size: 0.85rem;
+    }
+    .ranking-row:last-child { border-bottom: none; }
+    .ranking-pos {
+      font-size: 0.72rem; font-weight: 800; color: var(--color-text-muted);
+      width: 18px; text-align: center; flex-shrink: 0;
+    }
+    .ranking-label { flex: 1; color: var(--color-text); }
+    .ranking-bar-wrap {
+      width: 80px; height: 6px; background: var(--color-border);
+      border-radius: 3px; overflow: hidden; flex-shrink: 0;
+    }
+    .ranking-bar { height: 100%; border-radius: 3px; background: var(--color-primary); }
+    .ranking-count {
+      font-weight: 700; color: var(--color-primary); font-size: 0.82rem;
+      min-width: 24px; text-align: right; flex-shrink: 0;
+    }
+    .ranking-vazio { color: var(--color-hint); font-size: 0.85rem; text-align: center; padding: 12px 0; }
+
+    /* ── Painel de publicações ───────────────────────────────────────────────── */
+    .pub-panel {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--color-bloco-border);
+      overflow: hidden;
+      position: sticky; top: 80px;
+    }
+    .pub-panel-header {
+      padding: 14px 18px;
+      background: var(--color-primary);
+      color: #fff;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .pub-panel-header-title { font-size: 0.95rem; font-weight: 700; }
+    .pub-panel-header-sub   { font-size: 0.72rem; opacity: 0.8; margin-top: 1px; }
+    .pub-list { padding: 0; }
+
+    .pub-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--color-border);
+      transition: background 0.15s;
+    }
+    .pub-item:last-child { border-bottom: none; }
+    .pub-item:hover { background: var(--color-row-alt); }
+
+    .pub-icon {
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+    .pub-icon.icon-pdf      { background: #FEE2E2; }
+    .pub-icon.icon-doc      { background: #DBEAFE; }
+    .pub-icon.icon-img      { background: #D1FAE5; }
+    .pub-icon.icon-default  { background: var(--color-primary-light); }
+
+    .pub-info { flex: 1; min-width: 0; }
+    .pub-titulo {
+      font-size: 0.85rem; font-weight: 700; color: var(--color-text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pub-meta {
+      font-size: 0.72rem; color: var(--color-text-muted); margin-top: 2px;
+    }
+    .pub-badge {
+      display: inline-block; padding: 2px 8px;
+      border-radius: var(--radius-pill); font-size: 0.68rem; font-weight: 700;
+      background: var(--color-primary-light); color: var(--color-primary);
+      white-space: nowrap; flex-shrink: 0; align-self: center;
+    }
+    .pub-baixar {
+      font-size: 0.75rem; font-weight: 700; color: var(--color-primary);
+      background: none; border: none; cursor: pointer; padding: 2px 0;
+      text-decoration: underline; white-space: nowrap;
+      align-self: center; flex-shrink: 0;
+    }
+    .pub-baixar:hover { opacity: 0.75; }
+
+    .pub-vazio {
+      padding: 28px 16px; text-align: center;
+      color: var(--color-hint); font-size: 0.85rem;
+    }
+    .pub-rodape {
+      padding: 10px 16px; text-align: center;
+      border-top: 1px solid var(--color-border);
+    }
+    .pub-rodape a {
+      font-size: 0.8rem; color: var(--color-primary); font-weight: 600;
+      text-decoration: none;
+    }
+    .pub-rodape a:hover { text-decoration: underline; }
+  </style>
 </head>
 <body>
   <header class="header">
@@ -24,54 +190,94 @@
 
   <main style="padding: 0 clamp(12px,2vw,24px);">
     <div class="home-container">
+
+      <!-- Boas-vindas -->
       <div class="home-welcome">
         <h2>Bem-vindo, <span id="nomeUsuario">—</span></h2>
         <p id="dataHoje"></p>
       </div>
 
-      <div class="home-stats" id="statsArea">
-        <div class="stat-card">
-          <div class="stat-num" id="statTotal">—</div>
-          <div class="stat-label">BOs Registrados</div>
+      <div class="home-body">
+        <!-- Coluna principal: estatísticas -->
+        <div>
+
+          <!-- Stats BOs -->
+          <div class="stat-section-title">📋 Boletins de Ocorrência</div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-num" id="statTotal">—</div>
+              <div class="stat-label">Total de BOs</div>
+              <div class="stat-sub">desde o início</div>
+            </div>
+            <div class="stat-card accent-verde">
+              <div class="stat-num" id="statHoje">—</div>
+              <div class="stat-label">BOs Hoje</div>
+              <div class="stat-sub" id="statHojeData">—</div>
+            </div>
+            <div class="stat-card accent-amber">
+              <div class="stat-num" id="statSemana">—</div>
+              <div class="stat-label">Esta Semana</div>
+              <div class="stat-sub">últimos 7 dias</div>
+            </div>
+            <div class="stat-card accent-rose">
+              <div class="stat-num" id="statMes">—</div>
+              <div class="stat-label">Este Mês</div>
+              <div class="stat-sub" id="statMesLabel">—</div>
+            </div>
+          </div>
+
+          <!-- Stats operacionais -->
+          <div class="stat-section-title">🚔 Operacional</div>
+          <div class="stats-grid">
+            <div class="stat-card accent-roxo">
+              <div class="stat-num" id="statRelatorios">—</div>
+              <div class="stat-label">Relatórios Internos</div>
+              <div class="stat-sub">total publicados</div>
+            </div>
+            <div class="stat-card accent-slate">
+              <div class="stat-num" id="statDocumentos">—</div>
+              <div class="stat-label">Documentos</div>
+              <div class="stat-sub">no acervo</div>
+            </div>
+            <div class="stat-card accent-verde">
+              <div class="stat-num" id="statAgentes">—</div>
+              <div class="stat-label">Agentes Ativos</div>
+              <div class="stat-sub">cadastrados</div>
+            </div>
+            <div class="stat-card accent-amber">
+              <div class="stat-num" id="statViaturas">—</div>
+              <div class="stat-label">Registros Viatura</div>
+              <div class="stat-sub">abastec. e revisões</div>
+            </div>
+          </div>
+
+          <!-- Ranking tipificações -->
+          <div class="ranking-card">
+            <div class="ranking-title">🔢 Ocorrências Mais Frequentes <span style="font-size:0.72rem;font-weight:400;color:var(--color-text-muted);">— últimos 30 dias</span></div>
+            <div id="rankingTipificacoes"><div class="ranking-vazio">Carregando...</div></div>
+          </div>
+
         </div>
-        <div class="stat-card">
-          <div class="stat-num" id="statHoje">—</div>
-          <div class="stat-label">BOs Hoje</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num" id="statSemana">—</div>
-          <div class="stat-label">BOs Esta Semana</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num" id="statRelatorios">—</div>
-          <div class="stat-label">Relatórios Internos</div>
+
+        <!-- Coluna lateral: publicações -->
+        <div>
+          <div class="pub-panel">
+            <div class="pub-panel-header">
+              <div>
+                <div class="pub-panel-header-title">📢 Publicações Oficiais</div>
+                <div class="pub-panel-header-sub">Documentos disponibilizados pela chefia</div>
+              </div>
+            </div>
+            <div class="pub-list" id="pubList">
+              <div class="pub-vazio">Carregando...</div>
+            </div>
+            <div class="pub-rodape">
+              <a href="/pages/documentos.html">Ver todos os documentos →</a>
+            </div>
+          </div>
         </div>
       </div>
 
-      <h3 style="margin-bottom:16px;font-size:1rem;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.04em;">Módulos do Sistema</h3>
-
-      <div class="home-cards">
-        <a href="/pages/dashboard.html" class="home-card card-bo">
-          <div class="home-card-title">Novo BO</div>
-          <div class="home-card-desc">Registrar um novo Boletim de Ocorrência com todas as informações da ocorrência.</div>
-        </a>
-        <a href="/pages/consulta.html" class="home-card card-hist">
-          <div class="home-card-title">Histórico de BOs</div>
-          <div class="home-card-desc">Consultar, filtrar e exportar PDF dos boletins já registrados.</div>
-        </a>
-        <a href="/pages/relatorio.html" class="home-card card-rel">
-          <div class="home-card-title">Relatório Interno</div>
-          <div class="home-card-desc">Criar e exportar relatórios internos com numeração automática e assinatura do agente.</div>
-        </a>
-        <a href="/pages/viatura.html" class="home-card card-viatura">
-          <div class="home-card-title">Controle de Viatura</div>
-          <div class="home-card-desc">Registrar abastecimentos, revisões e manutenções das viaturas da guarda.</div>
-        </a>
-        <a href="/pages/documentos.html" class="home-card card-docs">
-          <div class="home-card-title">Documentos</div>
-          <div class="home-card-desc">Publicar e consultar ofícios, escalas e demais documentos do serviço.</div>
-        </a>
-      </div>
     </div>
   </main>
 
@@ -79,40 +285,138 @@
   <script src="../assets/js/main.js"></script>
   <script>
     (async () => {
-      // Exibe data atual
       const agora = new Date();
       document.getElementById('dataHoje').textContent =
         agora.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-      // Nome do usuário
       const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
       if (perfil.usuario) document.getElementById('nomeUsuario').textContent = perfil.usuario;
 
-      // Estatísticas de BOs
+      const hoje      = agora.toISOString().slice(0, 10);
+      const mesAtual  = hoje.slice(0, 7);
+      const seteDias  = new Date(agora); seteDias.setDate(agora.getDate() - 6);
+      const seteDiasStr = seteDias.toISOString().slice(0, 10);
+
+      document.getElementById('statHojeData').textContent =
+        agora.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      document.getElementById('statMesLabel').textContent =
+        agora.toLocaleDateString('pt-BR', { month: 'long' });
+
+      // BOs
       try {
         const res = await fetch(`${API_BASE_URL}/api/bo`, { credentials: 'include' });
         if (res.ok) {
           const bos = await res.json();
-          const hoje = new Date().toISOString().slice(0, 10);
-          const inicioSemana = new Date();
-          inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
-          const semanaStr = inicioSemana.toISOString().slice(0, 10);
+          document.getElementById('statTotal').textContent  = bos.length;
+          document.getElementById('statHoje').textContent   = bos.filter(b => b.data?.startsWith(hoje)).length;
+          document.getElementById('statSemana').textContent = bos.filter(b => b.data >= seteDiasStr).length;
+          document.getElementById('statMes').textContent    = bos.filter(b => b.data?.startsWith(mesAtual)).length;
 
-          document.getElementById('statTotal').textContent   = bos.length;
-          document.getElementById('statHoje').textContent    = bos.filter(b => b.data && b.data.startsWith(hoje)).length;
-          document.getElementById('statSemana').textContent  = bos.filter(b => b.data && b.data >= semanaStr).length;
+          // Ranking tipificações — últimos 30 dias
+          const limite30 = new Date(agora); limite30.setDate(agora.getDate() - 30);
+          const lim30Str = limite30.toISOString().slice(0, 10);
+          const recentes = bos.filter(b => b.data >= lim30Str);
+          const contagem = {};
+          recentes.forEach(b => {
+            try {
+              const d = JSON.parse(b.dados);
+              const tip = d.dadosOcorrencia?.tipificacao || d.dadosSolicitacao?.natureza;
+              if (tip) contagem[tip] = (contagem[tip] || 0) + 1;
+            } catch {}
+          });
+          const ranking = Object.entries(contagem)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 7);
+          const max = ranking[0]?.[1] || 1;
+          const el = document.getElementById('rankingTipificacoes');
+          if (!ranking.length) {
+            el.innerHTML = '<div class="ranking-vazio">Nenhuma ocorrência nos últimos 30 dias.</div>';
+          } else {
+            el.innerHTML = ranking.map(([tip, n], i) => `
+              <div class="ranking-row">
+                <span class="ranking-pos">${i + 1}º</span>
+                <span class="ranking-label">${tip}</span>
+                <div class="ranking-bar-wrap">
+                  <div class="ranking-bar" style="width:${Math.round((n/max)*100)}%"></div>
+                </div>
+                <span class="ranking-count">${n}</span>
+              </div>`).join('');
+          }
         }
       } catch {}
 
-      // Estatísticas de relatórios
+      // Relatórios
       try {
-        const rr = await fetch(`${API_BASE_URL}/api/relatorio`, { credentials: 'include' });
-        if (rr.ok) {
-          const rels = await rr.json();
-          document.getElementById('statRelatorios').textContent = rels.length;
-        }
+        const r = await fetch(`${API_BASE_URL}/api/relatorio`, { credentials: 'include' });
+        if (r.ok) document.getElementById('statRelatorios').textContent = (await r.json()).length;
       } catch { document.getElementById('statRelatorios').textContent = '0'; }
+
+      // Documentos
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/documentos`, { credentials: 'include' });
+        if (r.ok) document.getElementById('statDocumentos').textContent = (await r.json()).length;
+      } catch { document.getElementById('statDocumentos').textContent = '0'; }
+
+      // Agentes ativos
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/agentes`, { credentials: 'include' });
+        if (r.ok) {
+          const ag = await r.json();
+          document.getElementById('statAgentes').textContent = ag.filter(a => a.ativo).length;
+        }
+      } catch { document.getElementById('statAgentes').textContent = '—'; }
+
+      // Controle de viatura
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/viatura`, { credentials: 'include' });
+        if (r.ok) document.getElementById('statViaturas').textContent = (await r.json()).length;
+      } catch { document.getElementById('statViaturas').textContent = '—'; }
+
+      // Publicações em destaque
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/documentos/destaque`, { credentials: 'include' });
+        const lista = r.ok ? await r.json() : [];
+        const el = document.getElementById('pubList');
+        if (!lista.length) {
+          el.innerHTML = '<div class="pub-vazio">Nenhuma publicação disponível no momento.</div>';
+        } else {
+          el.innerHTML = lista.map(d => {
+            const icon = iconeDoc(d.arquivo_mime, d.arquivo_nome);
+            const data = new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+            return `
+            <div class="pub-item">
+              <div class="pub-icon ${icon.cls}">${icon.emoji}</div>
+              <div class="pub-info">
+                <div class="pub-titulo" title="${d.titulo}">${d.titulo}</div>
+                <div class="pub-meta">${data} · ${d.publicado_por}</div>
+              </div>
+              <span class="pub-badge">${d.tipo}</span>
+              <button class="pub-baixar" onclick="baixarDoc(${d.id}, '${d.arquivo_nome}')">⬇ Baixar</button>
+            </div>`;
+          }).join('');
+        }
+      } catch {}
     })();
+
+    function iconeDoc(mime, nome) {
+      if (!mime && nome) mime = nome.endsWith('.pdf') ? 'application/pdf' : '';
+      if (mime?.includes('pdf'))   return { cls: 'icon-pdf',     emoji: '📄' };
+      if (mime?.includes('image')) return { cls: 'icon-img',     emoji: '🖼️' };
+      if (mime?.includes('word') || nome?.match(/\.docx?$/i)) return { cls: 'icon-doc', emoji: '📝' };
+      return { cls: 'icon-default', emoji: '📎' };
+    }
+
+    async function baixarDoc(id, nome) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/documentos/${id}/download`, { credentials: 'include' });
+        if (!res.ok) { alert('Erro ao baixar arquivo.'); return; }
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = nome || `documento_${id}`; a.click();
+        URL.revokeObjectURL(url);
+      } catch { alert('Erro ao baixar arquivo.'); }
+    }
   </script>
 </body>
 </html>
