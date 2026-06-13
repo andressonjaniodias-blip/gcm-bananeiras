@@ -13,6 +13,46 @@
   <style>
     .obrigatorio::after { content: ' *'; color: var(--color-danger); }
     input:invalid, textarea:invalid { border-color: var(--color-danger) !important; }
+
+    /* Anexos */
+    .anexo-item {
+      display:flex; align-items:center; gap:10px; padding:9px 12px;
+      background:var(--color-row-alt); border:1px solid var(--color-border);
+      border-radius:var(--radius-sm); font-size:0.86rem;
+    }
+    .anexo-item .anexo-thumb {
+      width:44px; height:44px; object-fit:cover;
+      border-radius:4px; flex-shrink:0;
+    }
+    .anexo-item .anexo-info { flex:1; min-width:0; }
+    .anexo-item .anexo-nome { font-weight:600; color:var(--color-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .anexo-item .anexo-meta { font-size:0.75rem; color:var(--color-hint); }
+    .anexo-item .btn-rm-anexo {
+      background:var(--color-danger); color:#fff; border:none;
+      border-radius:4px; padding:4px 10px; cursor:pointer; font-size:0.8rem; flex-shrink:0;
+    }
+    .dz-over { border-color:var(--color-primary) !important; background:var(--color-primary-light) !important; }
+
+    /* Modal PDF */
+    #modal-pdf-opts {
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(0,0,0,0.55); align-items:center; justify-content:center;
+    }
+    #modal-pdf-opts.show { display:flex; }
+    #modal-pdf-opts .mpo-card {
+      background:#fff; border-radius:12px; padding:30px 28px;
+      max-width:380px; width:90%; box-shadow:0 16px 48px rgba(0,0,0,0.3);
+    }
+    #modal-pdf-opts .mpo-title { font-size:1rem; font-weight:800; color:#1E3A5F; margin-bottom:8px; }
+    #modal-pdf-opts .mpo-msg   { font-size:0.87rem; color:#6B7280; margin-bottom:20px; }
+    #modal-pdf-opts .mpo-btns  { display:flex; gap:10px; flex-wrap:wrap; }
+    #modal-pdf-opts .mpo-btn   {
+      flex:1; padding:11px; border:none; border-radius:8px;
+      font-size:0.92rem; font-weight:700; cursor:pointer;
+    }
+    #modal-pdf-opts .mpo-btn-sim  { background:#1E3A5F; color:#fff; }
+    #modal-pdf-opts .mpo-btn-nao  { background:#e5e7eb; color:#374151; }
+    #modal-pdf-opts .mpo-btn:hover { opacity:0.88; }
   </style>
 </head>
 <body>
@@ -35,6 +75,7 @@
       <button onclick="showTab('vitima')" class="tab-btn">Vítimas</button>
       <button onclick="showTab('suspeito')" class="tab-btn">Suspeitos</button>
       <button onclick="showTab('relato')" class="tab-btn">Relato</button>
+      <button onclick="showTab('anexos')" class="tab-btn">Anexos</button>
       <button onclick="showTab('objetos')" class="tab-btn">Objetos</button>
       <button onclick="showTab('autoridade')" class="tab-btn">Autoridade</button>
     </nav>
@@ -151,6 +192,31 @@
       </div>
     </section>
 
+    <!-- Anexos -->
+    <section id="anexos" class="tab-content hidden">
+      <h3>Anexos da Ocorrência</h3>
+      <p style="font-size:0.85rem;color:var(--color-text-muted);margin-bottom:16px;">
+        Adicione fotos, documentos ou outros arquivos relacionados à ocorrência.
+        Imagens serão incorporadas ao PDF; demais arquivos ficarão vinculados ao BO no sistema.
+      </p>
+      <div id="dropzone-bo" style="
+        border: 2px dashed var(--color-border); border-radius: var(--radius);
+        padding: 28px 20px; text-align: center; cursor: pointer;
+        background: var(--color-row-alt); transition: border-color 0.2s, background 0.2s;
+        margin-bottom: 16px;"
+        onclick="document.getElementById('inputAnexosBO').click()"
+        ondragover="dzOver(event,'dropzone-bo')" ondragleave="dzOut('dropzone-bo')" ondrop="dzDrop(event,'inputAnexosBO','dropzone-bo')">
+        <div style="font-size:2rem;margin-bottom:8px;">📎</div>
+        <div style="font-weight:600;color:var(--color-text);">Clique ou arraste arquivos aqui</div>
+        <div style="font-size:0.8rem;color:var(--color-hint);margin-top:4px;">
+          Imagens (JPG, PNG, GIF, WebP), PDF, DOC, TXT — máx. 15 MB por arquivo
+        </div>
+      </div>
+      <input type="file" id="inputAnexosBO" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display:none"
+             onchange="adicionarAnexosBO(this.files)">
+      <div id="listaAnexosBO" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </section>
+
     <!-- Objetos -->
     <section id="objetos" class="tab-content hidden">
       <h3>Objetos Apreendidos</h3>
@@ -192,6 +258,18 @@
 
     <p style="font-size:0.8rem;color:var(--color-hint);text-align:center;margin-top:8px;">* Campos obrigatórios</p>
   </main>
+
+  <!-- Modal opções PDF -->
+  <div id="modal-pdf-opts">
+    <div class="mpo-card">
+      <div class="mpo-title">📄 Exportar PDF</div>
+      <div class="mpo-msg">Deseja incluir os anexos nas páginas finais do documento?</div>
+      <div class="mpo-btns">
+        <button class="mpo-btn mpo-btn-sim" onclick="confirmarPdfBO(true)">✔ Sim, incluir anexos</button>
+        <button class="mpo-btn mpo-btn-nao" onclick="confirmarPdfBO(false)">Não incluir</button>
+      </div>
+    </div>
+  </div>
 
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
