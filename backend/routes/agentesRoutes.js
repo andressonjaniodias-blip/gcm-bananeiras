@@ -7,7 +7,7 @@ const exigirAdmin = verificarAdmin;
 const CAMPOS_AGENTE = `
   id, nome, matricula, cargo, usuario, ativo, criado_em, atualizado_em,
   cpf, rg, data_nascimento, sexo, lotacao, turno, data_admissao,
-  email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf
+  email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf, foto
 `;
 
 // Listar agentes
@@ -110,6 +110,22 @@ router.patch('/meu-contato', verificarToken, async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Agente vinculado ao usuário não encontrado.' });
     res.json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Salvar foto de perfil (próprio usuário)
+router.patch('/minha-foto', verificarToken, async (req, res) => {
+  try {
+    const usuario = req.usuario?.usuario;
+    const { foto } = req.body;
+    if (!foto) return res.status(400).json({ error: 'Foto não enviada.' });
+    if (foto.length > 500_000) return res.status(413).json({ error: 'Imagem muito grande. Máx. 500 KB.' });
+    const { rows } = await db.query(
+      `UPDATE agentes SET foto=$1, atualizado_em=NOW() WHERE usuario=$2 RETURNING id`,
+      [foto, usuario]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Agente não encontrado.' });
+    res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
