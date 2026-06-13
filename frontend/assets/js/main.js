@@ -49,15 +49,61 @@ window.addEventListener('DOMContentLoaded', async () => {
       restaurarRascunho(dados);
     } catch {}
   }
+
+  _renderMobileNav();
 });
 
 // ── Navegação de abas ────────────────────────────────────────────────────────
-function showTab(tabId) {
+const TAB_ORDER = ['solicitacao','ocorrencia','vitima','suspeito','relato','anexos','objetos','autoridade'];
+
+function showTab(tabId, scroll) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(tabId)?.classList.remove('hidden');
-  event?.target?.classList.add('active');
+  const section = document.getElementById(tabId);
+  section?.classList.remove('hidden');
+  document.querySelector(`.tab-btn[data-tab="${tabId}"]`)?.classList.add('active');
+  if (scroll !== false && window.innerWidth <= 768) {
+    section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  _renderMobileNav();
 }
+
+function _renderMobileNav() {
+  document.querySelectorAll('.mobile-tab-nav').forEach(el => el.remove());
+  if (window.innerWidth > 768) return;
+  const visible = document.querySelector('.tab-content:not(.hidden)');
+  if (!visible) return;
+  const idx = TAB_ORDER.indexOf(visible.id);
+  const nav = document.createElement('div');
+  nav.className = 'mobile-tab-nav';
+  if (idx > 0) {
+    const prev = document.createElement('button');
+    prev.type = 'button';
+    prev.className = 'mobile-nav-btn mobile-nav-prev';
+    prev.textContent = '← Anterior';
+    prev.onclick = () => showTab(TAB_ORDER[idx - 1]);
+    nav.appendChild(prev);
+  } else {
+    nav.appendChild(document.createElement('span'));
+  }
+  const counter = document.createElement('span');
+  counter.className = 'mobile-nav-counter';
+  counter.textContent = `${idx + 1} / ${TAB_ORDER.length}`;
+  nav.appendChild(counter);
+  if (idx < TAB_ORDER.length - 1) {
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'mobile-nav-btn mobile-nav-next';
+    next.textContent = 'Próximo →';
+    next.onclick = () => showTab(TAB_ORDER[idx + 1]);
+    nav.appendChild(next);
+  } else {
+    nav.appendChild(document.createElement('span'));
+  }
+  visible.appendChild(nav);
+}
+
+window.addEventListener('resize', _renderMobileNav);
 
 // ── Máscaras ─────────────────────────────────────────────────────────────────
 function mascararCPF(input) {
