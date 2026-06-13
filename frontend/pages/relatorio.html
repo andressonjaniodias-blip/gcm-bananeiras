@@ -12,6 +12,42 @@
   <script src="../assets/js/sidebar.js"></script>
   <style>
     .obrigatorio::after { content: ' *'; color: var(--color-danger); }
+
+    /* Anexos */
+    .anexo-item {
+      display:flex; align-items:center; gap:10px; padding:9px 12px;
+      background:var(--color-row-alt); border:1px solid var(--color-border);
+      border-radius:var(--radius-sm); font-size:0.86rem;
+    }
+    .anexo-item .anexo-thumb {
+      width:42px; height:42px; object-fit:cover; border-radius:4px; flex-shrink:0;
+    }
+    .anexo-item .anexo-info { flex:1; min-width:0; }
+    .anexo-item .anexo-nome { font-weight:600; color:var(--color-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .anexo-item .anexo-meta { font-size:0.75rem; color:var(--color-hint); }
+    .anexo-item .btn-rm-anexo {
+      background:var(--color-danger); color:#fff; border:none;
+      border-radius:4px; padding:4px 10px; cursor:pointer; font-size:0.8rem; flex-shrink:0;
+    }
+    .dz-over { border-color:var(--color-primary) !important; background:var(--color-primary-light) !important; }
+
+    /* Modal PDF */
+    #modal-pdf-rel {
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(0,0,0,0.55); align-items:center; justify-content:center;
+    }
+    #modal-pdf-rel.show { display:flex; }
+    #modal-pdf-rel .mpo-card {
+      background:#fff; border-radius:12px; padding:30px 28px;
+      max-width:380px; width:90%; box-shadow:0 16px 48px rgba(0,0,0,0.3);
+    }
+    #modal-pdf-rel .mpo-title { font-size:1rem; font-weight:800; color:#1E3A5F; margin-bottom:8px; }
+    #modal-pdf-rel .mpo-msg   { font-size:0.87rem; color:#6B7280; margin-bottom:20px; }
+    #modal-pdf-rel .mpo-btns  { display:flex; gap:10px; flex-wrap:wrap; }
+    #modal-pdf-rel .mpo-btn   { flex:1; padding:11px; border:none; border-radius:8px; font-size:0.92rem; font-weight:700; cursor:pointer; }
+    #modal-pdf-rel .mpo-btn-sim { background:#1E3A5F; color:#fff; }
+    #modal-pdf-rel .mpo-btn-nao { background:#e5e7eb; color:#374151; }
+    #modal-pdf-rel .mpo-btn:hover { opacity:0.88; }
   </style>
 </head>
 <body>
@@ -87,6 +123,27 @@
         <textarea id="obsRelatorio" rows="4" placeholder="Observações complementares, recomendações..." style="min-height:100px;"></textarea>
       </div>
 
+      <!-- Anexos -->
+      <div class="campo-group" style="margin-top:4px;">
+        <label>Anexos</label>
+        <div id="dropzone-rel" style="
+          border:2px dashed var(--color-border); border-radius:var(--radius);
+          padding:22px 16px; text-align:center; cursor:pointer;
+          background:var(--color-row-alt); transition:border-color 0.2s, background 0.2s;
+          margin-bottom:12px;"
+          onclick="document.getElementById('inputAnexosRel').click()"
+          ondragover="dzOverR(event)" ondragleave="dzOutR()" ondrop="dzDropR(event)">
+          <div style="font-size:1.8rem;margin-bottom:6px;">📎</div>
+          <div style="font-weight:600;color:var(--color-text);font-size:0.9rem;">Clique ou arraste arquivos aqui</div>
+          <div style="font-size:0.78rem;color:var(--color-hint);margin-top:4px;">
+            Imagens (JPG, PNG, GIF, WebP), PDF, DOC, TXT — máx. 15 MB por arquivo
+          </div>
+        </div>
+        <input type="file" id="inputAnexosRel" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display:none"
+               onchange="adicionarAnexosRel(this.files)">
+        <div id="listaAnexosRel" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
       <div class="actions">
         <button onclick="salvarRelatorio('rascunho')" style="background:var(--color-text-muted);">Salvar Rascunho</button>
         <button onclick="salvarRelatorio('finalizado')" style="background:var(--color-success);">Finalizar Relatório</button>
@@ -109,6 +166,18 @@
       </div>
     </section>
   </main>
+
+  <!-- Modal opções PDF -->
+  <div id="modal-pdf-rel">
+    <div class="mpo-card">
+      <div class="mpo-title">📄 Exportar PDF</div>
+      <div class="mpo-msg">Deseja incluir os anexos nas páginas finais do documento?</div>
+      <div class="mpo-btns">
+        <button class="mpo-btn mpo-btn-sim" onclick="confirmarPdfRel(true)">✔ Sim, incluir anexos</button>
+        <button class="mpo-btn mpo-btn-nao" onclick="confirmarPdfRel(false)">Não incluir</button>
+      </div>
+    </div>
+  </div>
 
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
@@ -191,10 +260,24 @@
       } catch { mostrarMsg('Erro de conexão.', 'danger'); }
     }
 
-    async function exportarPDFRelatorio() {
+    function exportarPDFRelatorio() {
       if (!relatorioIdAtual) return;
+      document.getElementById('modal-pdf-rel')?.classList.add('show');
+    }
+
+    async function confirmarPdfRel(comAnexos) {
+      document.getElementById('modal-pdf-rel')?.classList.remove('show');
+      if (!relatorioIdAtual) return;
+
+      // Primeiro envia anexos pendentes, se houver
+      if (_anexosRel.length) {
+        await enviarAnexosRel(relatorioIdAtual);
+        _anexosRel = [];
+        renderizarAnexosRel();
+      }
+
       try {
-        const res = await fetch(`${API_BASE_URL}/api/relatorio/${relatorioIdAtual}/pdf`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE_URL}/api/relatorio/${relatorioIdAtual}/pdf?anexos=${comAnexos}`, { credentials: 'include' });
         if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
         const blob = await res.blob();
         const url  = URL.createObjectURL(blob);
@@ -205,6 +288,67 @@
         URL.revokeObjectURL(url);
       } catch { alert('Erro ao exportar PDF.'); }
     }
+
+    // ── Lógica de anexos do Relatório ────────────────────────────────────────
+    let _anexosRel = [];
+
+    function adicionarAnexosRel(files) {
+      for (const f of Array.from(files)) {
+        if (_anexosRel.some(x => x.name === f.name && x.size === f.size)) continue;
+        _anexosRel.push(f);
+      }
+      renderizarAnexosRel();
+    }
+
+    function removerAnexoRel(idx) {
+      _anexosRel.splice(idx, 1);
+      renderizarAnexosRel();
+    }
+
+    function renderizarAnexosRel() {
+      const lista = document.getElementById('listaAnexosRel');
+      if (!lista) return;
+      if (!_anexosRel.length) { lista.innerHTML = ''; return; }
+      lista.innerHTML = _anexosRel.map((f, i) => {
+        const isImg = f.type.startsWith('image/');
+        const thumb = isImg
+          ? `<img class="anexo-thumb" src="${URL.createObjectURL(f)}" alt="">`
+          : `<div class="anexo-thumb" style="background:var(--color-row-alt);display:flex;align-items:center;justify-content:center;font-size:1.3rem;border:1px solid var(--color-border);border-radius:4px;">📄</div>`;
+        const kb = (f.size / 1024).toFixed(0);
+        return `<div class="anexo-item">
+          ${thumb}
+          <div class="anexo-info">
+            <div class="anexo-nome">${f.name}</div>
+            <div class="anexo-meta">${f.type || 'arquivo'} — ${kb} KB</div>
+          </div>
+          <button class="btn-rm-anexo" onclick="removerAnexoRel(${i})">Remover</button>
+        </div>`;
+      }).join('');
+    }
+
+    async function enviarAnexosRel(relId) {
+      if (!_anexosRel.length) return;
+      const fd = new FormData();
+      _anexosRel.forEach(f => fd.append('arquivos', f));
+      await fetch(`${API_BASE_URL}/api/anexos/relatorio/${relId}`, {
+        method: 'POST', credentials: 'include', body: fd
+      });
+    }
+
+    function dzOverR(e)  { e.preventDefault(); document.getElementById('dropzone-rel')?.classList.add('dz-over'); }
+    function dzOutR()    { document.getElementById('dropzone-rel')?.classList.remove('dz-over'); }
+    function dzDropR(e)  {
+      e.preventDefault(); dzOutR();
+      const files = e.dataTransfer?.files;
+      if (files?.length) {
+        const dt = new DataTransfer();
+        Array.from(files).forEach(f => dt.items.add(f));
+        const input = document.getElementById('inputAnexosRel');
+        input.files = dt.files;
+        adicionarAnexosRel(input.files);
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     async function carregarRelatorios() {
       try {
@@ -245,18 +389,33 @@
     }
 
     async function baixarPDFRel(id, numero) {
+      // Reutiliza o modal; armazena o número para o nome do arquivo
+      relatorioIdAtual = id;
+      _numeroRelHistorico = numero;
+      document.getElementById('modal-pdf-rel')?.classList.add('show');
+    }
+    let _numeroRelHistorico = null;
+
+    // Sobrescreve confirmarPdfRel para suportar chamada do histórico também
+    const _confirmarOriginal = confirmarPdfRel;
+    confirmarPdfRel = async function(comAnexos) {
+      document.getElementById('modal-pdf-rel')?.classList.remove('show');
+      if (!relatorioIdAtual) return;
+      // Não envia anexos pendentes ao chamar do histórico (sem _anexosRel neste contexto)
+      const nomeDl = _numeroRelHistorico
+        ? `relatorio_${_numeroRelHistorico.replace(/\//g, '-')}.pdf`
+        : `relatorio_${relatorioIdAtual}.pdf`;
+      _numeroRelHistorico = null;
       try {
-        const res  = await fetch(`${API_BASE_URL}/api/relatorio/${id}/pdf`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE_URL}/api/relatorio/${relatorioIdAtual}/pdf?anexos=${comAnexos}`, { credentials: 'include' });
         if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
         const blob = await res.blob();
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
-        a.href     = url;
-        a.download = `relatorio_${numero.replace(/\//g, '-')}.pdf`;
-        a.click();
+        a.href = url; a.download = nomeDl; a.click();
         URL.revokeObjectURL(url);
       } catch { alert('Erro ao baixar PDF.'); }
-    }
+    };
 
     function mostrarMsg(texto, tipo) {
       const el = document.getElementById('msgRelatorio');
