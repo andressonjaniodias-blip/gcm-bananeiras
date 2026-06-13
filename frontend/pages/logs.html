@@ -39,11 +39,11 @@
     /* Filtros */
     .filtros-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr auto auto;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto auto;
       gap: 10px; align-items: end;
     }
-    @media (max-width: 900px) { .filtros-grid { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 500px) { .filtros-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 1000px) { .filtros-grid { grid-template-columns: 1fr 1fr 1fr; } }
+    @media (max-width: 600px)  { .filtros-grid { grid-template-columns: 1fr; } }
 
     .field label {
       display: block; font-size: 0.75rem; font-weight: 600;
@@ -115,7 +115,14 @@
     .acao-criar    { background: #DBEAFE; color: #1E40AF; }
     .acao-editar   { background: #FEF9C3; color: #854D0E; }
     .acao-excluir  { background: #FFE4E6; color: #9F1239; }
-    .acao-exportar { background: #EDE9FE; color: #5B21B6; }
+    .acao-exportar  { background: #EDE9FE; color: #5B21B6; }
+    .acao-expirada  { background: #FFF3CD; color: #856404; }
+    .acao-senha     { background: #E0E7FF; color: #3730A3; }
+
+    .disp-tag {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:0.78rem; color:var(--color-text-muted);
+    }
 
     .empty-row td  { text-align: center; color: var(--color-hint); padding: 30px; }
 
@@ -182,12 +189,23 @@
           <label>Tipo de Ação</label>
           <select id="filtroAcao">
             <option value="">Todas as ações</option>
-            <option value="login">Login</option>
-            <option value="logout">Logout</option>
-            <option value="criar">Criar</option>
-            <option value="editar">Editar</option>
-            <option value="excluir">Excluir</option>
-            <option value="exportar">Exportar</option>
+            <option value="LOGIN">Login</option>
+            <option value="LOGOUT">Logout</option>
+            <option value="SESSAO_EXPIRADA">Sessão expirada</option>
+            <option value="CRIAR">Criar</option>
+            <option value="ALTERAR">Alterar</option>
+            <option value="REMOVER">Remover</option>
+            <option value="TROCAR_SENHA">Troca de senha</option>
+            <option value="ARQUIVAR">Arquivar</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Dispositivo</label>
+          <select id="filtroDispositivo">
+            <option value="">Todos</option>
+            <option value="Desktop">Desktop</option>
+            <option value="Mobile">Mobile</option>
+            <option value="Tablet">Tablet</option>
           </select>
         </div>
         <div class="field">
@@ -220,8 +238,11 @@
       <div class="stats-row" id="statsRow" style="display:none;">
         <div class="stat-pill">Total: <strong id="statTotal">0</strong></div>
         <div class="stat-pill">Logins: <strong id="statLogins">0</strong></div>
+        <div class="stat-pill">Sessões expiradas: <strong id="statExpiradas">0</strong></div>
         <div class="stat-pill">Ações críticas: <strong id="statCriticas">0</strong></div>
         <div class="stat-pill">Usuários distintos: <strong id="statUsuarios">0</strong></div>
+        <div class="stat-pill">💻 Desktop: <strong id="statDesktop">0</strong></div>
+        <div class="stat-pill">📱 Mobile: <strong id="statMobile">0</strong></div>
       </div>
 
       <div class="table-wrap">
@@ -233,11 +254,13 @@
               <th>Usuário</th>
               <th>Ação</th>
               <th>Recurso / Descrição</th>
+              <th>Dispositivo</th>
+              <th>Navegador / SO</th>
               <th>IP</th>
             </tr>
           </thead>
           <tbody id="tabelaLogs">
-            <tr class="empty-row"><td colspan="6">Carregando registros...</td></tr>
+            <tr class="empty-row"><td colspan="8">Carregando registros...</td></tr>
           </tbody>
         </table>
       </div>
@@ -279,22 +302,20 @@
     }
 
     function aplicarFiltros() {
-      const usuario = document.getElementById('filtroUsuario').value.trim().toLowerCase();
-      const acao    = document.getElementById('filtroAcao').value.toLowerCase();
-      const inicio  = document.getElementById('filtroInicio').value;
-      const fim     = document.getElementById('filtroFim').value;
+      const usuario    = document.getElementById('filtroUsuario').value.trim().toLowerCase();
+      const acao       = document.getElementById('filtroAcao').value.toUpperCase();
+      const dispositivo= document.getElementById('filtroDispositivo').value;
+      const inicio     = document.getElementById('filtroInicio').value;
+      const fim        = document.getElementById('filtroFim').value;
 
       logsFiltrados = todosLogs.filter(l => {
-        if (usuario && !(l.usuario || '').toLowerCase().includes(usuario)) return false;
-        if (acao    && !(l.acao   || '').toLowerCase().includes(acao))    return false;
-        if (inicio) {
-          const d = new Date(l.data);
-          if (d < new Date(inicio)) return false;
-        }
+        if (usuario    && !(l.usuario||'').toLowerCase().includes(usuario)) return false;
+        if (acao       && !(l.acao||'').toUpperCase().includes(acao))       return false;
+        if (dispositivo&& (l.dispositivo||'') !== dispositivo)              return false;
+        if (inicio && new Date(l.data) < new Date(inicio))                  return false;
         if (fim) {
-          const d = new Date(l.data);
           const fimDia = new Date(fim); fimDia.setHours(23,59,59,999);
-          if (d > fimDia) return false;
+          if (new Date(l.data) > fimDia) return false;
         }
         return true;
       });
@@ -305,10 +326,8 @@
     }
 
     function limparFiltros() {
-      document.getElementById('filtroUsuario').value = '';
-      document.getElementById('filtroAcao').value    = '';
-      document.getElementById('filtroInicio').value  = '';
-      document.getElementById('filtroFim').value     = '';
+      ['filtroUsuario','filtroAcao','filtroDispositivo','filtroInicio','filtroFim']
+        .forEach(id => document.getElementById(id).value = '');
       logsFiltrados = [...todosLogs];
       paginaAtual = 1;
       atualizarStats();
@@ -319,15 +338,20 @@
       const el = document.getElementById('statsRow');
       if (!logsFiltrados.length) { el.style.display = 'none'; return; }
       el.style.display = 'flex';
-      document.getElementById('statTotal').textContent    = logsFiltrados.length;
-      document.getElementById('statLogins').textContent   = logsFiltrados.filter(l => (l.acao||'').toLowerCase().includes('login')).length;
-      document.getElementById('statCriticas').textContent = logsFiltrados.filter(l => /excluir|deletar|remover|arquivar/i.test(l.acao||'')).length;
-      document.getElementById('statUsuarios').textContent = new Set(logsFiltrados.map(l => l.usuario)).size;
+      document.getElementById('statTotal').textContent     = logsFiltrados.length;
+      document.getElementById('statLogins').textContent    = logsFiltrados.filter(l => l.acao === 'LOGIN').length;
+      document.getElementById('statExpiradas').textContent = logsFiltrados.filter(l => l.acao === 'SESSAO_EXPIRADA').length;
+      document.getElementById('statCriticas').textContent  = logsFiltrados.filter(l => /REMOVER|ARQUIVAR|EXCLUIR|DELETAR/.test(l.acao||'')).length;
+      document.getElementById('statUsuarios').textContent  = new Set(logsFiltrados.map(l => l.usuario)).size;
+      document.getElementById('statDesktop').textContent   = logsFiltrados.filter(l => l.dispositivo === 'Desktop').length;
+      document.getElementById('statMobile').textContent    = logsFiltrados.filter(l => l.dispositivo === 'Mobile' || l.dispositivo === 'Tablet').length;
     }
 
+    const DISP_ICON = { Desktop: '💻', Mobile: '📱', Tablet: '📟' };
+
     function renderizar() {
-      const tbody  = document.getElementById('tabelaLogs');
-      const total  = logsFiltrados.length;
+      const tbody   = document.getElementById('tabelaLogs');
+      const total   = logsFiltrados.length;
       const totalPg = Math.ceil(total / POR_PAGINA) || 1;
       if (paginaAtual > totalPg) paginaAtual = totalPg;
 
@@ -335,17 +359,28 @@
       const pagina = logsFiltrados.slice(inicio, inicio + POR_PAGINA);
 
       if (!pagina.length) {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Nenhum registro encontrado</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Nenhum registro encontrado</td></tr>';
       } else {
         tbody.innerHTML = pagina.map((l, i) => {
-          const acaoLow  = (l.acao || '').toLowerCase();
-          const acaoClass = acaoLow.includes('login')    ? 'acao-login'
-                          : acaoLow.includes('logout')   ? 'acao-logout'
-                          : acaoLow.includes('criar')    ? 'acao-criar'
-                          : acaoLow.includes('edit')     ? 'acao-editar'
-                          : /excluir|deletar|remover|arquivar/.test(acaoLow) ? 'acao-excluir'
-                          : acaoLow.includes('export')   ? 'acao-exportar'
-                          : '';
+          const acao = (l.acao || '').toUpperCase();
+          const acaoClass =
+            acao === 'LOGIN'            ? 'acao-login'
+          : acao === 'LOGOUT'           ? 'acao-logout'
+          : acao === 'SESSAO_EXPIRADA'  ? 'acao-expirada'
+          : /CRIAR|CADASTR/.test(acao)  ? 'acao-criar'
+          : /ALTERAR|EDITAR/.test(acao) ? 'acao-editar'
+          : /REMOVER|EXCLUIR|ARQUIVAR/.test(acao) ? 'acao-excluir'
+          : /EXPORTAR/.test(acao)       ? 'acao-exportar'
+          : /SENHA/.test(acao)          ? 'acao-senha'
+          : '';
+
+          const disp  = l.dispositivo || '';
+          const dispHtml = disp
+            ? `<span class="disp-tag">${DISP_ICON[disp] || '🖥️'} ${disp}</span>`
+            : '<span style="color:var(--color-hint)">—</span>';
+
+          const navSo = [l.navegador, l.so].filter(Boolean).join(' / ') || '—';
+
           return `
             <tr>
               <td style="color:var(--color-hint);font-size:0.78rem;">${inicio + i + 1}</td>
@@ -353,17 +388,17 @@
               <td style="font-weight:600;">${l.usuario || '—'}</td>
               <td><span class="acao-tag ${acaoClass}">${l.acao || '—'}</span></td>
               <td style="color:var(--color-text-muted);font-size:0.84rem;">${l.recurso || '—'}</td>
-              <td style="font-size:0.78rem;font-family:monospace;color:var(--color-hint);">${l.ip || '—'}</td>
+              <td>${dispHtml}</td>
+              <td style="font-size:0.78rem;color:var(--color-text-muted);">${navSo}</td>
+              <td style="font-size:0.78rem;font-family:monospace;color:var(--color-hint);white-space:nowrap;">${l.ip || '—'}</td>
             </tr>`;
         }).join('');
       }
 
-      // Info de paginação
       const fim2 = Math.min(inicio + POR_PAGINA, total);
       document.getElementById('pgInfo').textContent =
         total ? `Exibindo ${inicio + 1}–${fim2} de ${total} registros` : 'Nenhum registro';
 
-      // Botões de página
       const pgBtns = document.getElementById('pgBtns');
       pgBtns.innerHTML = '';
       const addBtn = (label, pg, ativo = false, disabled = false) => {
@@ -392,14 +427,18 @@
 
     function exportarCSV() {
       if (!logsFiltrados.length) { toast('Nenhum registro para exportar.', 'erro'); return; }
-      const cols = ['#', 'Data/Hora', 'Usuário', 'Ação', 'Recurso', 'IP'];
+      const cols = ['#','Data/Hora','Usuário','Ação','Recurso','Dispositivo','Navegador','SO','IP','ID Sessão'];
       const linhas = logsFiltrados.map((l, i) => [
         i + 1,
         new Date(l.data).toLocaleString('pt-BR'),
-        l.usuario || '',
-        l.acao    || '',
-        l.recurso || '',
-        l.ip      || ''
+        l.usuario    || '',
+        l.acao       || '',
+        l.recurso    || '',
+        l.dispositivo|| '',
+        l.navegador  || '',
+        l.so         || '',
+        l.ip         || '',
+        l.sessao_id  || '',
       ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'));
 
       const csv = '﻿' + [cols.join(';'), ...linhas].join('\r\n');
