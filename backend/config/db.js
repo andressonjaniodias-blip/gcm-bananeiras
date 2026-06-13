@@ -24,12 +24,17 @@ pool.connect()
         role TEXT DEFAULT 'agente'
       );
       CREATE TABLE IF NOT EXISTS audit_logs (
-        id SERIAL PRIMARY KEY,
-        usuario TEXT NOT NULL,
-        acao TEXT NOT NULL,
-        recurso TEXT,
-        ip TEXT,
-        data TIMESTAMPTZ DEFAULT NOW()
+        id          SERIAL PRIMARY KEY,
+        usuario     TEXT NOT NULL,
+        acao        TEXT NOT NULL,
+        recurso     TEXT,
+        ip          TEXT,
+        data        TIMESTAMPTZ DEFAULT NOW(),
+        user_agent  TEXT,
+        dispositivo TEXT,
+        navegador   TEXT,
+        so          TEXT,
+        sessao_id   TEXT
       );
     `);
     await client.query(`
@@ -87,6 +92,16 @@ pool.connect()
       );
     `);
     // Colunas adicionais de dados funcionais e contato
+    // Colunas adicionais de log (para bancos existentes)
+    const colunasLog = [
+      `ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS user_agent  TEXT`,
+      `ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS dispositivo TEXT`,
+      `ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS navegador   TEXT`,
+      `ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS so          TEXT`,
+      `ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS sessao_id   TEXT`,
+    ];
+    for (const sql of colunasLog) await client.query(sql);
+
     const colunasAgentes = [
       `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS cpf           TEXT`,
       `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS rg            TEXT`,
@@ -104,6 +119,7 @@ pool.connect()
       `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS bairro        TEXT`,
       `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS cidade        TEXT`,
       `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS uf            TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMPTZ DEFAULT NOW()`,
     ];
     for (const sql of colunasAgentes) await client.query(sql);
     client.release();
