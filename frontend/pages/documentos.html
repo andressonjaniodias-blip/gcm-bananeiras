@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -12,6 +12,7 @@
   <script src="../assets/js/sidebar.js"></script>
   <style>
     .obrigatorio::after { content: ' *'; color: var(--color-danger); }
+
     .upload-area {
       border: 2px dashed var(--color-border);
       border-radius: var(--radius-sm);
@@ -27,6 +28,49 @@
     }
     .upload-area input[type="file"] { display: none; }
     .upload-nome { margin-top: 8px; font-size: 0.85rem; color: var(--color-primary); font-weight: 600; }
+
+    /* Destaque checkbox */
+    .destaque-toggle {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px;
+      background: var(--color-primary-light);
+      border: 1px solid var(--color-primary);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+    .destaque-toggle:hover { background: var(--color-primary-light); filter: brightness(0.96); }
+    .destaque-toggle input[type="checkbox"] {
+      width: 18px; height: 18px; accent-color: var(--color-primary); cursor: pointer; flex-shrink: 0;
+    }
+    .destaque-toggle-text { font-size: 0.9rem; font-weight: 600; color: var(--color-primary); line-height: 1.3; }
+    .destaque-toggle-text small { display: block; font-weight: 400; color: var(--color-text-muted); font-size: 0.78rem; margin-top: 2px; }
+
+    /* Badge destaque no acervo */
+    .badge-destaque {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: var(--radius-pill);
+      font-size: 0.72rem; font-weight: 700;
+      background: #FEF3C7; color: #92400E;
+      border: 1px solid #FCD34D;
+    }
+
+    /* Toggle destaque no acervo (supervisor/admin) */
+    .btn-destaque-toggle {
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 0.75rem; font-weight: 700;
+      border: 1px solid var(--color-border);
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg-card);
+      color: var(--color-text-muted);
+    }
+    .btn-destaque-toggle.ativo {
+      background: #FEF3C7; color: #92400E; border-color: #FCD34D;
+    }
+    .btn-destaque-toggle:hover { opacity: 0.8; }
   </style>
 </head>
 <body>
@@ -42,8 +86,8 @@
 
   <main class="dashboard">
     <nav class="tabs" id="docTabs">
-      <button class="tab-btn" id="btnTabPublicar" onclick="showDocTab('publicar')">Publicar Documento</button>
-      <button class="tab-btn active" id="btnTabAcervo" onclick="showDocTab('acervo')">Acervo</button>
+      <button class="tab-btn" id="btnTabPublicar" onclick="showDocTab('publicar', this)">Publicar Documento</button>
+      <button class="tab-btn active" id="btnTabAcervo" onclick="showDocTab('acervo', this)">Acervo</button>
     </nav>
 
     <!-- PUBLICAR -->
@@ -84,6 +128,17 @@
       <div class="campo-group">
         <label>Descrição</label>
         <textarea id="docDescricao" rows="3" placeholder="Breve descrição do conteúdo..." style="min-height:80px;"></textarea>
+      </div>
+
+      <!-- Destaque na página inicial -->
+      <div class="campo-group">
+        <label class="destaque-toggle" for="docDestaqueHome">
+          <input type="checkbox" id="docDestaqueHome">
+          <div class="destaque-toggle-text">
+            ⭐ Exibir na Página Inicial
+            <small>O documento aparecerá no painel de publicações da tela inicial do sistema.</small>
+          </div>
+        </label>
       </div>
 
       <div class="campo-group">
@@ -135,29 +190,30 @@
     let arquivoBase64 = null;
     let arquivoNome   = null;
     let arquivoMime   = null;
+    let podePublicar  = false;
 
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('docData').value = new Date().toISOString().slice(0, 10);
       carregarDocumentos();
 
       const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
-      const podePublicar = perfil.role === 'supervisor' || perfil.role === 'admin';
+      podePublicar = perfil.role === 'supervisor' || perfil.role === 'admin';
       const btnPublicar = document.getElementById('btnTabPublicar');
       if (!podePublicar) {
         btnPublicar.style.display = 'none';
-        showDocTab('acervo');
+        showDocTab('acervo', document.getElementById('btnTabAcervo'));
       } else {
         btnPublicar.classList.add('active');
         document.getElementById('btnTabAcervo').classList.remove('active');
-        showDocTab('publicar');
+        showDocTab('publicar', btnPublicar);
       }
     });
 
-    function showDocTab(id) {
+    function showDocTab(id, btn) {
       document.querySelectorAll('#publicar, #acervo').forEach(s => s.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(id).classList.remove('hidden');
-      event?.target?.classList.add('active');
+      if (btn) btn.classList.add('active');
       if (id === 'acervo') renderizarDocs(todosDocumentos);
     }
 
@@ -171,7 +227,7 @@
       document.getElementById('uploadArea').classList.add('drag-over');
     }
 
-    function dragLeave(e) {
+    function dragLeave() {
       document.getElementById('uploadArea').classList.remove('drag-over');
     }
 
@@ -207,11 +263,12 @@
 
       const payload = {
         tipo, titulo, data,
-        numero:    document.getElementById('docNumero').value.trim(),
-        descricao: document.getElementById('docDescricao').value.trim(),
-        arquivo:   arquivoBase64,
+        numero:      document.getElementById('docNumero').value.trim(),
+        descricao:   document.getElementById('docDescricao').value.trim(),
+        arquivo:     arquivoBase64,
         arquivoNome,
         arquivoMime,
+        destaqueHome: document.getElementById('docDestaqueHome').checked,
       };
 
       try {
@@ -232,23 +289,66 @@
     async function carregarDocumentos() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/documentos`, { credentials: 'include' });
-        if (res.ok) todosDocumentos = await res.json();
+        if (res.ok) {
+          todosDocumentos = await res.json();
+          renderizarDocs(todosDocumentos);
+        }
       } catch {}
     }
 
     function renderizarDocs(lista) {
       const el = document.getElementById('listaDocumentos');
-      if (!lista.length) { el.innerHTML = '<p style="text-align:center;color:var(--color-hint);">Nenhum documento encontrado.</p>'; return; }
-      el.innerHTML = '<div class="doc-list">' + lista.map(d => `
-        <div class="doc-item">
+      if (!lista.length) {
+        el.innerHTML = '<p style="text-align:center;color:var(--color-hint);">Nenhum documento encontrado.</p>';
+        return;
+      }
+      el.innerHTML = '<div class="doc-list">' + lista.map(d => {
+        const destaqueTag = d.destaque_home
+          ? `<span class="badge-destaque">⭐ Home</span>`
+          : '';
+        const btnDestaque = podePublicar ? `
+          <button class="btn-destaque-toggle ${d.destaque_home ? 'ativo' : ''}"
+                  title="${d.destaque_home ? 'Remover da página inicial' : 'Destacar na página inicial'}"
+                  onclick="toggleDestaque(${d.id}, ${!d.destaque_home}, this)">
+            ${d.destaque_home ? '⭐ Na home' : '☆ Destacar'}
+          </button>` : '';
+        return `
+        <div class="doc-item" id="doc-item-${d.id}">
           <div class="doc-item-info">
-            <div class="doc-item-title">${d.titulo}</div>
-            <div class="doc-item-meta">${d.numero ? d.numero + ' &bull; ' : ''}${new Date(d.data).toLocaleDateString('pt-BR')} &bull; Publicado por: ${d.publicado_por}</div>
+            <div class="doc-item-title">${d.titulo} ${destaqueTag}</div>
+            <div class="doc-item-meta">
+              ${d.numero ? d.numero + ' &bull; ' : ''}
+              ${new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR')}
+              &bull; Publicado por: ${d.publicado_por}
+            </div>
             ${d.descricao ? `<div class="doc-item-meta" style="margin-top:2px;">${d.descricao}</div>` : ''}
           </div>
           <span class="doc-badge">${d.tipo}</span>
+          ${btnDestaque}
           <button class="btn-pdf" onclick="baixarDoc(${d.id}, '${d.arquivo_nome}')">Baixar</button>
-        </div>`).join('') + '</div>';
+        </div>`;
+      }).join('') + '</div>';
+    }
+
+    async function toggleDestaque(id, novoValor, btn) {
+      btn.disabled = true;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/documentos/${id}/destaque`, {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ destaque_home: novoValor }),
+        });
+        if (!res.ok) { alert('Erro ao atualizar destaque.'); btn.disabled = false; return; }
+        const doc = todosDocumentos.find(d => d.id === id);
+        if (doc) doc.destaque_home = novoValor;
+        renderizarDocs(todosDocumentos.filter(d => {
+          const busca = document.getElementById('buscarDoc').value.toLowerCase();
+          const tipo  = document.getElementById('filtroTipoDoc').value;
+          return (!busca || d.titulo.toLowerCase().includes(busca) || (d.numero || '').toLowerCase().includes(busca))
+              && (!tipo  || d.tipo === tipo);
+        }));
+      } catch { alert('Erro de conexão.'); btn.disabled = false; }
     }
 
     function filtrarDocs() {
@@ -285,6 +385,7 @@
         const el = document.getElementById(id);
         if (el) el.value = id === 'docData' ? new Date().toISOString().slice(0, 10) : '';
       });
+      document.getElementById('docDestaqueHome').checked = false;
       arquivoBase64 = arquivoNome = arquivoMime = null;
       document.getElementById('docArquivoNome').style.display = 'none';
       document.getElementById('docArquivo').value = '';
