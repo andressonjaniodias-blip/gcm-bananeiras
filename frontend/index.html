@@ -23,6 +23,10 @@
 
   <main class="login-container">
     <h2>Login</h2>
+    <div id="avisoInatividade" style="display:none;background:#FEF3C7;border-left:4px solid #F59E0B;
+      color:#92400E;padding:10px 14px;border-radius:6px;font-size:0.84rem;font-weight:600;margin-bottom:14px;">
+      ⏱️ Sua sessão foi encerrada por inatividade. Faça login novamente.
+    </div>
     <form onsubmit="login(); return false;">
       <input type="text" id="usuario" placeholder="Usuário" required>
       <input type="password" id="senha" placeholder="Senha" required>
@@ -30,6 +34,11 @@
     </form>
     <p style="font-size:0.82rem;color:#888;text-align:center;margin-top:8px;">Esqueceu a senha? Contate o administrador do sistema.</p>
   </main>
+  <script>
+    if (new URLSearchParams(window.location.search).get('motivo') === 'inatividade') {
+      document.getElementById('avisoInatividade').style.display = 'block';
+    }
+  </script>
 
   <!-- ✅ IMPORTANTE: Carregar config ANTES de main.js -->
   <script src="assets/js/config.js"></script>
