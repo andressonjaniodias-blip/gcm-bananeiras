@@ -5,7 +5,7 @@ const { verificarToken, verificarAdmin } = require('../middleware/auth');
 const exigirAdmin = verificarAdmin;
 
 const CAMPOS_AGENTE = `
-  id, nome, matricula, cargo, usuario, ativo, criado_em,
+  id, nome, matricula, cargo, usuario, ativo, criado_em, atualizado_em,
   cpf, rg, data_nascimento, sexo, lotacao, turno, data_admissao,
   email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf
 `;
@@ -33,8 +33,9 @@ router.post('/', verificarToken, exigirAdmin, async (req, res) => {
       `INSERT INTO agentes
         (nome, matricula, cargo, usuario, ativo,
          cpf, rg, data_nascimento, sexo, lotacao, turno, data_admissao,
-         email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+         email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf,
+         atualizado_em)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,NOW())
        RETURNING ${CAMPOS_AGENTE}`,
       [
         nome.trim(), matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal',
@@ -67,7 +68,8 @@ router.put('/:id', verificarToken, exigirAdmin, async (req, res) => {
         cpf=$6, rg=$7, data_nascimento=$8, sexo=$9,
         lotacao=$10, turno=$11, data_admissao=$12,
         email=$13, telefone=$14, cep=$15, logradouro=$16,
-        numero_end=$17, complemento=$18, bairro=$19, cidade=$20, uf=$21
+        numero_end=$17, complemento=$18, bairro=$19, cidade=$20, uf=$21,
+        atualizado_em=NOW()
        WHERE id=$22 RETURNING ${CAMPOS_AGENTE}`,
       [
         nome.trim(), matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal',
@@ -95,7 +97,8 @@ router.patch('/meu-contato', verificarToken, async (req, res) => {
     const { rows } = await db.query(
       `UPDATE agentes
        SET telefone=$1, email=$2, cep=$3, logradouro=$4,
-           numero_end=$5, complemento=$6, bairro=$7, cidade=$8, uf=$9
+           numero_end=$5, complemento=$6, bairro=$7, cidade=$8, uf=$9,
+           atualizado_em=NOW()
        WHERE usuario=$10 RETURNING ${CAMPOS_AGENTE}`,
       [
         telefone?.trim() || null, email?.trim() || null,
