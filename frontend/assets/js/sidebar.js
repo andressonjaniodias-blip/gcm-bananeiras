@@ -135,9 +135,266 @@
     }
   };
 
+  // ── Timer de inatividade de sessão ───────────────────────────────────────
+  let _inativMinutos  = 30;   // sobrescrito após /api/auth/me
+  let _timerInativ    = null;
+  let _timerAviso     = null;
+  let _avisoPendente  = false;
+
+  const AVISO_ANTECEDENCIA_S = 5 * 60; // aviso 5 min antes
+
+  function iniciarTimerInatividade(minutos) {
+    _inativMinutos = minutos || 30;
+    _resetarTimer();
+
+    const eventos = ['mousemove','mousedown','keydown','touchstart','scroll','click'];
+    eventos.forEach(ev => document.addEventListener(ev, _resetarTimer, { passive: true }));
+  }
+
+  function _resetarTimer() {
+    clearTimeout(_timerInativ);
+    clearTimeout(_timerAviso);
+
+    // Se aviso estava visível, fecha-o pois houve atividade
+    if (_avisoPendente) {
+      _fecharAvisoInatividade();
+    }
+
+    const totalMs  = _inativMinutos * 60 * 1000;
+    const avisoMs  = totalMs - AVISO_ANTECEDENCIA_S * 1000;
+
+    // Aviso antecipado
+    if (avisoMs > 0) {
+      _timerAviso = setTimeout(_mostrarAvisoInatividade, avisoMs);
+    }
+
+    // Logout por inatividade
+    _timerInativ = setTimeout(_logoutPorInatividade, totalMs);
+  }
+
+  function _mostrarAvisoInatividade() {
+    if (_avisoPendente) return;
+    _avisoPendente = true;
+
+    const style = document.createElement('style');
+    style.id = 'style-inativ';
+    style.textContent = `
+      #modal-inativ {
+        position:fixed; inset:0; z-index:99998;
+        background:rgba(0,0,0,0.6); backdrop-filter:blur(3px);
+        display:flex; align-items:center; justify-content:center; padding:20px;
+      }
+      #modal-inativ .mi-card {
+        background:#fff; border-radius:12px; padding:32px 28px;
+        max-width:400px; width:100%; text-align:center;
+        box-shadow:0 16px 48px rgba(0,0,0,0.35);
+      }
+      #modal-inativ .mi-icon  { font-size:2.8rem; margin-bottom:10px; }
+      #modal-inativ .mi-title { font-size:1.05rem; font-weight:800; color:#92400E; margin-bottom:8px; }
+      #modal-inativ .mi-msg   { font-size:0.88rem; color:#6B7280; margin-bottom:6px; }
+      #modal-inativ .mi-cnt   { font-size:1.6rem; font-weight:800; color:#DC2626; margin:10px 0 18px; }
+      #modal-inativ .mi-btn   {
+        background:#1E3A5F; color:#fff; border:none; border-radius:8px;
+        padding:11px 24px; font-size:0.95rem; font-weight:700; cursor:pointer; width:100%;
+      }
+      #modal-inativ .mi-btn:hover { background:#162d4a; }
+    `;
+    document.head.appendChild(style);
+
+    const modal = document.createElement('div');
+    modal.id = 'modal-inativ';
+    modal.innerHTML = `
+      <div class="mi-card">
+        <div class="mi-icon">⏱️</div>
+        <div class="mi-title">Sessão prestes a expirar</div>
+        <div class="mi-msg">Você está inativo. A sessão será encerrada em:</div>
+        <div class="mi-cnt" id="mi-contador">${AVISO_ANTECEDENCIA_S}</div>
+        <div class="mi-msg" style="margin-bottom:16px;font-size:0.8rem;">segundos</div>
+        <button class="mi-btn" onclick="window._manterSessao()">Continuar conectado</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Contador regressivo
+    let restante = AVISO_ANTECEDENCIA_S;
+    const contadorEl = document.getElementById('mi-contador');
+    const tick = setInterval(() => {
+      restante--;
+      if (contadorEl) contadorEl.textContent = restante;
+      if (restante <= 0) clearInterval(tick);
+    }, 1000);
+    modal._tick = tick;
+  }
+
+  function _fecharAvisoInatividade() {
+    _avisoPendente = false;
+    const modal = document.getElementById('modal-inativ');
+    if (modal) { clearInterval(modal._tick); modal.remove(); }
+    const s = document.getElementById('style-inativ');
+    if (s) s.remove();
+  }
+
+  async function _logoutPorInatividade() {
+    _fecharAvisoInatividade();
+    try {
+      await fetch(`${window.API_BASE_URL || ''}/api/auth/logout-inatividade`, {
+        method: 'POST', credentials: 'include'
+      });
+    } catch {}
+    sessionStorage.removeItem('perfil');
+    window.location.href = '/?motivo=inatividade';
+  }
+
+  window._manterSessao = function () {
+    _resetarTimer();
+  };
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // ── Verificação de atualização de dados a cada 6 meses ──────────────────
+  const MESES_LIMITE = 6;
+  const PAGINA_PERFIL = '/pages/perfil.html';
+  const estouNoPerfil = window.location.pathname.endsWith('perfil.html');
+
+  async function verificarAtualizacaoDados(usuarioLogado) {
+    try {
+      const res = await fetch(`${window.API_BASE_URL || ''}/api/agentes`, { credentials: 'include' });
+      if (!res.ok) return;
+      const agentes = await res.json();
+      const ag = agentes.find(a => a.usuario === usuarioLogado);
+      if (!ag) return;
+
+      const referencia = ag.atualizado_em || ag.criado_em;
+      if (!referencia) return;
+
+      const diasPassados = (Date.now() - new Date(referencia).getTime()) / (1000 * 60 * 60 * 24);
+      const limiteDias  = MESES_LIMITE * 30;
+
+      if (diasPassados < limiteDias) return; // dados em dia
+
+      // Quantos dias além do prazo
+      const diasAtraso = Math.floor(diasPassados - limiteDias);
+      const dataRef    = new Date(referencia).toLocaleDateString('pt-BR');
+
+      if (estouNoPerfil) {
+        // Na página de perfil: apenas banner de aviso
+        mostrarBannerAviso(dataRef, diasAtraso);
+      } else {
+        // Nas demais páginas: overlay de bloqueio total
+        mostrarBloqueio(dataRef, diasAtraso);
+      }
+    } catch { /* não bloqueia em caso de falha de rede */ }
+  }
+
+  function mostrarBannerAviso(dataRef, diasAtraso) {
+    const style = document.createElement('style');
+    style.textContent = `
+      #banner-dados {
+        position: fixed; top: var(--header-h, 60px); left: 0; right: 0; z-index: 9000;
+        background: #FEF3C7; border-bottom: 3px solid #F59E0B;
+        color: #92400E; padding: 12px 20px;
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; font-size: 0.88rem; font-weight: 600; flex-wrap: wrap;
+      }
+      #banner-dados .banner-msg { flex: 1; }
+      #banner-dados .banner-acao {
+        background: #F59E0B; color: #fff; border: none;
+        border-radius: 6px; padding: 7px 16px; cursor: pointer;
+        font-weight: 700; font-size: 0.85rem; white-space: nowrap;
+      }
+      #banner-dados .banner-acao:hover { background: #D97706; }
+    `;
+    document.head.appendChild(style);
+
+    const banner = document.createElement('div');
+    banner.id = 'banner-dados';
+    banner.innerHTML = `
+      <span class="banner-msg">
+        ⚠️ Seus dados de contato não são atualizados desde <strong>${dataRef}</strong>
+        (${diasAtraso} dia(s) além do prazo de ${MESES_LIMITE} meses).
+        Atualize antes de sair desta página.
+      </span>
+      <button class="banner-acao" onclick="window.scrollTo({top:document.getElementById('cardContato')?.offsetTop-80,behavior:'smooth'})">
+        Atualizar Agora
+      </button>
+    `;
+    document.body.appendChild(banner);
+  }
+
+  function mostrarBloqueio(dataRef, diasAtraso) {
+    const style = document.createElement('style');
+    style.textContent = `
+      #overlay-dados {
+        position: fixed; inset: 0; z-index: 99999;
+        background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+        display: flex; align-items: center; justify-content: center; padding: 20px;
+      }
+      #overlay-dados .od-card {
+        background: #fff; border-radius: 12px; padding: 36px 32px;
+        max-width: 460px; width: 100%; text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      }
+      #overlay-dados .od-icon  { font-size: 3rem; margin-bottom: 12px; }
+      #overlay-dados .od-title {
+        font-size: 1.15rem; font-weight: 800; color: #1E3A5F; margin-bottom: 10px;
+      }
+      #overlay-dados .od-msg {
+        font-size: 0.9rem; color: #4B5563; margin-bottom: 8px; line-height: 1.55;
+      }
+      #overlay-dados .od-meta {
+        font-size: 0.8rem; color: #9CA3AF; margin-bottom: 24px;
+      }
+      #overlay-dados .od-btn {
+        display: block; width: 100%; background: #1E3A5F; color: #fff;
+        border: none; border-radius: 8px; padding: 13px;
+        font-size: 1rem; font-weight: 700; cursor: pointer;
+        text-decoration: none; transition: background 0.2s;
+      }
+      #overlay-dados .od-btn:hover { background: #162d4a; }
+    `;
+    document.head.appendChild(style);
+
+    const overlay = document.createElement('div');
+    overlay.id = 'overlay-dados';
+    overlay.innerHTML = `
+      <div class="od-card">
+        <div class="od-icon">🔒</div>
+        <div class="od-title">Dados de Contato Desatualizados</div>
+        <div class="od-msg">
+          Por norma interna, os dados de contato de cada servidor devem ser revisados
+          a cada <strong>${MESES_LIMITE} meses</strong>. Seu cadastro está desatualizado
+          há <strong>${diasAtraso} dia(s)</strong>.
+        </div>
+        <div class="od-meta">Última atualização registrada: ${dataRef}</div>
+        <a class="od-btn" href="${PAGINA_PERFIL}">Atualizar Meus Dados Agora</a>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', buildSidebar);
   } else {
     buildSidebar();
   }
+
+  // Aguarda o perfil ser carregado e então inicia verificações
+  async function aguardarPerfilEVerificar(tentativas) {
+    if (tentativas <= 0) return;
+    const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
+    if (perfil.usuario) {
+      verificarAtualizacaoDados(perfil.usuario);
+      // Busca timeout configurado no servidor
+      try {
+        const r = await fetch(`${window.API_BASE_URL || ''}/api/auth/me`, { credentials: 'include' });
+        if (r.ok) {
+          const d = await r.json();
+          iniciarTimerInatividade(d.inatividade_minutos || 30);
+        }
+      } catch { iniciarTimerInatividade(30); }
+    } else {
+      setTimeout(() => aguardarPerfilEVerificar(tentativas - 1), 600);
+    }
+  }
+  setTimeout(() => aguardarPerfilEVerificar(5), 800);
 })();
