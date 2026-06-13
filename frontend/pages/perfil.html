@@ -64,7 +64,12 @@
     .info-grid {
       display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px;
     }
-    @media (max-width: 500px) { .info-grid { grid-template-columns: 1fr; } }
+    .info-grid-3 {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 4px;
+    }
+    @media (max-width: 500px) {
+      .info-grid, .info-grid-3 { grid-template-columns: 1fr; }
+    }
 
     .info-item label {
       display: block; font-size: 0.72rem; font-weight: 700;
@@ -74,8 +79,25 @@
     .info-item span {
       font-size: 0.92rem; color: var(--color-text); font-weight: 500;
     }
+    .info-item span.vazio { color: var(--color-hint); font-style: italic; }
 
-    /* Formulário de senha */
+    /* Formulário de senha / contato */
+    .secao-label {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--color-label);
+      margin: 18px 0 10px; padding-bottom: 6px;
+      border-bottom: 1px dashed var(--color-border);
+    }
+    .secao-label:first-child { margin-top: 0; }
+
+    .fg-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .fg-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .fg-3x1 { display: grid; grid-template-columns: 3fr 1fr; gap: 12px; }
+    .fg-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+    @media (max-width: 600px) {
+      .fg-2, .fg-3, .fg-3x1, .fg-4 { grid-template-columns: 1fr; }
+    }
+
     .field { margin-bottom: 14px; }
     .field label {
       display: block; font-size: 0.78rem; font-weight: 600;
@@ -162,7 +184,7 @@
       </div>
       <div class="info-grid" style="margin-top:20px;">
         <div class="info-item">
-          <label>Usuário</label>
+          <label>Usuário do Sistema</label>
           <span id="infoUsuario">—</span>
         </div>
         <div class="info-item">
@@ -178,6 +200,95 @@
           <span>GCM Bananeiras — Online</span>
         </div>
       </div>
+
+      <!-- Dados funcionais do agente -->
+      <div id="cardDadosFuncionais" style="margin-top:20px;display:none;">
+        <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-label);margin-bottom:10px;padding-bottom:6px;border-bottom:1px dashed var(--color-border);">
+          🏛️ Dados Funcionais
+        </div>
+        <div class="info-grid-3">
+          <div class="info-item"><label>Matrícula</label><span id="infoMatricula">—</span></div>
+          <div class="info-item"><label>Cargo / Função</label><span id="infoCargo">—</span></div>
+          <div class="info-item"><label>Lotação / Setor</label><span id="infoLotacao">—</span></div>
+          <div class="info-item"><label>Turno</label><span id="infoTurno">—</span></div>
+          <div class="info-item"><label>Data de Admissão</label><span id="infoAdmissao">—</span></div>
+          <div class="info-item"><label>Status</label><span id="infoAtivo">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Editar dados de contato -->
+    <div class="card" id="cardContato" style="display:none;">
+      <div class="card-title">📞 Meus Dados de Contato</div>
+      <p style="font-size:0.83rem;color:var(--color-text-muted);margin-bottom:16px;">
+        Mantenha seu telefone e endereço atualizados. Estas informações podem ser alteradas a qualquer momento.
+      </p>
+      <form onsubmit="salvarContato(event)" autocomplete="off">
+        <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-label);margin-bottom:10px;padding-bottom:6px;border-bottom:1px dashed var(--color-border);">
+          Contato
+        </div>
+        <div class="fg-2" style="margin-bottom:14px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>E-mail Institucional</label>
+            <input type="email" id="contatoEmail" placeholder="servidor@bananeiras.pb.gov.br" maxlength="150">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Telefone / WhatsApp</label>
+            <input type="text" id="contatoTelefone" placeholder="(83) 99999-9999" maxlength="20" oninput="mascaraTelefone(this)">
+          </div>
+        </div>
+
+        <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-label);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px dashed var(--color-border);">
+          Endereço Residencial
+        </div>
+        <div class="fg-3" style="margin-bottom:14px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>CEP</label>
+            <input type="text" id="contatoCep" placeholder="58000-000" maxlength="9"
+                   oninput="mascaraCep(this)" onblur="buscarCep(this.value, 'contato')">
+          </div>
+        </div>
+        <div class="fg-3x1" style="margin-bottom:14px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>Logradouro</label>
+            <input type="text" id="contatoLogradouro" placeholder="Rua, Av., Travessa..." maxlength="200">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Número</label>
+            <input type="text" id="contatoNumeroEnd" placeholder="S/N" maxlength="20">
+          </div>
+        </div>
+        <div class="fg-4" style="margin-bottom:14px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>Complemento</label>
+            <input type="text" id="contatoComplemento" placeholder="Apto, Bloco..." maxlength="100">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Bairro</label>
+            <input type="text" id="contatoBairro" placeholder="Bairro" maxlength="100">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Cidade</label>
+            <input type="text" id="contatoCidade" placeholder="Bananeiras" maxlength="100">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>UF</label>
+            <select id="contatoUf">
+              <option value="">—</option>
+              <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+              <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+              <option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option>
+              <option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+              <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+              <option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+              <option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+              <option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+              <option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary">Salvar Dados de Contato</button>
+      </form>
     </div>
 
     <!-- Alterar senha -->
@@ -217,26 +328,126 @@
     const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' };
     const badgeClass = { admin: 'badge-admin', supervisor: 'badge-supervisor', agente: 'badge-agente' };
 
+    let meuUsuario = '';
+
     (async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
         if (!res.ok) { window.location.href = '/'; return; }
         const perfil = await res.json();
+        meuUsuario = perfil.usuario;
 
-        const inicial = (perfil.usuario || '?')[0].toUpperCase();
-        document.getElementById('perfilAvatar').textContent = inicial;
-        document.getElementById('perfilNome').textContent   = perfil.usuario;
-        document.getElementById('infoUsuario').textContent  = perfil.usuario;
-        document.getElementById('infoRole').textContent     = roleLabel[perfil.role] || perfil.role;
-        document.getElementById('infoSessao').textContent   = new Date().toLocaleString('pt-BR');
+        document.getElementById('infoUsuario').textContent = perfil.usuario;
+        document.getElementById('infoRole').textContent    = roleLabel[perfil.role] || perfil.role;
+        document.getElementById('infoSessao').textContent  = new Date().toLocaleString('pt-BR');
 
         const badge = document.getElementById('perfilBadge');
-        badge.textContent  = roleLabel[perfil.role] || perfil.role;
-        badge.className    = `perfil-role-badge ${badgeClass[perfil.role] || 'badge-agente'}`;
+        badge.textContent = roleLabel[perfil.role] || perfil.role;
+        badge.className   = `perfil-role-badge ${badgeClass[perfil.role] || 'badge-agente'}`;
+
+        // Carrega dados do agente vinculado
+        const resA = await fetch(`${API_BASE_URL}/api/agentes`, { credentials: 'include' });
+        if (resA.ok) {
+          const agentes = await resA.json();
+          const ag = agentes.find(a => a.usuario === perfil.usuario);
+          if (ag) {
+            const nomeExibir = ag.nome || perfil.usuario;
+            document.getElementById('perfilNome').textContent  = nomeExibir;
+            document.getElementById('perfilAvatar').textContent = nomeExibir[0].toUpperCase();
+
+            // Dados funcionais
+            document.getElementById('cardDadosFuncionais').style.display = '';
+            setText('infoMatricula', ag.matricula);
+            setText('infoCargo',     ag.cargo);
+            setText('infoLotacao',   ag.lotacao);
+            setText('infoTurno',     ag.turno);
+            setText('infoAdmissao',  ag.data_admissao ? new Date(ag.data_admissao + 'T00:00:00').toLocaleDateString('pt-BR') : null);
+            setText('infoAtivo',     ag.ativo ? 'Ativo' : 'Inativo');
+
+            // Preenche formulário de contato
+            document.getElementById('cardContato').style.display = '';
+            document.getElementById('contatoEmail').value      = ag.email || '';
+            document.getElementById('contatoTelefone').value   = ag.telefone || '';
+            document.getElementById('contatoCep').value        = ag.cep || '';
+            document.getElementById('contatoLogradouro').value = ag.logradouro || '';
+            document.getElementById('contatoNumeroEnd').value  = ag.numero_end || '';
+            document.getElementById('contatoComplemento').value= ag.complemento || '';
+            document.getElementById('contatoBairro').value     = ag.bairro || '';
+            document.getElementById('contatoCidade').value     = ag.cidade || '';
+            document.getElementById('contatoUf').value         = ag.uf || '';
+          } else {
+            const inicial = (perfil.usuario || '?')[0].toUpperCase();
+            document.getElementById('perfilAvatar').textContent = inicial;
+            document.getElementById('perfilNome').textContent   = perfil.usuario;
+          }
+        } else {
+          const inicial = (perfil.usuario || '?')[0].toUpperCase();
+          document.getElementById('perfilAvatar').textContent = inicial;
+          document.getElementById('perfilNome').textContent   = perfil.usuario;
+        }
       } catch { window.location.href = '/'; }
 
       carregarAcessos();
     })();
+
+    function setText(id, val) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (val) { el.textContent = val; el.className = ''; }
+      else     { el.textContent = 'Não informado'; el.className = 'vazio'; }
+    }
+
+    async function salvarContato(e) {
+      e.preventDefault();
+      const payload = {
+        email:       document.getElementById('contatoEmail').value.trim() || null,
+        telefone:    document.getElementById('contatoTelefone').value.trim() || null,
+        cep:         document.getElementById('contatoCep').value.trim() || null,
+        logradouro:  document.getElementById('contatoLogradouro').value.trim() || null,
+        numero_end:  document.getElementById('contatoNumeroEnd').value.trim() || null,
+        complemento: document.getElementById('contatoComplemento').value.trim() || null,
+        bairro:      document.getElementById('contatoBairro').value.trim() || null,
+        cidade:      document.getElementById('contatoCidade').value.trim() || null,
+        uf:          document.getElementById('contatoUf').value || null,
+      };
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/agentes/meu-contato`, {
+          method: 'PATCH', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) toast('Dados de contato salvos com sucesso!', 'ok');
+        else toast(data.error || 'Erro ao salvar.', 'erro');
+      } catch { toast('Erro de conexão.', 'erro'); }
+    }
+
+    async function buscarCep(cep, prefixo) {
+      const v = cep.replace(/\D/g, '');
+      if (v.length !== 8) return;
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${v}/json/`);
+        const data = await res.json();
+        if (data.erro) return;
+        document.getElementById(`${prefixo}Logradouro`).value = data.logradouro || '';
+        document.getElementById(`${prefixo}Bairro`).value     = data.bairro || '';
+        document.getElementById(`${prefixo}Cidade`).value     = data.localidade || '';
+        document.getElementById(`${prefixo}Uf`).value         = data.uf || '';
+      } catch {}
+    }
+
+    function mascaraTelefone(el) {
+      let v = el.value.replace(/\D/g, '').slice(0, 11);
+      if (v.length > 10)     v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+      else if (v.length > 6) v = v.replace(/(\d{2})(\d{4})(\d{1,4})/, '($1) $2-$3');
+      else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,5})/, '($1) $2');
+      el.value = v;
+    }
+    function mascaraCep(el) {
+      let v = el.value.replace(/\D/g, '').slice(0, 8);
+      if (v.length > 5) v = v.replace(/(\d{5})(\d{1,3})/, '$1-$2');
+      el.value = v;
+    }
 
     async function trocarSenha(e) {
       e.preventDefault();
