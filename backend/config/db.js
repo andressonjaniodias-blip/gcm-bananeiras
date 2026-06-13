@@ -135,8 +135,13 @@ pool.connect()
       `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS cidade        TEXT`,
       `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS uf            TEXT`,
       `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMPTZ DEFAULT NOW()`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS foto          TEXT`,
     ];
     for (const sql of colunasAgentes) await client.query(sql);
+
+    await client.query(`
+      ALTER TABLE documentos ADD COLUMN IF NOT EXISTS destaque_home BOOLEAN DEFAULT false;
+    `);
     client.release();
   })
   .catch(err => console.error('Erro ao conectar ao banco:', err.message));
