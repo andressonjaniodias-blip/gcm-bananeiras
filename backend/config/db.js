@@ -77,15 +77,35 @@ pool.connect()
     `);
     await client.query(`
       CREATE TABLE IF NOT EXISTS agentes (
-        id        SERIAL PRIMARY KEY,
-        nome      TEXT NOT NULL,
-        matricula TEXT NOT NULL,
-        cargo     TEXT DEFAULT 'Guarda Civil Municipal',
-        usuario   TEXT,
-        ativo     BOOLEAN DEFAULT true,
-        criado_em TIMESTAMPTZ DEFAULT NOW()
+        id             SERIAL PRIMARY KEY,
+        nome           TEXT NOT NULL,
+        matricula      TEXT NOT NULL,
+        cargo          TEXT DEFAULT 'Guarda Civil Municipal',
+        usuario        TEXT,
+        ativo          BOOLEAN DEFAULT true,
+        criado_em      TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+    // Colunas adicionais de dados funcionais e contato
+    const colunasAgentes = [
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS cpf           TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS rg            TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS data_nascimento TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS sexo          TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS lotacao       TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS turno         TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS data_admissao TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS email         TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS telefone      TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS cep           TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS logradouro    TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS numero_end    TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS complemento   TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS bairro        TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS cidade        TEXT`,
+      `ALTER TABLE agentes ADD COLUMN IF NOT EXISTS uf            TEXT`,
+    ];
+    for (const sql of colunasAgentes) await client.query(sql);
     client.release();
   })
   .catch(err => console.error('Erro ao conectar ao banco:', err.message));
