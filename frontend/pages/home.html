@@ -302,37 +302,22 @@
       document.getElementById('statMesLabel').textContent =
         agora.toLocaleDateString('pt-BR', { month: 'long' });
 
-      // BOs
+      // BOs — estatísticas globais da instituição
       try {
-        const res = await fetch(`${API_BASE_URL}/api/bo`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE_URL}/api/bo/stats`, { credentials: 'include' });
         if (res.ok) {
-          const bos = await res.json();
-          document.getElementById('statTotal').textContent  = bos.length;
-          document.getElementById('statHoje').textContent   = bos.filter(b => b.data?.startsWith(hoje)).length;
-          document.getElementById('statSemana').textContent = bos.filter(b => b.data >= seteDiasStr).length;
-          document.getElementById('statMes').textContent    = bos.filter(b => b.data?.startsWith(mesAtual)).length;
+          const s = await res.json();
+          document.getElementById('statTotal').textContent  = s.total;
+          document.getElementById('statHoje').textContent   = s.hoje;
+          document.getElementById('statSemana').textContent = s.semana;
+          document.getElementById('statMes').textContent    = s.mes;
 
-          // Ranking tipificações — últimos 30 dias
-          const limite30 = new Date(agora); limite30.setDate(agora.getDate() - 30);
-          const lim30Str = limite30.toISOString().slice(0, 10);
-          const recentes = bos.filter(b => b.data >= lim30Str);
-          const contagem = {};
-          recentes.forEach(b => {
-            try {
-              const d = JSON.parse(b.dados);
-              const tip = d.dadosOcorrencia?.tipificacao || d.dadosSolicitacao?.natureza;
-              if (tip) contagem[tip] = (contagem[tip] || 0) + 1;
-            } catch {}
-          });
-          const ranking = Object.entries(contagem)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 7);
-          const max = ranking[0]?.[1] || 1;
-          const el = document.getElementById('rankingTipificacoes');
-          if (!ranking.length) {
+          const max = s.ranking[0]?.[1] || 1;
+          const el  = document.getElementById('rankingTipificacoes');
+          if (!s.ranking.length) {
             el.innerHTML = '<div class="ranking-vazio">Nenhuma ocorrência nos últimos 30 dias.</div>';
           } else {
-            el.innerHTML = ranking.map(([tip, n], i) => `
+            el.innerHTML = s.ranking.map(([tip, n], i) => `
               <div class="ranking-row">
                 <span class="ranking-pos">${i + 1}º</span>
                 <span class="ranking-label">${tip}</span>
