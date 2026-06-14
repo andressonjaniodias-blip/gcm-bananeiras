@@ -49,6 +49,7 @@ router.post('/login', async (req, res) => {
       role: row.role,
       usuario: row.usuario,
       sessao_id,
+      lgpd_aceito: !!row.lgpd_aceito,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -72,13 +73,25 @@ router.post('/logout-inatividade', verificarToken, async (req, res) => {
 });
 
 // Perfil do usuário logado
-router.get('/me', verificarToken, (req, res) => {
+router.get('/me', verificarToken, async (req, res) => {
+  const { rows } = await db.query('SELECT lgpd_aceito FROM usuarios WHERE usuario = $1', [req.usuario.usuario]);
   res.json({
     usuario: req.usuario.usuario,
     role: req.usuario.role,
     sessao_id: req.usuario.sessao_id,
     inatividade_minutos: INATIVIDADE_MINUTOS,
+    lgpd_aceito: !!(rows[0]?.lgpd_aceito),
   });
+});
+
+// Registrar aceite da LGPD
+router.post('/lgpd-aceite', verificarToken, async (req, res) => {
+  try {
+    await db.query('UPDATE usuarios SET lgpd_aceito = true WHERE usuario = $1', [req.usuario.usuario]);
+    res.json({ message: 'Aceite registrado' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Setup — cria o primeiro admin
