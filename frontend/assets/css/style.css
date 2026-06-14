@@ -1461,5 +1461,16 @@ body.has-sidebar #app-content {
   table { font-size: 0.75rem; }
   table th, table td { padding: 6px 4px; }
 
-  #theme-switcher { bottom: 14px; right: 14px; }
+  /* Botões flutuantes: sobe para o canto superior direito no mobile */
+  #theme-switcher {
+    bottom: auto;
+    top: calc(var(--header-h, 80px) + 8px);
+    right: 10px;
+  }
+
+  #sb-fab {
+    bottom: auto;
+    top: calc(var(--header-h, 80px) + 8px);
+    right: calc(10px + 44px + 8px); /* à esquerda do botão de tema */
+  }
 }
