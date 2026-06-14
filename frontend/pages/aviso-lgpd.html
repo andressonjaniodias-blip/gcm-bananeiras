@@ -3,85 +3,271 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aviso de Privacidade - GCM</title>
+  <title>Aviso de Privacidade - GCM Bananeiras</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/style.css">
   <script src="../assets/js/theme-switcher.js"></script>
   <style>
-    body { background: #f0f4f8; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    body {
+      background: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    /* reutiliza o cabeçalho oficial */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      background: linear-gradient(135deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%);
+      border-bottom: 3px solid var(--header-accent);
+      color: var(--header-text);
+      padding: clamp(13px, 2.5vw, 23px) clamp(18px, 3.75vw, 35px);
+      gap: 13px;
+    }
+    .header-titulo {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      text-align: center;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .header-linha-1 { font-size: clamp(1.31rem, 3vw, 1.94rem); font-weight: 800; letter-spacing: 0.06em; line-height: 1.2; color: var(--header-text); }
+    .header-linha-2 { font-size: clamp(0.88rem, 1.75vw, 1.19rem); font-weight: 500; letter-spacing: 0.18em; line-height: 1.2; color: var(--header-text); opacity: 0.85; }
+    .header-linha-3 { font-size: clamp(0.78rem, 1.5vw, 1.03rem); font-weight: 400; letter-spacing: 0.04em; line-height: 1.2; color: var(--header-text); opacity: 0.75; }
+    .header .logo { height: clamp(50px, 8.75vw, 73px); width: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+
+    /* conteúdo */
+    .pagina {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 16px 48px;
+    }
+
     .aviso-card {
-      background: #fff; border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-      padding: 36px 40px; max-width: 600px; width: 90%;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      width: 100%;
+      max-width: 700px;
+      overflow: hidden;
     }
-    .aviso-card .logo-row { display: flex; justify-content: center; gap: 24px; margin-bottom: 20px; }
-    .aviso-card .logo-row img { height: 56px; }
-    h2 { color: #003366; text-align: center; margin-bottom: 6px; font-size: 1.2rem; }
-    .subtitulo { text-align: center; color: #555; font-size: 0.9rem; margin-bottom: 20px; }
-    .secao { margin-bottom: 14px; }
-    .secao h3 { font-size: 0.95rem; color: #003366; margin-bottom: 4px; }
-    .secao p, .secao ul { font-size: 0.88rem; color: #444; margin: 0; line-height: 1.6; }
-    .secao ul { padding-left: 18px; }
+
+    .aviso-titulo-barra {
+      background: #003366;
+      color: #fff;
+      padding: 18px 28px;
+      text-align: center;
+    }
+    .aviso-titulo-barra h2 {
+      margin: 0 0 4px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .aviso-titulo-barra p {
+      margin: 0;
+      font-size: 0.82rem;
+      opacity: 0.82;
+    }
+
+    .aviso-corpo {
+      padding: 24px 28px;
+    }
+
+    .secao {
+      margin-bottom: 18px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid #edf0f4;
+    }
+    .secao:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+    .secao h3 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #003366;
+      margin: 0 0 7px;
+    }
+    .secao p, .secao ul {
+      font-size: 0.88rem;
+      color: #3a3a3a;
+      margin: 0;
+      line-height: 1.7;
+    }
+    .secao ul {
+      padding-left: 20px;
+    }
+    .secao ul li { margin-bottom: 3px; }
+
+    .destaque {
+      background: #f0f5ff;
+      border-left: 4px solid #003366;
+      border-radius: 0 6px 6px 0;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: #1a2a40;
+      margin-top: 8px;
+      line-height: 1.6;
+    }
+
     .rodape {
-      margin-top: 24px; padding-top: 16px; border-top: 1px solid #eee;
-      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      border-top: 2px solid #e8ecf0;
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #f8f9fb;
     }
-    .rodape label { font-size: 0.9rem; color: #333; display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
+    .rodape label {
+      font-size: 0.88rem;
+      color: #222;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      flex: 1;
+      min-width: 220px;
+      line-height: 1.4;
+    }
+    .rodape input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      accent-color: #003366;
+      cursor: pointer;
+    }
     .btn-aceitar {
-      background: #003366; color: #fff; border: none; border-radius: 5px;
-      padding: 10px 28px; font-size: 0.95rem; cursor: pointer; white-space: nowrap;
+      background: #003366;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 11px 32px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
     }
-    .btn-aceitar:disabled { background: #aaa; cursor: not-allowed; }
+    .btn-aceitar:disabled { background: #b0b8c4; cursor: not-allowed; }
     .btn-aceitar:not(:disabled):hover { background: #00509e; }
   </style>
 </head>
 <body>
-  <div class="aviso-card">
-    <div class="logo-row">
-      <img src="/brasao-gcm.png" alt="GCM">
-      <img src="/brasao-prefeitura.png" alt="Prefeitura">
+
+  <header class="header">
+    <img src="/brasao-gcm.png" alt="Brasão GCM" class="logo">
+    <div class="header-titulo">
+      <span class="header-linha-1">PREFEITURA MUNICIPAL DE BANANEIRAS</span>
+      <span class="header-linha-2">GUARDA CIVIL MUNICIPAL</span>
+      <span class="header-linha-3">Secretaria de Administração Pública Municipal</span>
     </div>
+    <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+  </header>
 
-    <h2>Aviso de Privacidade e Proteção de Dados</h2>
-    <p class="subtitulo">Lei Geral de Proteção de Dados Pessoais — Lei nº 13.709/2018 (LGPD)</p>
+  <div class="pagina">
+    <div class="aviso-card">
+      <div class="aviso-titulo-barra">
+        <h2>Aviso de Privacidade e Proteção de Dados Pessoais</h2>
+        <p>Lei nº 13.709/2018 — Lei Geral de Proteção de Dados Pessoais (LGPD)</p>
+      </div>
 
-    <div class="secao">
-      <h3>Quem trata os dados</h3>
-      <p>A Guarda Civil Municipal de Bananeiras, na qualidade de controladora, é responsável pelo tratamento dos dados pessoais registrados neste sistema.</p>
-    </div>
+      <div class="aviso-corpo">
 
-    <div class="secao">
-      <h3>Quais dados são coletados</h3>
-      <ul>
-        <li>Dados de identificação: nome, CPF, RG, CNH, data de nascimento</li>
-        <li>Dados de contato: endereço, telefone</li>
-        <li>Dados familiares: nome do pai e da mãe</li>
-        <li>Dados da ocorrência: relato, natureza, local, data e hora</li>
-      </ul>
-    </div>
+        <div class="secao">
+          <h3>Controladora dos Dados</h3>
+          <p>
+            A <strong>Guarda Civil Municipal de Bananeiras — PB</strong>, órgão vinculado à Secretaria de
+            Administração Pública Municipal da Prefeitura de Bananeiras, é a controladora dos dados pessoais
+            tratados neste sistema, na forma do art. 5º, VI, da LGPD.
+          </p>
+        </div>
 
-    <div class="secao">
-      <h3>Finalidade e base legal</h3>
-      <p>Os dados são coletados exclusivamente para o registro e instrução de Boletins de Ocorrência, no exercício regular das atribuições legais da GCM, com base no art. 7º, inciso III da LGPD (execução de políticas públicas).</p>
-    </div>
+        <div class="secao">
+          <h3>Dados Coletados</h3>
+          <p>Para fins de registro e instrução de Boletins de Ocorrência, podem ser coletados:</p>
+          <ul>
+            <li><strong>Identificação pessoal:</strong> nome completo, data de nascimento, CPF, RG, CNH, filiação</li>
+            <li><strong>Contato e localização:</strong> endereço residencial, número de telefone</li>
+            <li><strong>Dados da ocorrência:</strong> natureza do fato, data, hora, local, relato circunstanciado e envolvidos</li>
+            <li><strong>Dados funcionais (agentes):</strong> matrícula, lotação, turno e registro de atividades</li>
+          </ul>
+        </div>
 
-    <div class="secao">
-      <h3>Prazo de conservação</h3>
-      <p>Os registros são conservados pelo prazo de 5 (cinco) anos, após os quais são arquivados conforme a política de retenção institucional.</p>
-    </div>
+        <div class="secao">
+          <h3>Finalidade e Base Legal</h3>
+          <p>
+            O tratamento é realizado exclusivamente para o exercício das atribuições legais da Guarda Civil Municipal,
+            em especial o registro de ocorrências, controle operacional e produção de relatórios institucionais.
+          </p>
+          <div class="destaque">
+            Base legal: <strong>art. 7º, inciso III, da LGPD</strong> — execução de políticas públicas pela administração
+            pública, com respaldo na Lei nº 13.022/2014 (Estatuto Geral das Guardas Municipais) e legislação municipal aplicável.
+          </div>
+        </div>
 
-    <div class="secao">
-      <h3>Direitos do titular</h3>
-      <p>Os titulares dos dados podem solicitar acesso, correção ou exclusão de seus dados mediante requerimento presencial na sede da GCM, conforme arts. 17 a 22 da LGPD.</p>
-    </div>
+        <div class="secao">
+          <h3>Compartilhamento</h3>
+          <p>
+            Os dados não são comercializados nem cedidos a terceiros. Poderão ser compartilhados exclusivamente com
+            órgãos de segurança pública, autoridades judiciais ou Ministério Público, quando exigido por ordem judicial
+            ou obrigação legal, nos termos do art. 7º, inciso VI, da LGPD.
+          </p>
+        </div>
 
-    <div class="rodape">
-      <label>
-        <input type="checkbox" id="chkAceite"> Declaro que li e compreendi este aviso de privacidade.
-      </label>
-      <button class="btn-aceitar" id="btnAceitar" disabled onclick="aceitar()">Continuar</button>
+        <div class="secao">
+          <h3>Prazo de Conservação</h3>
+          <p>
+            Os registros são conservados pelo prazo de <strong>5 (cinco) anos</strong> contados da data do registro,
+            conforme política de retenção institucional, após o qual os dados são arquivados ou eliminados de forma
+            segura, observadas as exigências legais de guarda documental.
+          </p>
+        </div>
+
+        <div class="secao">
+          <h3>Segurança da Informação</h3>
+          <p>
+            O sistema adota medidas técnicas e administrativas para proteger os dados contra acesso não autorizado,
+            perda ou destruição, incluindo controle de acesso por perfil, registro de auditoria de todas as ações
+            e comunicação cifrada (HTTPS).
+          </p>
+        </div>
+
+        <div class="secao">
+          <h3>Direitos do Titular (art. 17 a 22 da LGPD)</h3>
+          <p>O titular dos dados pode, a qualquer momento, solicitar:</p>
+          <ul>
+            <li>Confirmação da existência de tratamento e acesso aos dados</li>
+            <li>Correção de dados incompletos, inexatos ou desatualizados</li>
+            <li>Eliminação dos dados desnecessários ou tratados em desconformidade</li>
+            <li>Informação sobre entidades com as quais os dados foram compartilhados</li>
+          </ul>
+          <p style="margin-top: 8px;">
+            Requerimentos devem ser apresentados <strong>presencialmente na sede da GCM de Bananeiras</strong>,
+            mediante documento de identificação com foto.
+          </p>
+        </div>
+
+      </div>
+
+      <div class="rodape">
+        <label for="chkAceite">
+          <input type="checkbox" id="chkAceite">
+          Declaro que li, compreendi e estou ciente das condições de tratamento de dados pessoais descritas neste aviso de privacidade.
+        </label>
+        <button class="btn-aceitar" id="btnAceitar" disabled onclick="aceitar()">Continuar</button>
+      </div>
     </div>
   </div>
 
@@ -91,8 +277,13 @@
       document.getElementById('btnAceitar').disabled = !this.checked;
     });
 
-    function aceitar() {
-      localStorage.setItem('lgpd_aceito', '1');
+    async function aceitar() {
+      try {
+        await fetch(`${API_BASE_URL}/api/auth/lgpd-aceite`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+      } catch (_) {}
       const destino = sessionStorage.getItem('redirecionarApos') || 'dashboard.html';
       sessionStorage.removeItem('redirecionarApos');
       window.location.href = '/' + destino;
