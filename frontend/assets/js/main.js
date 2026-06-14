@@ -63,7 +63,7 @@ function showTab(tabId, scroll) {
   section?.classList.remove('hidden');
   document.querySelector(`.tab-btn[data-tab="${tabId}"]`)?.classList.add('active');
   if (scroll !== false && window.innerWidth <= 768) {
-    section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   _renderMobileNav();
 }
@@ -487,8 +487,7 @@ async function login() {
     const result = await response.json();
     if (response.ok) {
       sessionStorage.setItem('perfil', JSON.stringify({ usuario: result.usuario, role: result.role }));
-      // Exibir aviso LGPD se ainda não foi aceito
-      if (!localStorage.getItem('lgpd_aceito')) {
+      if (!result.lgpd_aceito) {
         sessionStorage.setItem('redirecionarApos', 'pages/home.html');
         window.location.href = 'pages/aviso-lgpd.html';
       } else {
