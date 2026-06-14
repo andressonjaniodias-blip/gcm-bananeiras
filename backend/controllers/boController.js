@@ -123,6 +123,40 @@ exports.criarBO = async (req, res) => {
   }
 };
 
+exports.statsGlobais = async (req, res) => {
+  try {
+    const hoje      = new Date().toISOString().slice(0, 10);
+    const mesAtual  = hoje.slice(0, 7);
+    const seteDias  = new Date(); seteDias.setDate(seteDias.getDate() - 6);
+    const seteDiasStr = seteDias.toISOString().slice(0, 10);
+    const limite30  = new Date(); limite30.setDate(limite30.getDate() - 30);
+    const lim30Str  = limite30.toISOString().slice(0, 10);
+
+    const [{ rows: [{ total }] }, { rows: [{ hoje: qtdHoje }] }, { rows: [{ semana }] }, { rows: [{ mes }] }, { rows: bos30 }] =
+      await Promise.all([
+        db.query('SELECT COUNT(*) AS total FROM boletins'),
+        db.query("SELECT COUNT(*) AS hoje FROM boletins WHERE data >= $1 AND data < $1::date + interval '1 day'", [hoje]),
+        db.query('SELECT COUNT(*) AS semana FROM boletins WHERE data >= $1', [seteDiasStr]),
+        db.query("SELECT COUNT(*) AS mes FROM boletins WHERE data >= $1", [mesAtual + '-01']),
+        db.query('SELECT dados FROM boletins WHERE data >= $1', [lim30Str]),
+      ]);
+
+    const contagem = {};
+    bos30.forEach(({ dados }) => {
+      try {
+        const d = JSON.parse(dados);
+        const tip = d.dadosOcorrencia?.tipificacao || d.dadosSolicitacao?.natureza;
+        if (tip) contagem[tip] = (contagem[tip] || 0) + 1;
+      } catch {}
+    });
+    const ranking = Object.entries(contagem).sort((a, b) => b[1] - a[1]).slice(0, 7);
+
+    res.json({ total: parseInt(total), hoje: parseInt(qtdHoje), semana: parseInt(semana), mes: parseInt(mes), ranking });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.listarBOs = async (req, res) => {
   try {
     const { usuario, role } = req.usuario;
