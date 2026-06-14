@@ -6,6 +6,7 @@ const { validarBO } = require('../utils/validation');
 
 // ✅ TODAS as rotas de BO requerem autenticação
 router.post('/', verificarToken, validarBO, boController.criarBO);
+router.get('/stats', verificarToken, boController.statsGlobais);
 router.get('/', verificarToken, boController.listarBOs);
 router.get('/:id', verificarToken, boController.consultarBO);
 router.get('/:id/pdf', verificarToken, boController.exportarPDF);
