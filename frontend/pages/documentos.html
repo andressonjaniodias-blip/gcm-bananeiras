@@ -183,6 +183,59 @@
     </section>
   </main>
 
+  <!-- MODAL DE DETALHES DO DOCUMENTO -->
+  <div class="detail-overlay" id="docDetailOverlay" onclick="fecharDocDetail(event)">
+    <div class="detail-modal" onclick="event.stopPropagation()">
+      <div class="detail-modal-head">
+        <div>
+          <div class="detail-modal-title" id="docDetailTitle">—</div>
+          <div class="detail-modal-subtitle" id="docDetailSubtitle">—</div>
+        </div>
+        <button class="detail-modal-close" onclick="fecharDocDetail()">×</button>
+      </div>
+      <nav class="tabs detail-tabs" id="docDetailTabs">
+        <button class="tab-btn active" onclick="docDetailTab('info',this)">Informações</button>
+        <button class="tab-btn" onclick="docDetailTab('acoes',this)">Ações</button>
+      </nav>
+      <div class="detail-modal-body">
+        <div id="docDetailInfo">
+          <div class="detail-grid-2">
+            <div class="detail-field">
+              <div class="detail-field-label">Tipo</div>
+              <div class="detail-field-value" id="ddTipo">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Data</div>
+              <div class="detail-field-value" id="ddData">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Número / Referência</div>
+              <div class="detail-field-value" id="ddNumero">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Publicado por</div>
+              <div class="detail-field-value" id="ddPublicado">—</div>
+            </div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Descrição</div>
+            <div class="detail-field-value pre" id="ddDescricao">—</div>
+          </div>
+        </div>
+        <div id="docDetailAcoes" class="hidden">
+          <p style="color:var(--color-text-muted);font-size:0.88rem;margin-bottom:16px;">Selecione uma ação para este documento.</p>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <button id="ddBtnDl" class="detail-btn-dl" style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:var(--color-primary);color:#fff;">⬇️ Baixar Arquivo</button>
+            <button id="ddBtnDest" style="padding:12px 20px;font-size:0.9rem;border-radius:8px;cursor:pointer;font-weight:700;">☆ Destacar na Home</button>
+          </div>
+        </div>
+      </div>
+      <div class="detail-footer">
+        <button class="detail-btn-close" onclick="fecharDocDetail()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
   <script>
@@ -190,12 +243,18 @@
     let arquivoSelecionado = null;
     let podePublicar       = false;
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('docData').value = new Date().toISOString().slice(0, 10);
-      carregarDocumentos();
 
-      const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
-      podePublicar = perfil.role === 'supervisor' || perfil.role === 'admin';
+      try {
+        const me = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
+        if (!me.ok) { window.location.href = '/'; return; }
+        const perfil = await me.json();
+        sessionStorage.setItem('perfil', JSON.stringify(perfil));
+        if (typeof updateSidebarUser === 'function') updateSidebarUser(perfil);
+        podePublicar = perfil.role === 'supervisor' || perfil.role === 'admin';
+      } catch { window.location.href = '/'; return; }
+
       const btnPublicar = document.getElementById('btnTabPublicar');
       if (!podePublicar) {
         btnPublicar.style.display = 'none';
@@ -205,6 +264,8 @@
         document.getElementById('btnTabAcervo').classList.remove('active');
         showDocTab('publicar', btnPublicar);
       }
+
+      await carregarDocumentos();
     });
 
     async function showDocTab(id, btn) {
@@ -289,38 +350,96 @@
       } catch {}
     }
 
+    const DOC_ICON = {
+      'Ofício': '📨', 'Escala de Serviço': '📅', 'Memorando': '📝',
+      'Portaria': '⚖️', 'Circular': '📢', 'Comunicado': '📣',
+      'Ordem de Serviço': '🗂️', 'Outro': '📄',
+    };
+
     function renderizarDocs(lista) {
       const el = document.getElementById('listaDocumentos');
       if (!lista.length) {
         el.innerHTML = '<p style="text-align:center;color:var(--color-hint);">Nenhum documento encontrado.</p>';
         return;
       }
-      el.innerHTML = '<div class="doc-list">' + lista.map(d => {
-        const destaqueTag = d.destaque_home
-          ? `<span class="badge-destaque">⭐ Home</span>`
-          : '';
-        const btnDestaque = podePublicar ? `
-          <button class="btn-destaque-toggle ${d.destaque_home ? 'ativo' : ''}"
-                  title="${d.destaque_home ? 'Remover da página inicial' : 'Destacar na página inicial'}"
-                  onclick="toggleDestaque(${d.id}, ${!d.destaque_home}, this)">
-            ${d.destaque_home ? '⭐ Na home' : '☆ Destacar'}
-          </button>` : '';
-        return `
-        <div class="doc-item" id="doc-item-${d.id}">
-          <div class="doc-item-info">
-            <div class="doc-item-title">${d.titulo} ${destaqueTag}</div>
-            <div class="doc-item-meta">
-              ${d.numero ? d.numero + ' &bull; ' : ''}
-              ${new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR')}
-              &bull; Publicado por: ${d.publicado_por}
+      el.innerHTML = '<div class="hist-list">' + lista.map(d => {
+        const icon = DOC_ICON[d.tipo] || '📄';
+        const dataStr = new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR');
+        const destaqueTag = d.destaque_home ? `<span class="badge-destaque">⭐ Home</span>` : '';
+        return `<div class="hist-item" onclick="abrirDocDetail(${d.id})">
+          <div class="hist-item-icon">${icon}</div>
+          <div class="hist-item-body">
+            <div class="hist-item-title">${d.titulo} ${destaqueTag}</div>
+            <div class="hist-item-meta">
+              ${d.numero ? `<span>${d.numero}</span><span>·</span>` : ''}
+              <span>${dataStr}</span>
+              <span>·</span>
+              <span>${d.tipo}</span>
+              <span>·</span>
+              <span>por ${d.publicado_por}</span>
             </div>
-            ${d.descricao ? `<div class="doc-item-meta" style="margin-top:2px;">${d.descricao}</div>` : ''}
           </div>
-          <span class="doc-badge">${d.tipo}</span>
-          ${btnDestaque}
-          <button class="btn-pdf" onclick="baixarDoc(${d.id}, '${d.arquivo_nome}')">Baixar</button>
+          <div class="hist-item-right">
+            <span class="hist-chevron">›</span>
+          </div>
         </div>`;
       }).join('') + '</div>';
+    }
+
+    let _docDetalhe = null;
+
+    function abrirDocDetail(id) {
+      _docDetalhe = todosDocumentos.find(d => d.id === id);
+      if (!_docDetalhe) return;
+      const d = _docDetalhe;
+      const dataStr = new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR');
+      document.getElementById('docDetailTitle').textContent = d.titulo;
+      document.getElementById('docDetailSubtitle').textContent = `${d.tipo} · ${dataStr}`;
+      document.getElementById('ddTipo').textContent    = d.tipo;
+      document.getElementById('ddData').textContent    = dataStr;
+      document.getElementById('ddNumero').textContent  = d.numero || '—';
+      document.getElementById('ddPublicado').textContent = d.publicado_por;
+      document.getElementById('ddDescricao').textContent = d.descricao || '—';
+
+      const btnDL = document.getElementById('ddBtnDl');
+      btnDL.onclick = () => baixarDoc(d.id, d.arquivo_nome);
+
+      const btnDest = document.getElementById('ddBtnDest');
+      if (podePublicar) {
+        btnDest.style.display = '';
+        btnDest.textContent = d.destaque_home ? '⭐ Remover da Home' : '☆ Destacar na Home';
+        btnDest.className   = d.destaque_home ? 'detail-btn-edit' : '';
+        btnDest.style.cssText = d.destaque_home
+          ? 'background:#FEF3C7;color:#92400E;border:none;border-radius:8px;padding:9px 18px;font-weight:700;font-size:0.86px;cursor:pointer;'
+          : 'background:var(--color-row-alt);border:1px solid var(--color-border);border-radius:8px;padding:9px 18px;font-weight:700;font-size:0.86rem;cursor:pointer;color:var(--color-text-muted);';
+        btnDest.onclick = async () => {
+          btnDest.disabled = true;
+          await toggleDestaque(d.id, !d.destaque_home, btnDest);
+          // Atualiza o botão após toggle
+          const atualizado = todosDocumentos.find(x => x.id === d.id);
+          if (atualizado) {
+            btnDest.textContent = atualizado.destaque_home ? '⭐ Remover da Home' : '☆ Destacar na Home';
+          }
+          btnDest.disabled = false;
+        };
+      } else {
+        btnDest.style.display = 'none';
+      }
+
+      docDetailTab('info', document.querySelector('#docDetailTabs .tab-btn'));
+      document.getElementById('docDetailOverlay').classList.add('aberto');
+    }
+
+    function fecharDocDetail(e) {
+      if (e && e.target !== document.getElementById('docDetailOverlay')) return;
+      document.getElementById('docDetailOverlay').classList.remove('aberto');
+    }
+
+    function docDetailTab(tab, btn) {
+      document.getElementById('docDetailInfo').classList.toggle('hidden', tab !== 'info');
+      document.getElementById('docDetailAcoes').classList.toggle('hidden', tab !== 'acoes');
+      document.querySelectorAll('#docDetailTabs .tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
     }
 
     async function toggleDestaque(id, novoValor, btn) {
