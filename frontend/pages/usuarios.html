@@ -330,6 +330,7 @@
               <th>Nome</th>
               <th>Matrícula</th>
               <th>Cargo / Lotação</th>
+              <th>E-mail (reset)</th>
               <th>Perfil</th>
               <th>Alterar Perfil</th>
               <th>Ação</th>
@@ -373,7 +374,11 @@
         </div>
         <div class="modal-field">
           <label>Nova Senha <span style="font-weight:400;color:var(--color-hint)">(deixe em branco para manter)</span></label>
-          <input type="password" id="editSenha" placeholder="Nova senha (mín. 6 caracteres)" minlength="6" autocomplete="new-password">
+          <input type="password" id="editSenha" placeholder="Nova senha (mín. 8 caracteres)" autocomplete="new-password">
+        </div>
+        <div class="modal-field" style="grid-column:1/-1;">
+          <label>E-mail para recuperação de senha</label>
+          <input type="email" id="editEmailUsuario" placeholder="servidor@bananeiras.pb.gov.br" maxlength="150">
         </div>
       </div>
 
@@ -518,7 +523,7 @@
         const agentePorUsuario = Object.fromEntries(agentes.map(a => [a.usuario, a]));
 
         if (!lista.length) {
-          tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Nenhum usuário encontrado</td></tr>';
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Nenhum usuário encontrado</td></tr>';
           return;
         }
         const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente' };
@@ -527,6 +532,10 @@
           const ag     = agentePorUsuario[u.usuario];
           const lotStr = ag?.lotacao ? `<br><span style="font-size:0.75rem;color:var(--color-hint);">${ag.lotacao}</span>` : '';
           const ativoTag = ag && !ag.ativo ? ' <span class="badge badge-inativo" style="font-size:0.7rem;padding:2px 7px;">Inativo</span>' : '';
+          const emailExibir = u.email
+            ? `<span style="font-size:0.78rem;color:var(--color-text-muted);">${u.email}</span>`
+            : `<span style="color:var(--color-hint);font-size:0.78rem;">—</span>`;
+          const emailEsc = (u.email || '').replace(/'/g, "\\'");
           return `
             <tr>
               <td style="color:var(--color-hint);font-size:0.8rem;">${u.id}</td>
@@ -534,6 +543,7 @@
               <td class="td-sec">${ag ? ag.nome + ativoTag : '<span style="color:var(--color-hint)">—</span>'}</td>
               <td class="td-sec">${ag?.matricula || '<span style="color:var(--color-hint)">—</span>'}</td>
               <td class="td-sec">${ag ? (ag.cargo || '—') + lotStr : '<span style="color:var(--color-hint)">—</span>'}</td>
+              <td>${emailExibir}</td>
               <td><span class="badge badge-${u.role}">${roleLabel[u.role] || u.role}</span></td>
               <td>
                 ${sou ? '<span style="color:var(--color-hint);font-size:0.82rem;">—</span>' : `
@@ -548,7 +558,7 @@
                 <div class="acoes-cell">
                   ${sou ? '<span style="color:var(--color-hint);font-size:0.82rem;">—</span>' : `
                     <button class="btn-acao btn-salvar" onclick="alterarRole(${u.id})">Salvar</button>
-                    <button class="btn-icon btn-icon-editar" title="Editar servidor" onclick="abrirModalEditar(${u.id}, '${u.usuario}')">✏️</button>
+                    <button class="btn-icon btn-icon-editar" title="Editar servidor" onclick="abrirModalEditar(${u.id}, '${u.usuario}', '${emailEsc}')">✏️</button>
                     <button class="btn-icon btn-icon-excluir" title="Remover usuário" onclick="abrirModalExcluir(${u.id}, '${u.usuario}')">🗑️</button>
                   `}
                 </div>
@@ -588,7 +598,7 @@
         const resU = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuario, senha, role })
+          body: JSON.stringify({ usuario, senha, role, email: email || null })
         });
         const dataU = await resU.json();
         if (!resU.ok) { toast(dataU.error || 'Erro ao criar usuário.', 'erro'); return; }
@@ -617,10 +627,11 @@
 
     let _excluirId = null;
 
-    async function abrirModalEditar(userId, usuario) {
+    async function abrirModalEditar(userId, usuario, emailUsuario = '') {
       document.getElementById('editId').value      = userId;
       document.getElementById('editUsuario').value = usuario;
       document.getElementById('editSenha').value   = '';
+      document.getElementById('editEmailUsuario').value = emailUsuario;
 
       // Limpa campos do agente
       ['editNome','editCpf','editRg','editNascimento','editMatricula',
@@ -665,13 +676,13 @@
     }
 
     async function salvarEdicao() {
-      const userId    = document.getElementById('editId').value;
-      const agenteId  = document.getElementById('editAgenteId').value;
-      const novaSenha = document.getElementById('editSenha').value.trim();
+      const userId       = document.getElementById('editId').value;
+      const agenteId     = document.getElementById('editAgenteId').value;
+      const novaSenha    = document.getElementById('editSenha').value.trim();
+      const emailUsuario = document.getElementById('editEmailUsuario').value.trim();
 
       // Atualiza senha se preenchida
       if (novaSenha) {
-        if (novaSenha.length < 6) { toast('A senha deve ter pelo menos 6 caracteres.', 'erro'); return; }
         try {
           const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${userId}/senha`, {
             method: 'PATCH', credentials: 'include',
@@ -681,6 +692,15 @@
           if (!res.ok) { const d = await res.json(); toast(d.error || 'Erro ao alterar senha.', 'erro'); return; }
         } catch { toast('Erro de conexão.', 'erro'); return; }
       }
+
+      // Atualiza e-mail de recuperação
+      try {
+        await fetch(`${API_BASE_URL}/api/auth/usuarios/${userId}/email`, {
+          method: 'PATCH', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailUsuario || null })
+        });
+      } catch { toast('Erro ao salvar e-mail.', 'erro'); return; }
 
       // Atualiza dados do agente
       if (agenteId) {

@@ -3,10 +3,18 @@ const router   = express.Router();
 const multer   = require('multer');
 const path     = require('path');
 const fs       = require('fs');
+const erroServidor = require('../utils/erroServidor');
 const pool     = require('../config/db');
 const { verificarToken, verificarSupervisor } = require('../middleware/auth');
 
 const UPLOADS_DIR = path.join(__dirname, '../uploads/documentos');
+
+function sanitizarNome(nome) {
+  return nome
+    .replace(/[^\w\s.\-]/g, '')  // remove chars especiais exceto . - _
+    .replace(/\.{2,}/g, '.')     // remove .. consecutivos
+    .slice(0, 200);              // limita tamanho
+}
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 const TIPOS_ACEITOS = new Set([
@@ -44,7 +52,7 @@ router.get('/', verificarToken, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 });
 
@@ -61,7 +69,7 @@ router.get('/destaque', verificarToken, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 });
 
@@ -87,7 +95,7 @@ router.post('/', verificarToken, verificarSupervisor, (req, res) => {
           numero   || null,
           descricao || null,
           req.file.filename,
-          req.file.originalname,
+          sanitizarNome(req.file.originalname),
           req.file.mimetype,
           req.usuario,
           destaqueHome === 'true' || destaqueHome === true,
@@ -112,7 +120,7 @@ router.patch('/:id/destaque', verificarToken, verificarSupervisor, async (req, r
     if (!rows.length) return res.status(404).json({ error: 'Documento não encontrado.' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 });
 
@@ -136,7 +144,7 @@ router.get('/:id/download', verificarToken, async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${arquivo_nome}"`);
     fs.createReadStream(filePath).pipe(res);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 });
 

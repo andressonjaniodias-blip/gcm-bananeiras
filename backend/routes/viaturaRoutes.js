@@ -13,7 +13,7 @@ router.get('/', verificarToken, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 });
 
@@ -31,7 +31,7 @@ router.post('/', verificarToken, async (req, res) => {
     );
     res.status(201).json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 });
 

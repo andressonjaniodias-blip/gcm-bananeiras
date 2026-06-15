@@ -4,3 +4,24 @@ const API_BASE_URL = window.location.hostname === 'localhost'
   : `https://${window.location.hostname}`;
 
 console.log('📡 API Base URL:', API_BASE_URL);
+
+// ── CSRF: injeta X-CSRF-Token automaticamente em requisições mutantes ─────────
+const _CSRF_SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+function _getCsrfToken() {
+  return document.cookie
+    .split('; ')
+    .find(row => row.startsWith('csrfToken='))
+    ?.split('=')[1] || '';
+}
+
+const _originalFetch = window.fetch.bind(window);
+window.fetch = function (input, init = {}) {
+  const method = (init.method || 'GET').toUpperCase();
+  if (!_CSRF_SAFE_METHODS.has(method)) {
+    init.headers = Object.assign({}, init.headers, {
+      'X-CSRF-Token': _getCsrfToken(),
+    });
+  }
+  return _originalFetch(input, init);
+};

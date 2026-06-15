@@ -214,6 +214,32 @@ function mascararRG(input) {
   input.value = v;
 }
 
+// Valida dígito verificador do CPF (retorna true se válido ou vazio)
+function cpfValido(cpf) {
+  const n = cpf.replace(/\D/g, '');
+  if (!n) return true; // campo opcional — só valida se preenchido
+  if (n.length !== 11 || /^(\d)\1{10}$/.test(n)) return false;
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += parseInt(n[i]) * (10 - i);
+  let r = (soma * 10) % 11;
+  if (r === 10 || r === 11) r = 0;
+  if (r !== parseInt(n[9])) return false;
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += parseInt(n[i]) * (11 - i);
+  r = (soma * 10) % 11;
+  if (r === 10 || r === 11) r = 0;
+  return r === parseInt(n[10]);
+}
+
+function validarCPFInput(input) {
+  if (!cpfValido(input.value)) {
+    input.classList.add('campo-invalido');
+    showToast('CPF inválido: ' + (input.closest('.bloco-pessoa')?.querySelector('[name="nome"]')?.value || input.value), 'danger');
+  } else {
+    input.classList.remove('campo-invalido');
+  }
+}
+
 function mascararTelefone(input) {
   let v = input.value.replace(/\D/g, '').slice(0, 11);
   if (v.length > 10) v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
@@ -234,7 +260,7 @@ function htmlPessoa(tipo, idx) {
     <div class="campo-group"><label>Alcunha</label>
       <input type="text" name="alcunha" placeholder="Apelido" maxlength="100"></div>
     <div class="campo-group"><label>CPF</label>
-      <input type="text" name="cpf" placeholder="000.000.000-00" maxlength="14" oninput="mascararCPF(this)"></div>
+      <input type="text" name="cpf" placeholder="000.000.000-00" maxlength="14" oninput="mascararCPF(this)" onblur="validarCPFInput(this)"></div>
     <div class="campo-group"><label>RG</label>
       <input type="text" name="rg" placeholder="00.000.000-0" maxlength="12" oninput="mascararRG(this)"></div>
     <div class="campo-group"><label>Nascimento</label>
@@ -429,6 +455,16 @@ async function finalizarBO() {
   if (!dados.relato) {
     showTab('relato');
     showToast('O relato da ocorrência é obrigatório.', 'danger');
+    return;
+  }
+
+  // Valida todos os CPFs preenchidos
+  const cpfsInvalidos = [...document.querySelectorAll('[name="cpf"]')]
+    .filter(el => el.value && !cpfValido(el.value));
+  if (cpfsInvalidos.length) {
+    cpfsInvalidos.forEach(el => el.classList.add('campo-invalido'));
+    showToast(`${cpfsInvalidos.length} CPF(s) inválido(s). Corrija antes de finalizar.`, 'danger');
+    cpfsInvalidos[0].focus();
     return;
   }
 

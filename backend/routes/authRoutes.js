@@ -1,12 +1,28 @@
 const express = require('express');
 const router = express.Router();
+const erroServidor = require('../utils/erroServidor');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const db = require('../config/db');
+
+function criarTransporte() {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+}
 const {
   verificarToken, verificarAdmin, registrarAuditoria, extraFromReq, ROLES
 } = require('../middleware/auth');
+const { gerarCsrfToken } = require('../middleware/csrf');
 
 const INATIVIDADE_MINUTOS = parseInt(process.env.INATIVIDADE_MINUTOS || '30');
 
@@ -45,8 +61,18 @@ router.post('/login', async (req, res) => {
     await registrarAuditoria(row.usuario, 'LOGIN', null, ip, extra);
 
     const isProducao = process.env.NODE_ENV === 'production';
+    const csrfToken = gerarCsrfToken();
+
     res.cookie('authToken', token, {
       httpOnly: true,
+      secure: isProducao,
+      sameSite: isProducao ? 'strict' : 'lax',
+      maxAge: 8 * 60 * 60 * 1000,
+    });
+
+    // Cookie não-httpOnly para que o JS possa lê-lo e enviá-lo como header
+    res.cookie('csrfToken', csrfToken, {
+      httpOnly: false,
       secure: isProducao,
       sameSite: isProducao ? 'strict' : 'lax',
       maxAge: 8 * 60 * 60 * 1000,
@@ -60,7 +86,7 @@ router.post('/login', async (req, res) => {
       lgpd_aceito: !!row.lgpd_aceito,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    erroServidor(res, error);
   }
 });
 
@@ -69,6 +95,7 @@ router.post('/logout', verificarToken, async (req, res) => {
   const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
   await registrarAuditoria(req.usuario.usuario, 'LOGOUT', null, ip, extraFromReq(req));
   res.clearCookie('authToken');
+  res.clearCookie('csrfToken');
   res.json({ message: 'Logout realizado com sucesso' });
 });
 
@@ -77,6 +104,7 @@ router.post('/logout-inatividade', verificarToken, async (req, res) => {
   const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
   await registrarAuditoria(req.usuario.usuario, 'SESSAO_EXPIRADA', 'Inatividade', ip, extraFromReq(req));
   res.clearCookie('authToken');
+  res.clearCookie('csrfToken');
   res.json({ message: 'Sessão encerrada por inatividade' });
 });
 
@@ -105,7 +133,7 @@ router.post('/lgpd-aceite', verificarToken, async (req, res) => {
     await db.query('UPDATE usuarios SET lgpd_aceito = true WHERE usuario = $1', [req.usuario.usuario]);
     res.json({ message: 'Aceite registrado' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    erroServidor(res, error);
   }
 });
 
@@ -129,24 +157,24 @@ router.post('/setup', async (req, res) => {
     );
     res.json({ message: 'Administrador criado com sucesso' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    erroServidor(res, error);
   }
 });
 
 // Listar usuários (admin)
 router.get('/usuarios', verificarToken, verificarAdmin, async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT id, usuario, role FROM usuarios ORDER BY id');
+    const { rows } = await db.query('SELECT id, usuario, role, email FROM usuarios ORDER BY id');
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    erroServidor(res, error);
   }
 });
 
 // Criar usuário (admin)
 router.post('/usuarios', verificarToken, verificarAdmin, async (req, res) => {
   try {
-    const { usuario, senha, role = 'agente' } = req.body;
+    const { usuario, senha, role = 'agente', email } = req.body;
     if (!usuario || !senha) {
       return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
     }
@@ -157,8 +185,8 @@ router.post('/usuarios', verificarToken, verificarAdmin, async (req, res) => {
     if (erroSenha) return res.status(400).json({ error: erroSenha });
     const hash = await bcrypt.hash(senha, 10);
     const result = await db.query(
-      'INSERT INTO usuarios (usuario, senha, role) VALUES ($1, $2, $3) RETURNING id',
-      [usuario, hash, role]
+      'INSERT INTO usuarios (usuario, senha, role, email) VALUES ($1, $2, $3, $4) RETURNING id',
+      [usuario, hash, role, email || null]
     );
     const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
     await registrarAuditoria(req.usuario.usuario, 'CRIAR_USUARIO', usuario, ip, extraFromReq(req));
@@ -167,7 +195,7 @@ router.post('/usuarios', verificarToken, verificarAdmin, async (req, res) => {
     if (error.code === '23505') {
       return res.status(409).json({ error: 'Usuário já existe' });
     }
-    res.status(500).json({ error: error.message });
+    erroServidor(res, error);
   }
 });
 
@@ -190,7 +218,45 @@ router.delete('/usuarios/:id', verificarToken, verificarAdmin, async (req, res) 
     await registrarAuditoria(req.usuario.usuario, 'REMOVER_USUARIO', rows[0].usuario, ip, extraFromReq(req));
     res.json({ message: 'Usuário removido com sucesso' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    erroServidor(res, error);
+  }
+});
+
+// Alterar senha de usuário pelo admin
+router.patch('/usuarios/:id/senha', verificarToken, verificarAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { senha } = req.body;
+    if (!senha) return res.status(400).json({ error: 'Nova senha é obrigatória.' });
+    const erroSenha = validarSenha(senha);
+    if (erroSenha) return res.status(400).json({ error: erroSenha });
+
+    const { rows } = await db.query('SELECT usuario FROM usuarios WHERE id = $1', [id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    const hash = await bcrypt.hash(senha, 10);
+    await db.query('UPDATE usuarios SET senha = $1 WHERE id = $2', [hash, id]);
+
+    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+    await registrarAuditoria(req.usuario.usuario, 'ADMIN_RESET_SENHA', rows[0].usuario, ip, extraFromReq(req));
+    res.json({ message: 'Senha alterada com sucesso' });
+  } catch (error) {
+    erroServidor(res, error);
+  }
+});
+
+// Alterar e-mail de usuário pelo admin
+router.patch('/usuarios/:id/email', verificarToken, verificarAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.body;
+    const { rows } = await db.query('SELECT usuario FROM usuarios WHERE id = $1', [id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    await db.query('UPDATE usuarios SET email = $1 WHERE id = $2', [email || null, id]);
+    res.json({ message: 'E-mail atualizado com sucesso' });
+  } catch (error) {
+    erroServidor(res, error);
   }
 });
 
@@ -218,7 +284,7 @@ router.put('/usuarios/:id', verificarToken, verificarAdmin, async (req, res) => 
     await registrarAuditoria(req.usuario.usuario, 'ALTERAR_ROLE', `${rows[0].usuario} → ${role}`, ip, extraFromReq(req));
     res.json({ message: 'Perfil atualizado com sucesso' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    erroServidor(res, error);
   }
 });
 
@@ -237,7 +303,7 @@ router.get('/retencao', verificarToken, verificarAdmin, async (req, res) => {
       bos_para_arquivar: parseInt(antigos[0].total),
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    erroServidor(res, error);
   }
 });
 
@@ -253,7 +319,7 @@ router.delete('/retencao/arquivar', verificarToken, verificarAdmin, async (req, 
     await registrarAuditoria(req.usuario.usuario, 'ARQUIVAR_BOs', `${rowCount} registros removidos`, ip, extraFromReq(req));
     res.json({ message: `${rowCount} BO(s) arquivado(s)`, arquivados: rows.map(r => r.numero) });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    erroServidor(res, error);
   }
 });
 
@@ -264,14 +330,108 @@ router.get('/auditoria', verificarToken, async (req, res) => {
     if (role !== 'admin' && role !== 'supervisor') {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    const { rows } = await db.query(
-      `SELECT id, usuario, acao, recurso, ip, data,
-              dispositivo, navegador, so, sessao_id
-       FROM audit_logs ORDER BY data DESC LIMIT 1000`
-    );
-    res.json(rows);
+
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));
+    const offset = (page - 1) * limit;
+
+    const [{ rows }, { rows: countRows }] = await Promise.all([
+      db.query(
+        `SELECT id, usuario, acao, recurso, ip, data,
+                dispositivo, navegador, so, sessao_id
+         FROM audit_logs ORDER BY data DESC LIMIT $1 OFFSET $2`,
+        [limit, offset]
+      ),
+      db.query(`SELECT COUNT(*) AS total FROM audit_logs`),
+    ]);
+
+    const total = parseInt(countRows[0].total);
+    res.json({ data: rows, total, page, pages: Math.ceil(total / limit) });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    erroServidor(res, error);
+  }
+});
+
+// Solicitar recuperação de senha por e-mail
+router.post('/esqueci-senha', async (req, res) => {
+  try {
+    const { usuario } = req.body;
+    if (!usuario) return res.status(400).json({ error: 'Informe o nome de usuário.' });
+
+    const { rows } = await db.query(
+      `SELECT u.id, u.usuario, COALESCE(u.email, a.email) AS email
+       FROM usuarios u
+       LEFT JOIN agentes a ON a.usuario = u.usuario
+       WHERE u.usuario = $1`,
+      [usuario]
+    );
+    // Resposta genérica para evitar enumeração de usuários
+    if (!rows[0] || !rows[0].email) {
+      return res.json({ message: 'Se o usuário existir e tiver e-mail cadastrado, um link de recuperação será enviado.' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expira = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+    await db.query(
+      'UPDATE usuarios SET reset_token = $1, reset_token_expira = $2 WHERE id = $3',
+      [token, expira, rows[0].id]
+    );
+
+    const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+    const link = `${baseUrl}/pages/recuperar-senha.html?token=${token}`;
+
+    const transporte = criarTransporte();
+    await transporte.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: rows[0].email,
+      subject: 'Recuperação de Senha — GCM Bananeiras',
+      html: `
+        <p>Olá, <strong>${rows[0].usuario}</strong>.</p>
+        <p>Recebemos uma solicitação para redefinir sua senha no sistema da GCM Bananeiras.</p>
+        <p><a href="${link}" style="background:#1d4ed8;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;">Redefinir minha senha</a></p>
+        <p>Este link expira em <strong>1 hora</strong>. Se você não solicitou a redefinição, ignore este e-mail.</p>
+      `,
+    });
+
+    res.json({ message: 'Se o usuário existir e tiver e-mail cadastrado, um link de recuperação será enviado.' });
+  } catch (error) {
+    erroServidor(res, error);
+  }
+});
+
+// Redefinir senha com token
+router.post('/redefinir-senha', async (req, res) => {
+  try {
+    const { token, novaSenha } = req.body;
+    if (!token || !novaSenha) {
+      return res.status(400).json({ error: 'Token e nova senha são obrigatórios.' });
+    }
+
+    const erroSenha = validarSenha(novaSenha);
+    if (erroSenha) return res.status(400).json({ error: erroSenha });
+
+    const { rows } = await db.query(
+      'SELECT id, usuario, reset_token_expira FROM usuarios WHERE reset_token = $1',
+      [token]
+    );
+
+    if (!rows[0] || new Date() > new Date(rows[0].reset_token_expira)) {
+      return res.status(400).json({ error: 'Link de recuperação inválido ou expirado.' });
+    }
+
+    const hash = await bcrypt.hash(novaSenha, 10);
+    await db.query(
+      'UPDATE usuarios SET senha = $1, reset_token = NULL, reset_token_expira = NULL WHERE id = $2',
+      [hash, rows[0].id]
+    );
+
+    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+    await registrarAuditoria(rows[0].usuario, 'RESET_SENHA', 'via token de e-mail', ip, extraFromReq({ headers: req.headers, usuario: { sessao_id: null } }));
+
+    res.json({ message: 'Senha redefinida com sucesso. Faça login com a nova senha.' });
+  } catch (error) {
+    erroServidor(res, error);
   }
 });
 
@@ -299,7 +459,7 @@ router.post('/trocar-senha', verificarToken, async (req, res) => {
     await registrarAuditoria(req.usuario.usuario, 'TROCAR_SENHA', null, ip, extraFromReq(req));
     res.json({ message: 'Senha alterada com sucesso' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    erroServidor(res, error);
   }
 });
 

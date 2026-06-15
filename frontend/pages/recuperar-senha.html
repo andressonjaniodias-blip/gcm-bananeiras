@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recuperar Senha - GCM Bananeiras</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="../assets/js/theme-switcher.js"></script>
+</head>
+<body>
+  <header class="header">
+    <img src="/brasao-gcm.png" alt="Brasão GCM" class="logo">
+    <div class="header-titulo">
+      <span class="header-linha-1">PREFEITURA MUNICIPAL DE BANANEIRAS</span>
+      <span class="header-linha-2">GUARDA CIVIL MUNICIPAL</span>
+      <span class="header-linha-3">Secretaria de Administração Pública Municipal</span>
+    </div>
+    <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+  </header>
+
+  <main class="login-container">
+    <!-- Etapa 1: solicitar link -->
+    <div id="etapa-solicitar">
+      <h2>Recuperar Senha</h2>
+      <p style="text-align:center;color:#666;font-size:0.88rem;margin-bottom:16px;">
+        Informe seu nome de usuário. Se houver um e-mail cadastrado no sistema, você receberá um link de redefinição.
+      </p>
+      <div id="msg-solicitar" style="display:none;padding:10px;border-radius:4px;margin-bottom:12px;text-align:center;"></div>
+      <form onsubmit="solicitarReset(event)">
+        <input type="text" id="usuario" placeholder="Nome de usuário" required autocomplete="username">
+        <button type="submit" id="btn-solicitar">Enviar link de recuperação</button>
+      </form>
+      <p style="text-align:center;margin-top:14px;font-size:0.85rem;">
+        <a href="/" style="color:#1d4ed8;">Voltar ao login</a>
+      </p>
+    </div>
+
+    <!-- Etapa 2: redefinir com token -->
+    <div id="etapa-redefinir" style="display:none;">
+      <h2>Nova Senha</h2>
+      <p style="text-align:center;color:#666;font-size:0.88rem;margin-bottom:16px;">
+        Escolha uma senha forte para o seu usuário.
+      </p>
+      <div id="msg-redefinir" style="display:none;padding:10px;border-radius:4px;margin-bottom:12px;text-align:center;"></div>
+      <form onsubmit="redefinirSenha(event)">
+        <input type="password" id="nova-senha" placeholder="Nova senha" required autocomplete="new-password">
+        <input type="password" id="confirmar-senha" placeholder="Confirmar nova senha" required autocomplete="new-password">
+        <button type="submit" id="btn-redefinir">Salvar nova senha</button>
+      </form>
+      <p style="font-size:0.8rem;color:#888;text-align:center;margin-top:10px;">
+        Mínimo 8 caracteres, 1 maiúscula, 1 número, 1 caractere especial.
+      </p>
+    </div>
+  </main>
+
+  <script src="../assets/js/config.js"></script>
+  <script>
+    const token = new URLSearchParams(window.location.search).get('token');
+
+    if (token) {
+      document.getElementById('etapa-solicitar').style.display = 'none';
+      document.getElementById('etapa-redefinir').style.display = 'block';
+    }
+
+    async function solicitarReset(e) {
+      e.preventDefault();
+      const usuario = document.getElementById('usuario').value.trim();
+      const btn = document.getElementById('btn-solicitar');
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/esqueci-senha`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario }),
+        });
+        const data = await res.json();
+        mostrarMsg('msg-solicitar', data.message || 'Solicitação enviada.', res.ok ? 'ok' : 'erro');
+      } catch {
+        mostrarMsg('msg-solicitar', 'Erro de conexão com o servidor.', 'erro');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Enviar link de recuperação';
+      }
+    }
+
+    async function redefinirSenha(e) {
+      e.preventDefault();
+      const novaSenha = document.getElementById('nova-senha').value;
+      const confirmar = document.getElementById('confirmar-senha').value;
+
+      if (novaSenha !== confirmar) {
+        mostrarMsg('msg-redefinir', 'As senhas não coincidem.', 'erro');
+        return;
+      }
+
+      const btn = document.getElementById('btn-redefinir');
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/redefinir-senha`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, novaSenha }),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          mostrarMsg('msg-redefinir', data.message, 'ok');
+          setTimeout(() => window.location.href = '/', 2500);
+        } else {
+          mostrarMsg('msg-redefinir', data.error || 'Erro ao redefinir senha.', 'erro');
+          btn.disabled = false;
+          btn.textContent = 'Salvar nova senha';
+        }
+      } catch {
+        mostrarMsg('msg-redefinir', 'Erro de conexão com o servidor.', 'erro');
+        btn.disabled = false;
+        btn.textContent = 'Salvar nova senha';
+      }
+    }
+
+    function mostrarMsg(id, texto, tipo) {
+      const el = document.getElementById(id);
+      el.textContent = texto;
+      el.style.display = 'block';
+      el.style.background = tipo === 'ok' ? '#d4edda' : '#f8d7da';
+      el.style.color = tipo === 'ok' ? '#155724' : '#721c24';
+    }
+  </script>
+</body>
+</html>

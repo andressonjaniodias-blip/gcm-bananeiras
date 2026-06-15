@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 
+const { csrfMiddleware } = require('./middleware/csrf');
 const boRoutes        = require('./routes/boRoutes');
 const authRoutes      = require('./routes/authRoutes');
 const relatorioRoutes = require('./routes/relatorioRoutes');
@@ -51,11 +52,12 @@ app.use(cors({
   origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
 // Middlewares
 app.use(cookieParser());
+app.use(csrfMiddleware);
 app.use(bodyParser.json({ limit: '20mb' }));
 app.use(bodyParser.urlencoded({ limit: '20mb', extended: true }));
 
@@ -76,6 +78,8 @@ app.use('/api/auth/login',            loginLimiter);
 app.use('/api/auth/setup',            adminWriteLimiter);
 app.use('/api/auth/usuarios',         adminWriteLimiter);
 app.use('/api/auth/trocar-senha',     adminWriteLimiter);
+app.use('/api/auth/esqueci-senha',    loginLimiter);
+app.use('/api/auth/redefinir-senha',  loginLimiter);
 app.use('/api/documentos',            uploadLimiter);
 app.use('/api/anexos',                uploadLimiter);
 app.use('/api/auth',      authRoutes);

@@ -16,10 +16,20 @@ const validarBO = [
   }
 ];
 
-// Validar CPF (formato básico)
+// Validar CPF com dígito verificador
 function validarCPF(cpf) {
-  const cpfLimpo = cpf.replace(/\D/g, '');
-  return cpfLimpo.length === 11;
+  const n = cpf.replace(/\D/g, '');
+  if (n.length !== 11 || /^(\d)\1{10}$/.test(n)) return false;
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += parseInt(n[i]) * (10 - i);
+  let r = (soma * 10) % 11;
+  if (r === 10 || r === 11) r = 0;
+  if (r !== parseInt(n[9])) return false;
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += parseInt(n[i]) * (11 - i);
+  r = (soma * 10) % 11;
+  if (r === 10 || r === 11) r = 0;
+  return r === parseInt(n[10]);
 }
 
 // Validar RG (formato básico)

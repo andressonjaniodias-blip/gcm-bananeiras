@@ -190,6 +190,9 @@
       <span class="header-linha-3">Secretaria de Administração Pública Municipal</span>
     </div>
     <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+    <button id="btn-tema" title="Alternar tema"
+      onclick="(function(){const themes=['gov-modern','dark-command'];const cur=document.documentElement.getAttribute('data-theme')||'gov-modern';const next=themes[(themes.indexOf(cur)+1)%themes.length];document.documentElement.setAttribute('data-theme',next);localStorage.setItem('gcm-tema',next);document.getElementById('btn-tema').textContent=next==='dark-command'?'☀️':'🌙';})()"
+      style="background:transparent;border:1px solid rgba(255,255,255,0.4);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:1.1rem;color:inherit;line-height:1;">🌙</button>
   </header>
 
   <div class="consulta">
@@ -290,6 +293,7 @@
         <div class="adv-actions">
           <button class="btn-buscar" onclick="filtrar()">Aplicar Filtros</button>
           <button class="btn-limpar-adv" onclick="limparTudo()">Limpar Tudo</button>
+          <button class="btn-limpar-adv" onclick="exportarCSV()" title="Exportar lista filtrada para CSV" style="margin-left:auto;">⬇️ Exportar CSV</button>
         </div>
       </div>
 
@@ -629,6 +633,70 @@
           showToast(data.error || 'Erro ao excluir o boletim.', 'danger');
         }
       } catch { showToast('Erro de conexão ao tentar excluir.', 'danger'); }
+    }
+
+    function exportarCSV() {
+      const f = coletarFiltros();
+      const resultado = todosOsBOs.filter(bo => {
+        const d = parseDados(bo);
+        const sol = d.dadosSolicitacao || {};
+        const oc  = d.dadosOcorrencia  || {};
+        const vitimas   = d.vitimas   || [];
+        const suspeitos = d.suspeitos || [];
+        const relato    = (d.relato   || '').toLowerCase();
+        const dataOc    = dataOcorrencia(d);
+        if (f.rapido) {
+          const haystack = [bo.numero, bo.criado_por, sol.natureza, sol.nomeSolicitante, sol.canal,
+            oc.tipificacao, oc.rua, oc.complemento, oc.cidade, oc.viatura, oc.comandante,
+            ...vitimas.flatMap(v => [v.nome, v.cpf, v.alcunha]),
+            ...suspeitos.flatMap(s => [s.nome, s.cpf, s.alcunha, s.rg]), relato,
+          ].join(' ').toLowerCase();
+          if (!haystack.includes(f.rapido)) return false;
+        }
+        if (f.dataDe  && dataOc && dataOc < f.dataDe)  return false;
+        if (f.dataAte && dataOc && dataOc > f.dataAte)  return false;
+        if (!contemStr(oc.tipificacao + ' ' + sol.natureza, f.tipificacao)) return false;
+        if (!contemStr(oc.rua,         f.rua))         return false;
+        if (!contemStr(oc.complemento, f.bairro))       return false;
+        if (!contemStr(sol.canal,      f.canal))        return false;
+        if (!contemStr(oc.viatura,     f.viatura))      return false;
+        if (!contemStr([oc.comandante, oc.motorista, oc.patrulheiroI, oc.patrulheiroII].join(' '), f.comandante)) return false;
+        if (f.nomeVitima && !arrayContem(vitimas, ['nome'], f.nomeVitima)) return false;
+        if (f.cpfVitima  && !arrayContem(vitimas, ['cpf'],  f.cpfVitima))  return false;
+        if (f.nomeSuspeito && !arrayContem(suspeitos, ['nome'],    f.nomeSuspeito)) return false;
+        if (f.alcunha      && !arrayContem(suspeitos, ['alcunha'], f.alcunha))      return false;
+        if (f.cpfSuspeito  && !arrayContem(suspeitos, ['cpf'],     f.cpfSuspeito))  return false;
+        if (f.rgSuspeito   && !arrayContem(suspeitos, ['rg'],      f.rgSuspeito))   return false;
+        if (!contemStr(relato, f.relato)) return false;
+        return true;
+      });
+
+      if (!resultado.length) { showToast('Nenhum BO para exportar com os filtros atuais.', 'warning'); return; }
+
+      const csvEscape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const linhas = [
+        ['Número','Data','Tipo/Natureza','Local','Registrado por','Vítimas','Suspeitos'].map(csvEscape).join(','),
+        ...resultado.map(bo => {
+          const d   = parseDados(bo);
+          const oc  = d.dadosOcorrencia  || {};
+          const sol = d.dadosSolicitacao || {};
+          const vitimas   = (d.vitimas   || []).filter(v => v.nome).map(v => v.nome).join('; ');
+          const suspeitos = (d.suspeitos || []).filter(s => s.nome).map(s => s.nome).join('; ');
+          const dataOc = dataOcorrencia(d);
+          const dataStr = dataOc ? new Date(dataOc + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+          const local = [oc.rua, oc.complemento].filter(Boolean).join(', ');
+          return [bo.numero, dataStr, oc.tipificacao || sol.natureza || '', local, bo.criado_por || '', vitimas, suspeitos].map(csvEscape).join(',');
+        }),
+      ];
+
+      const bom = '﻿'; // UTF-8 BOM para Excel
+      const blob = new Blob([bom + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `boletins_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
     async function baixarPDF(id, numero) {

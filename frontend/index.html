@@ -32,7 +32,9 @@
       <input type="password" id="senha" placeholder="Senha" required>
       <button type="submit">Entrar</button>
     </form>
-    <p style="font-size:0.82rem;color:#888;text-align:center;margin-top:8px;">Esqueceu a senha? Contate o administrador do sistema.</p>
+    <p style="font-size:0.82rem;color:#888;text-align:center;margin-top:8px;">
+      <a href="/pages/recuperar-senha.html" style="color:#1d4ed8;">Esqueceu sua senha?</a>
+    </p>
   </main>
   <script>
     if (new URLSearchParams(window.location.search).get('motivo') === 'inatividade') {
