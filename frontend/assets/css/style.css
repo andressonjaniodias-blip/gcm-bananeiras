@@ -1556,3 +1556,198 @@ body.has-sidebar .header {
     right: calc(10px + 44px + 8px); /* à esquerda do botão de tema */
   }
 }
+
+/* ============================================================
+   MODERNIZAÇÃO — refinamentos visuais institucionais
+   ============================================================ */
+
+/* ── Scrollbar personalizada ───────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+
+/* ── Header — profundidade e identidade ───────────────────── */
+.header {
+  background: linear-gradient(135deg,
+    #060f1c 0%,
+    var(--bg-header-from) 30%,
+    #162d52 65%,
+    var(--bg-header-to) 100%);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 -1px 0 rgba(245,158,11,0.3);
+}
+
+/* Linha "GUARDA CIVIL MUNICIPAL" em dourado */
+.header-linha-2 {
+  color: var(--header-accent) !important;
+  opacity: 1 !important;
+  font-weight: 700;
+  text-shadow: 0 1px 6px rgba(245,158,11,0.4);
+}
+
+/* ── Sidebar — mais profundidade e active state refinado ───── */
+#sidebar {
+  background: linear-gradient(180deg, #060f1c 0%, #0a1628 50%, #112240 100%);
+  box-shadow: 3px 0 20px rgba(0,0,0,0.35);
+}
+
+.sb-user {
+  background: rgba(245,158,11,0.06);
+  border-bottom-color: rgba(245,158,11,0.15) !important;
+}
+
+.sb-avatar {
+  background: linear-gradient(135deg, var(--header-accent) 0%, #D97706 100%);
+  box-shadow: 0 2px 10px rgba(245,158,11,0.45);
+  border-color: rgba(245,158,11,0.3) !important;
+}
+
+.sb-link.active {
+  background: linear-gradient(90deg, rgba(245,158,11,0.16) 0%, rgba(245,158,11,0.03) 100%) !important;
+  border-left-color: var(--header-accent) !important;
+  color: #fff !important;
+  font-weight: 700;
+}
+
+.sb-link:hover {
+  border-left-color: rgba(245,158,11,0.45) !important;
+}
+
+/* ── Login — borda amber e botão com gradiente ─────────────── */
+.login-container {
+  border-top: 4px solid var(--header-accent);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.09);
+}
+
+.login-container button[type="submit"] {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  box-shadow: 0 2px 10px rgba(21,101,192,0.3);
+  letter-spacing: 0.05em;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.login-container button[type="submit"]:hover {
+  box-shadow: 0 4px 18px rgba(21,101,192,0.4);
+  transform: translateY(-2px);
+}
+
+/* ── Tabela — header com gradiente naval ─────────────────────── */
+table th {
+  background: linear-gradient(135deg, #0a1628 0%, var(--color-primary) 100%);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  border-color: rgba(255,255,255,0.08);
+}
+
+/* ── Botões de ação — gradiente + shadow ──────────────────── */
+.actions button {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  box-shadow: 0 2px 8px rgba(21,101,192,0.25);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.actions button:hover {
+  background: linear-gradient(135deg, var(--color-primary-hover) 0%, #083585 100%);
+  box-shadow: 0 4px 18px rgba(21,101,192,0.4);
+  transform: translateY(-2px);
+}
+
+.filters button {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  box-shadow: 0 2px 6px rgba(21,101,192,0.2);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.filters button:hover {
+  box-shadow: 0 4px 14px rgba(21,101,192,0.35);
+  background: linear-gradient(135deg, var(--color-primary-hover) 0%, #083585 100%);
+}
+
+/* ── Tabs — active com sombra e gradiente ─────────────────── */
+.tabs button.active,
+.tabs .tab-btn.active {
+  background: linear-gradient(135deg, #0a1628 0%, #1E3A5F 100%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  border-color: transparent;
+}
+
+/* ── Cards — layered shadow para profundidade ─────────────── */
+.card,
+.dashboard,
+.consulta {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05),
+              0 4px 12px rgba(0,0,0,0.07),
+              0 12px 28px rgba(0,0,0,0.04);
+}
+.card h3 {
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--header-accent);
+  margin-bottom: 16px;
+}
+
+/* ── Home cards — hover mais expressivo ───────────────────── */
+.home-card {
+  transition: transform 0.2s cubic-bezier(.34,1.56,.64,1), box-shadow 0.2s;
+}
+.home-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.15);
+}
+.home-card .home-card-title::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--header-accent);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* ── Stat card — hover lift ───────────────────────────────── */
+.stat-card {
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* ── Pub panel header — gradiente naval ───────────────────── */
+.pub-panel-header {
+  background: linear-gradient(135deg, #060f1c 0%, var(--bg-header-to) 100%) !important;
+  border-bottom: 3px solid var(--header-accent) !important;
+}
+
+/* ── Tema dark-command — header mais profundo ─────────────── */
+[data-theme="dark-command"] .header {
+  background: linear-gradient(135deg,
+    #020507 0%,
+    #050D1A 35%,
+    #091828 65%,
+    #0F1F38 100%);
+}
+[data-theme="dark-command"] #sidebar {
+  background: linear-gradient(180deg, #020507 0%, #060e1a 50%, #0a1628 100%);
+}
+[data-theme="dark-command"] .actions button {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  box-shadow: 0 2px 10px rgba(59,130,246,0.25);
+}
+[data-theme="dark-command"] .actions button:hover {
+  box-shadow: 0 4px 18px rgba(59,130,246,0.4);
+}
+[data-theme="dark-command"] table th {
+  background: linear-gradient(135deg, #020810 0%, #1E3A5F 100%);
+}
+[data-theme="dark-command"] .card h3 {
+  border-bottom-color: var(--header-accent);
+}
+[data-theme="dark-command"] .login-container {
+  border-top-color: var(--header-accent);
+}
+[data-theme="dark-command"] .login-container button[type="submit"] {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  box-shadow: 0 2px 10px rgba(59,130,246,0.3);
+}
