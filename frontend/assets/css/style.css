@@ -7,6 +7,9 @@
 [data-theme="gov-modern"] {
   --header-h: 110px;
   --bg-page:         #EEF2FA;
+  --bg-body-from:    #071422;
+  --bg-body-mid:     #0D1B2A;
+  --bg-body-to:      #142840;
   --bg-card:         #FFFFFF;
   --bg-header-from:  #0D1B2A;
   --bg-header-to:    #1E3A5F;
@@ -54,6 +57,9 @@
 /* Dark Command — operacional escuro */
 [data-theme="dark-command"] {
   --bg-page:         #0B1120;
+  --bg-body-from:    #020406;
+  --bg-body-mid:     #050D1A;
+  --bg-body-to:      #030d1f;
   --bg-card:         #1E293B;
   --bg-header-from:  #050D1A;
   --bg-header-to:    #0F1F38;
@@ -111,10 +117,36 @@ html { transition: background 0.3s, color 0.3s; }
 
 body {
   font-family: 'Inter', Arial, sans-serif;
-  background: var(--bg-page);
+  background: linear-gradient(150deg, var(--bg-body-from) 0%, var(--bg-body-mid) 50%, var(--bg-body-to) 100%);
+  background-attachment: fixed;
   color: var(--color-text);
   min-height: 100vh;
+  padding: clamp(8px, 1.5vw, 20px);
   transition: background 0.3s, color 0.3s;
+}
+
+/* ============================================================
+   APP SHELL — card flutuante centralizado
+   ============================================================ */
+#app-shell {
+  max-width: 1520px;
+  width: 100%;
+  margin: 0 auto;
+  border-radius: clamp(10px, 1.5vw, 18px);
+  overflow: hidden;
+  box-shadow: 0 24px 72px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05);
+  background: var(--bg-page);
+  min-height: calc(100vh - clamp(16px, 3vw, 40px));
+  display: flex;
+  flex-direction: column;
+}
+
+/* Shell-body: sidebar + conteúdo lado a lado */
+#shell-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  position: relative;
 }
 
 /* ============================================================
@@ -939,31 +971,52 @@ table button:hover { background: var(--color-primary-hover); }
 /* ============================================================
    SIDEBAR LAYOUT
    ============================================================ */
-body.has-sidebar {
-  display: flex;
-  flex-direction: row;
-  min-height: 100vh;
-}
-
 #sidebar {
   width: 230px;
-  min-height: 100vh;
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
   overflow-y: auto;
   background: linear-gradient(180deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%);
   border-right: 1px solid rgba(255,255,255,0.07);
   display: flex;
   flex-direction: column;
   z-index: 300;
-  box-shadow: 2px 0 12px rgba(0,0,0,0.25);
   transition: transform 0.28s cubic-bezier(.4,0,.2,1);
 }
 
+/* Desktop: sidebar sticky dentro do app-shell */
+@media (min-width: 1025px) {
+  #sidebar {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    min-height: calc(100vh - clamp(16px, 3vw, 40px));
+    box-shadow: 2px 0 16px rgba(0,0,0,0.2);
+    transform: none !important;
+  }
+
+  #app-content {
+    flex: 1;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  body.has-sidebar .header {
+    position: sticky;
+    top: 0;
+    left: auto;
+    right: auto;
+    width: 100%;
+    z-index: 250;
+  }
+
+  body.has-sidebar #app-content {
+    padding-top: 16px;
+  }
+
+  #sb-fab    { display: none !important; }
+  .sb-close-btn { display: none !important; }
+}
+
 #app-content {
-  margin-left: 230px;
   flex: 1;
   min-width: 0;
 }
@@ -1114,25 +1167,43 @@ body.has-sidebar {
   background: var(--color-danger);
 }
 
+/* ── Mobile: header e sidebar fixos (drawer) ─────────────────────────── */
+@media (max-width: 1024px) {
+  body.has-sidebar .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 250;
+    justify-content: center;
+    gap: 16px;
+    box-sizing: border-box;
+  }
+
+  body.has-sidebar #sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    min-height: 100vh;
+    width: 260px;
+    z-index: 400;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.45);
+  }
+
+  body.sb-open #sidebar { transform: translateX(0); }
+
+  body.has-sidebar #app-content {
+    padding-top: calc(var(--header-h) + 16px);
+    margin-left: 0;
+  }
+}
+
+/* Centraliza o conteúdo do header nas páginas com sidebar */
 body.has-sidebar .header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  z-index: 250;
   justify-content: center;
   gap: 16px;
-  box-sizing: border-box;
-}
-
-body.has-sidebar #sidebar {
-  top: var(--header-h);
-  min-height: calc(100vh - var(--header-h));
-}
-
-body.has-sidebar #app-content {
-  padding-top: calc(var(--header-h) + 16px);
 }
 
 /* ============================================================
@@ -1363,19 +1434,20 @@ body.has-sidebar #app-content {
 @media (max-width: 1024px) {
   :root { --header-h: 90px; }
 
-  /* Sidebar vira drawer no mobile/tablet */
-  body.has-sidebar #sidebar {
-    transform: translateX(-100%);
-    top: 0;
-    min-height: 100vh;
-    width: 260px;
-    z-index: 400;
+  body {
+    padding: 0;
   }
-  body.sb-open #sidebar { transform: translateX(0); }
+
+  #app-shell {
+    border-radius: 0;
+    min-height: 100vh;
+    margin: 0;
+    box-shadow: none;
+  }
+
   body.sb-open #sb-overlay { display: block; }
 
   body.has-sidebar #app-content {
-    margin-left: 0;
     padding-top: calc(var(--header-h) + 24px);
   }
 
