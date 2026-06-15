@@ -15,9 +15,27 @@ const agentesRoutes   = require('./routes/agentesRoutes');
 const anexosRoutes    = require('./routes/anexosRoutes');
 
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 15 * 60 * 1000,
   max: 20,
   message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Limiter para criação de usuários e operações admin sensíveis
+const adminWriteLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 30,
+  message: { error: 'Muitas requisições. Tente novamente em 1 hora.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Limiter para upload de arquivos e geração de PDF
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 50,
+  message: { error: 'Muitos uploads. Tente novamente em 15 minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -54,7 +72,12 @@ const uploadsPath = path.join(__dirname, 'uploads');
 app.use('/uploads', require('./middleware/auth').verificarToken, express.static(uploadsPath));
 
 // Rotas da API
-app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth/login',            loginLimiter);
+app.use('/api/auth/setup',            adminWriteLimiter);
+app.use('/api/auth/usuarios',         adminWriteLimiter);
+app.use('/api/auth/trocar-senha',     adminWriteLimiter);
+app.use('/api/documentos',            uploadLimiter);
+app.use('/api/anexos',                uploadLimiter);
 app.use('/api/auth',      authRoutes);
 app.use('/api/bo',        boRoutes);
 app.use('/api/relatorio', relatorioRoutes);
