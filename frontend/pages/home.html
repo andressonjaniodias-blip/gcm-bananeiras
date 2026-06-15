@@ -608,13 +608,13 @@
     async function baixarDoc(id, nome) {
       try {
         const res = await fetch(`${API_BASE_URL}/api/documentos/${id}/download`, { credentials: 'include' });
-        if (!res.ok) { alert('Erro ao baixar arquivo.'); return; }
+        if (!res.ok) { showToast('Erro ao baixar arquivo.', 'danger'); return; }
         const blob = await res.blob();
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
         a.href = url; a.download = nome || `documento_${id}`; a.click();
         URL.revokeObjectURL(url);
-      } catch { alert('Erro ao baixar arquivo.'); }
+      } catch { showToast('Erro ao baixar arquivo.', 'danger'); }
     }
   </script>
 </body>
