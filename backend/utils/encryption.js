@@ -1,7 +1,12 @@
 const crypto = require('crypto');
 
 const ALGORITHM = 'aes-256-cbc';
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'chave_padrao_dev_32_caracteres';
+
+if (!process.env.ENCRYPTION_KEY) {
+  throw new Error('Variável de ambiente ENCRYPTION_KEY não definida. Defina-a antes de iniciar a aplicação.');
+}
+
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 
 function encriptar(texto) {
   try {
