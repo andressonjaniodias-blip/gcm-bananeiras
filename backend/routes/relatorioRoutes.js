@@ -2,6 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
 const { verificarToken } = require('../middleware/auth');
+const erroServidor = require('../utils/erroServidor');
 const PDFDocument = require('pdfkit');
 
 // Próximo número disponível
@@ -15,7 +16,7 @@ router.get('/proximo-numero', verificarToken, async (req, res) => {
     const seq = String(Number(rows[0].count) + 1).padStart(4, '0');
     res.json({ numero: `REL-GCM-${seq}/${ano}` });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 });
 
@@ -28,7 +29,7 @@ router.get('/', verificarToken, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 });
 
@@ -53,7 +54,7 @@ router.post('/', verificarToken, async (req, res) => {
     );
     res.status(201).json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 });
 
@@ -69,7 +70,7 @@ router.put('/:id', verificarToken, async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Relatório não encontrado.' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 });
 
@@ -248,7 +249,7 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     doc.flushPages();
     doc.end();
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 });
 
