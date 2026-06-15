@@ -57,6 +57,9 @@
       </div>
       <nav class="sb-nav">${navHTML}</nav>
       <div class="sb-footer">
+        <button class="sb-btn-tema" id="sb-btn-tema" onclick="(function(){const themes=['gov-modern','dark-command'];const cur=document.documentElement.getAttribute('data-theme')||'gov-modern';const next=themes[(themes.indexOf(cur)+1)%themes.length];document.documentElement.setAttribute('data-theme',next);localStorage.setItem('gcm-tema',next);const btn=document.getElementById('sb-btn-tema');if(btn){btn.innerHTML=next==='dark-command'?'☀️ Tema Claro':'🌙 Tema Escuro';}})()" title="Alternar tema">
+          🌙 Tema Escuro
+        </button>
         <button class="sb-btn-sair" onclick="logout()">Sair do Sistema</button>
       </div>
     `;
@@ -100,6 +103,11 @@
     document.body.appendChild(overlay);
     document.body.appendChild(fab);
     document.body.classList.add('has-sidebar');
+
+    // Inicializa label do botão de tema conforme tema salvo
+    const temaAtual = localStorage.getItem('gcm-tema') || 'gov-modern';
+    const btnTema = document.getElementById('sb-btn-tema');
+    if (btnTema) btnTema.innerHTML = temaAtual === 'dark-command' ? '☀️ Tema Claro' : '🌙 Tema Escuro';
 
     // Ajusta --header-h com a altura real do cabeçalho
     function syncHeaderHeight() {
