@@ -85,10 +85,19 @@
   </header>
 
   <main class="dashboard">
-    <nav class="tabs" id="docTabs">
-      <button class="tab-btn" id="btnTabPublicar" onclick="showDocTab('publicar', this)">Publicar Documento</button>
-      <button class="tab-btn active" id="btnTabAcervo" onclick="showDocTab('acervo', this)">Acervo</button>
-    </nav>
+    <div class="tabs-scroll-wrap" id="docTabs">
+      <nav class="tabs">
+        <button class="tab-btn" id="btnTabPublicar" onclick="showDocTab('publicar', this)">Publicar Documento</button>
+        <button class="tab-btn active" id="btnTabAcervo" onclick="showDocTab('acervo', this)">Acervo</button>
+      </nav>
+    </div>
+
+    <!-- Navegação mobile entre abas (oculta no desktop) -->
+    <div class="mobile-tab-nav" id="mobileDocNav">
+      <button class="mobile-nav-btn" id="docBtnAnterior" onclick="navDocTab(-1)" style="visibility:hidden">← Anterior</button>
+      <span class="mobile-nav-counter" id="docNavCounter">1 / 2</span>
+      <button class="mobile-nav-btn" id="docBtnProximo" onclick="navDocTab(1)">Próxima →</button>
+    </div>
 
     <!-- PUBLICAR -->
     <section id="publicar" class="tab-content hidden">
@@ -268,11 +277,35 @@
       await carregarDocumentos();
     });
 
+    const DOC_TABS = ['publicar', 'acervo'];
+    let docTabIdx = 1; // começa no acervo (aba ativa padrão)
+
+    function _updateDocMobileNav() {
+      const counter = document.getElementById('docNavCounter');
+      const btnAnt  = document.getElementById('docBtnAnterior');
+      const btnProx = document.getElementById('docBtnProximo');
+      if (counter) counter.textContent = `${docTabIdx + 1} / ${DOC_TABS.length}`;
+      if (btnAnt)  btnAnt.style.visibility  = docTabIdx === 0 ? 'hidden' : 'visible';
+      if (btnProx) btnProx.style.visibility = docTabIdx === DOC_TABS.length - 1 ? 'hidden' : 'visible';
+    }
+
+    window.navDocTab = async function(dir) {
+      const next = docTabIdx + dir;
+      if (next < 0 || next >= DOC_TABS.length) return;
+      docTabIdx = next;
+      const id = DOC_TABS[docTabIdx];
+      const btn = id === 'publicar' ? document.getElementById('btnTabPublicar') : document.getElementById('btnTabAcervo');
+      await showDocTab(id, btn);
+    };
+
     async function showDocTab(id, btn) {
       document.querySelectorAll('#publicar, #acervo').forEach(s => s.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(id).classList.remove('hidden');
       if (btn) btn.classList.add('active');
+      docTabIdx = DOC_TABS.indexOf(id);
+      if (docTabIdx < 0) docTabIdx = 1;
+      _updateDocMobileNav();
       if (id === 'acervo') {
         await carregarDocumentos();
         renderizarDocs(todosDocumentos);
