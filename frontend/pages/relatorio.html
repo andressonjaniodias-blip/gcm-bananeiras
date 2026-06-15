@@ -31,23 +31,6 @@
     }
     .dz-over { border-color:var(--color-primary) !important; background:var(--color-primary-light) !important; }
 
-    /* Modal PDF */
-    #modal-pdf-rel {
-      display:none; position:fixed; inset:0; z-index:9999;
-      background:rgba(0,0,0,0.55); align-items:center; justify-content:center;
-    }
-    #modal-pdf-rel.show { display:flex; }
-    #modal-pdf-rel .mpo-card {
-      background:#fff; border-radius:12px; padding:30px 28px;
-      max-width:380px; width:90%; box-shadow:0 16px 48px rgba(0,0,0,0.3);
-    }
-    #modal-pdf-rel .mpo-title { font-size:1rem; font-weight:800; color:#1E3A5F; margin-bottom:8px; }
-    #modal-pdf-rel .mpo-msg   { font-size:0.87rem; color:#6B7280; margin-bottom:20px; }
-    #modal-pdf-rel .mpo-btns  { display:flex; gap:10px; flex-wrap:wrap; }
-    #modal-pdf-rel .mpo-btn   { flex:1; padding:11px; border:none; border-radius:8px; font-size:0.92rem; font-weight:700; cursor:pointer; }
-    #modal-pdf-rel .mpo-btn-sim { background:#1E3A5F; color:#fff; }
-    #modal-pdf-rel .mpo-btn-nao { background:#e5e7eb; color:#374151; }
-    #modal-pdf-rel .mpo-btn:hover { opacity:0.88; }
   </style>
 </head>
 <body>
@@ -147,7 +130,6 @@
       <div class="actions">
         <button onclick="salvarRelatorio('rascunho')" style="background:var(--color-text-muted);">Salvar Rascunho</button>
         <button onclick="salvarRelatorio('finalizado')" style="background:var(--color-success);">Finalizar Relatório</button>
-        <button onclick="exportarPDFRelatorio()" style="background:var(--color-danger);" id="btnExportarPDF" disabled>Exportar PDF</button>
       </div>
       <p id="msgRelatorio" class="msg" style="margin-top:12px;"></p>
     </section>
@@ -167,17 +149,6 @@
     </section>
   </main>
 
-  <!-- Modal opções PDF -->
-  <div id="modal-pdf-rel">
-    <div class="mpo-card">
-      <div class="mpo-title">📄 Exportar PDF</div>
-      <div class="mpo-msg">Deseja incluir os anexos nas páginas finais do documento?</div>
-      <div class="mpo-btns">
-        <button class="mpo-btn mpo-btn-sim" onclick="confirmarPdfRel(true)">✔ Sim, incluir anexos</button>
-        <button class="mpo-btn mpo-btn-nao" onclick="confirmarPdfRel(false)">Não incluir</button>
-      </div>
-    </div>
-  </div>
 
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
@@ -207,12 +178,15 @@
       carregarRelatorios();
     });
 
-    function showRelTab(id) {
+    async function showRelTab(id) {
       document.querySelectorAll('#criar, #historico').forEach(s => s.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(id).classList.remove('hidden');
       event?.target?.classList.add('active');
-      if (id === 'historico') renderizarRelatorios(todosRelatorios);
+      if (id === 'historico') {
+        await carregarRelatorios();
+        renderizarRelatorios(todosRelatorios);
+      }
     }
 
     async function salvarRelatorio(status) {
@@ -254,39 +228,9 @@
         const result = await res.json();
         relatorioIdAtual = result.id;
         document.getElementById('numRelatorio').textContent = result.numero;
-        document.getElementById('btnExportarPDF').disabled = false;
         mostrarMsg(status === 'finalizado' ? 'Relatório finalizado com sucesso!' : 'Rascunho salvo!', 'success');
         carregarRelatorios();
       } catch { mostrarMsg('Erro de conexão.', 'danger'); }
-    }
-
-    function exportarPDFRelatorio() {
-      if (!relatorioIdAtual) return;
-      document.getElementById('modal-pdf-rel')?.classList.add('show');
-    }
-
-    async function confirmarPdfRel(comAnexos) {
-      document.getElementById('modal-pdf-rel')?.classList.remove('show');
-      if (!relatorioIdAtual) return;
-
-      // Primeiro envia anexos pendentes, se houver
-      if (_anexosRel.length) {
-        await enviarAnexosRel(relatorioIdAtual);
-        _anexosRel = [];
-        renderizarAnexosRel();
-      }
-
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/relatorio/${relatorioIdAtual}/pdf?anexos=${comAnexos}`, { credentials: 'include' });
-        if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
-        const blob = await res.blob();
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href     = url;
-        a.download = `relatorio_${document.getElementById('numRelatorio').textContent.replace(/\//g, '-')}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
-      } catch { alert('Erro ao exportar PDF.'); }
     }
 
     // ── Lógica de anexos do Relatório ────────────────────────────────────────
@@ -389,25 +333,11 @@
     }
 
     async function baixarPDFRel(id, numero) {
-      // Reutiliza o modal; armazena o número para o nome do arquivo
-      relatorioIdAtual = id;
-      _numeroRelHistorico = numero;
-      document.getElementById('modal-pdf-rel')?.classList.add('show');
-    }
-    let _numeroRelHistorico = null;
-
-    // Sobrescreve confirmarPdfRel para suportar chamada do histórico também
-    const _confirmarOriginal = confirmarPdfRel;
-    confirmarPdfRel = async function(comAnexos) {
-      document.getElementById('modal-pdf-rel')?.classList.remove('show');
-      if (!relatorioIdAtual) return;
-      // Não envia anexos pendentes ao chamar do histórico (sem _anexosRel neste contexto)
-      const nomeDl = _numeroRelHistorico
-        ? `relatorio_${_numeroRelHistorico.replace(/\//g, '-')}.pdf`
-        : `relatorio_${relatorioIdAtual}.pdf`;
-      _numeroRelHistorico = null;
+      const nomeDl = numero
+        ? `relatorio_${numero.replace(/\//g, '-')}.pdf`
+        : `relatorio_${id}.pdf`;
       try {
-        const res = await fetch(`${API_BASE_URL}/api/relatorio/${relatorioIdAtual}/pdf?anexos=${comAnexos}`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE_URL}/api/relatorio/${id}/pdf`, { credentials: 'include' });
         if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
         const blob = await res.blob();
         const url  = URL.createObjectURL(blob);
@@ -415,7 +345,7 @@
         a.href = url; a.download = nomeDl; a.click();
         URL.revokeObjectURL(url);
       } catch { alert('Erro ao baixar PDF.'); }
-    };
+    }
 
     function mostrarMsg(texto, tipo) {
       const el = document.getElementById('msgRelatorio');
