@@ -2,6 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
 const { verificarToken } = require('../middleware/auth');
+const erroServidor = require('../utils/erroServidor');
 
 // Listar registros
 router.get('/', verificarToken, async (req, res) => {
