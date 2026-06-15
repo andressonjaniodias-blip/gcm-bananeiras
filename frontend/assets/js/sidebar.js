@@ -57,9 +57,16 @@
       </div>
       <nav class="sb-nav">${navHTML}</nav>
       <div class="sb-footer">
-        <button class="sb-btn-tema" id="sb-btn-tema" onclick="(function(){const themes=['gov-modern','dark-command','google-material'];const labels={'gov-modern':'🏛️ Gov Modern','dark-command':'🌙 Dark Command','google-material':'🎨 Google Material'};const cur=document.documentElement.getAttribute('data-theme')||'gov-modern';const next=themes[(themes.indexOf(cur)+1)%themes.length];document.documentElement.setAttribute('data-theme',next);localStorage.setItem('gcm-tema',next);const btn=document.getElementById('sb-btn-tema');if(btn){const after=themes[(themes.indexOf(next)+1)%themes.length];btn.innerHTML=labels[after];}})()" title="Alternar tema">
-          🌙 Dark Command
-        </button>
+        <div class="sb-tema-wrapper" id="sb-tema-wrapper">
+          <button class="sb-btn-tema" id="sb-btn-tema" onclick="window.toggleTemaMenu()" title="Selecionar tema">
+            Temas
+          </button>
+          <div class="sb-tema-menu" id="sb-tema-menu">
+            <button class="sb-tema-item" data-theme="gov-modern"      onclick="window.aplicarTema('gov-modern')">Gov Modern</button>
+            <button class="sb-tema-item" data-theme="dark-command"    onclick="window.aplicarTema('dark-command')">Dark Command</button>
+            <button class="sb-tema-item" data-theme="google-material" onclick="window.aplicarTema('google-material')">Google Material</button>
+          </div>
+        </div>
         <button class="sb-btn-sair" onclick="logout()">Sair do Sistema</button>
       </div>
     `;
@@ -104,15 +111,8 @@
     document.body.appendChild(fab);
     document.body.classList.add('has-sidebar');
 
-    // Inicializa label do botão de tema conforme tema salvo
-    const temaAtual = localStorage.getItem('gcm-tema') || 'gov-modern';
-    const btnTema = document.getElementById('sb-btn-tema');
-    if (btnTema) {
-      const _themes = ['gov-modern','dark-command','google-material'];
-      const _labels = {'gov-modern':'🏛️ Gov Modern','dark-command':'🌙 Dark Command','google-material':'🎨 Google Material'};
-      const _next = _themes[(_themes.indexOf(temaAtual) + 1) % _themes.length];
-      btnTema.innerHTML = _labels[_next];
-    }
+    // Marca o tema ativo no menu
+    _marcarTemaAtivo();
 
     // Ajusta --header-h com a altura real do cabeçalho
     function syncHeaderHeight() {
@@ -148,6 +148,35 @@
     const open = document.body.classList.toggle('sb-open');
     document.getElementById('sb-overlay').style.display = open ? 'block' : 'none';
   };
+
+  function _marcarTemaAtivo() {
+    const cur = localStorage.getItem('gcm-tema') || 'gov-modern';
+    document.querySelectorAll('.sb-tema-item').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.theme === cur);
+    });
+  }
+
+  window.toggleTemaMenu = function () {
+    const menu = document.getElementById('sb-tema-menu');
+    if (menu) menu.classList.toggle('open');
+  };
+
+  window.aplicarTema = function (tema) {
+    document.documentElement.setAttribute('data-theme', tema);
+    localStorage.setItem('gcm-tema', tema);
+    _marcarTemaAtivo();
+    const menu = document.getElementById('sb-tema-menu');
+    if (menu) menu.classList.remove('open');
+  };
+
+  // Fecha o menu ao clicar fora
+  document.addEventListener('click', function (e) {
+    const wrapper = document.getElementById('sb-tema-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+      const menu = document.getElementById('sb-tema-menu');
+      if (menu) menu.classList.remove('open');
+    }
+  });
 
   window.closeSidebar = function () {
     document.body.classList.remove('sb-open');
