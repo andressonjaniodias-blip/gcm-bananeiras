@@ -136,6 +136,45 @@
       border-radius: 2px; padding: 0 2px;
     }
 
+    /* ── Botões de ação ──────────────────────────────────────────────────────── */
+    .acoes-wrap { display: flex; gap: 5px; align-items: center; justify-content: center; }
+    .btn-acao {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px; border-radius: var(--radius-sm);
+      border: none; cursor: pointer; font-size: 0.85rem;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-acao:hover { opacity: 0.85; transform: scale(1.1); }
+    .btn-acao-pdf    { background: #EEF2FF; color: #4F46E5; }
+    .btn-acao-editar { background: #FEF9C3; color: #854D0E; }
+    .btn-acao-excluir{ background: #FEE2E2; color: #991B1B; }
+
+    /* Modal de confirmação de exclusão */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.45); align-items: center; justify-content: center;
+    }
+    .modal-overlay.aberto { display: flex; }
+    .modal-box {
+      background: var(--bg-card); border-radius: var(--radius);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25); padding: 28px 28px 22px;
+      max-width: 400px; width: 90%; text-align: center;
+    }
+    .modal-box h3 { margin: 0 0 10px; font-size: 1.1rem; color: var(--color-text); }
+    .modal-box p  { margin: 0 0 20px; font-size: 0.9rem; color: var(--color-text-muted); }
+    .modal-actions { display: flex; gap: 10px; justify-content: center; }
+    .btn-confirmar-excluir {
+      padding: 9px 22px; background: var(--color-danger); color: #fff;
+      border: none; border-radius: var(--radius-sm); font-weight: 700;
+      cursor: pointer; font-size: 0.9rem;
+    }
+    .btn-confirmar-excluir:hover { opacity: 0.88; }
+    .btn-cancelar-modal {
+      padding: 9px 22px; background: transparent;
+      border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+      color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;
+    }
+
     @media (max-width: 600px) {
       .adv-grid { grid-template-columns: 1fr; }
       .col-local, .col-envolvidos { display: none; }
@@ -273,13 +312,25 @@
             <th class="col-local">Local</th>
             <th class="col-envolvidos">Envolvidos</th>
             <th id="thRegistradoPor">Registrado por</th>
-            <th>PDF</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody id="listaBOs">
           <tr><td colspan="7" style="text-align:center;color:var(--color-hint);">Carregando...</td></tr>
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- Modal de confirmação de exclusão -->
+  <div class="modal-overlay" id="modalExcluir">
+    <div class="modal-box">
+      <h3>⚠️ Excluir Boletim</h3>
+      <p id="modalExcluirTexto">Tem certeza que deseja excluir este BO? Esta ação não pode ser desfeita.</p>
+      <div class="modal-actions">
+        <button class="btn-cancelar-modal" onclick="fecharModalExcluir()">Cancelar</button>
+        <button class="btn-confirmar-excluir" onclick="confirmarExclusao()">Excluir</button>
+      </div>
     </div>
   </div>
 
@@ -455,6 +506,11 @@
           ? `<td>${hl(bo.criado_por || '—', destaque)}</td>`
           : '';
 
+        const botoesPrivilegiados = (perfilRole === 'admin' || perfilRole === 'supervisor')
+          ? `<button class="btn-acao btn-acao-editar" title="Editar BO" onclick="editarBO(${bo.id}, '${bo.numero}')">✏️</button>
+             <button class="btn-acao btn-acao-excluir" title="Excluir BO" onclick="abrirModalExcluir(${bo.id}, '${bo.numero}')">🗑️</button>`
+          : '';
+
         return `<tr>
           <td><strong>${bo.numero}</strong></td>
           <td>${dataStr}</td>
@@ -462,7 +518,12 @@
           <td class="col-local" title="${oc.rua || ''}">${local}</td>
           <td class="col-envolvidos">${envolvidos}</td>
           ${tdReg}
-          <td><button class="btn-pdf" onclick="baixarPDF(${bo.id}, '${bo.numero}')">PDF</button></td>
+          <td>
+            <div class="acoes-wrap">
+              <button class="btn-acao btn-acao-pdf" title="Baixar PDF" onclick="baixarPDF(${bo.id}, '${bo.numero}')">⬇️</button>
+              ${botoesPrivilegiados}
+            </div>
+          </td>
         </tr>`;
       }).join('');
     }
@@ -504,9 +565,46 @@
       filtrar();
     }
 
+    function editarBO(id, numero) {
+      window.location.href = `bo.html?editar=${id}`;
+    }
+
+    let _excluirId = null;
+    let _excluirNumero = null;
+
+    function abrirModalExcluir(id, numero) {
+      _excluirId     = id;
+      _excluirNumero = numero;
+      document.getElementById('modalExcluirTexto').textContent =
+        `Tem certeza que deseja excluir o BO ${numero}? Esta ação não pode ser desfeita.`;
+      document.getElementById('modalExcluir').classList.add('aberto');
+    }
+
+    function fecharModalExcluir() {
+      document.getElementById('modalExcluir').classList.remove('aberto');
+      _excluirId = _excluirNumero = null;
+    }
+
+    async function confirmarExclusao() {
+      if (!_excluirId) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/bo/${_excluirId}`, {
+          method: 'DELETE', credentials: 'include'
+        });
+        if (res.ok) {
+          todosOsBOs = todosOsBOs.filter(bo => bo.id !== _excluirId);
+          filtrar();
+          fecharModalExcluir();
+        } else {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || 'Erro ao excluir o boletim.');
+        }
+      } catch { alert('Erro de conexão ao tentar excluir.'); }
+    }
+
     async function baixarPDF(id, numero) {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/bo/${id}/pdf`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE_URL}/api/bo/${id}/pdf`, { credentials: 'include' }); // anexos sempre incluídos
         if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
         const blob = await res.blob();
         const url  = URL.createObjectURL(blob);
