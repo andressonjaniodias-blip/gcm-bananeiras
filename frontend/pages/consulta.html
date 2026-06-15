@@ -303,23 +303,8 @@
       </div>
     </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Nº do BO</th>
-            <th>Data Ocorr.</th>
-            <th>Tipificação / Natureza</th>
-            <th class="col-local">Local</th>
-            <th class="col-envolvidos">Envolvidos</th>
-            <th id="thRegistradoPor">Registrado por</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="listaBOs">
-          <tr><td colspan="7" style="text-align:center;color:var(--color-hint);">Carregando...</td></tr>
-        </tbody>
-      </table>
+    <div id="listaBOs">
+      <p style="text-align:center;color:var(--color-hint);">Carregando...</p>
     </div>
   </div>
 
@@ -331,6 +316,82 @@
       <div class="modal-actions">
         <button class="btn-cancelar-modal" onclick="fecharModalExcluir()">Cancelar</button>
         <button class="btn-confirmar-excluir" onclick="confirmarExclusao()">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE DETALHES DO BO -->
+  <div class="detail-overlay" id="boDetailOverlay" onclick="fecharBODetail(event)">
+    <div class="detail-modal" onclick="event.stopPropagation()">
+      <div class="detail-modal-head">
+        <div>
+          <div class="detail-modal-title" id="boDetailTitle">—</div>
+          <div class="detail-modal-subtitle" id="boDetailSubtitle">—</div>
+        </div>
+        <button class="detail-modal-close" onclick="fecharBODetail()">×</button>
+      </div>
+      <nav class="tabs detail-tabs" id="boDetailTabs">
+        <button class="tab-btn active" onclick="boDetailTab('ocorrencia',this)">Ocorrência</button>
+        <button class="tab-btn" onclick="boDetailTab('envolvidos',this)">Envolvidos</button>
+        <button class="tab-btn" onclick="boDetailTab('acoes',this)">Ações</button>
+      </nav>
+      <div class="detail-modal-body">
+        <!-- Ocorrência -->
+        <div id="boDetailOcorrencia">
+          <div class="detail-grid-2">
+            <div class="detail-field">
+              <div class="detail-field-label">Nº do BO</div>
+              <div class="detail-field-value" id="bdNumero">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Data da Ocorrência</div>
+              <div class="detail-field-value" id="bdData">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Tipificação / Natureza</div>
+              <div class="detail-field-value" id="bdTipificacao">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Canal de Solicitação</div>
+              <div class="detail-field-value" id="bdCanal">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Viatura</div>
+              <div class="detail-field-value" id="bdViatura">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Registrado por</div>
+              <div class="detail-field-value" id="bdRegistrado">—</div>
+            </div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Local</div>
+            <div class="detail-field-value" id="bdLocal">—</div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Equipe</div>
+            <div class="detail-field-value" id="bdEquipe">—</div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Relato</div>
+            <div class="detail-field-value pre" id="bdRelato">—</div>
+          </div>
+        </div>
+        <!-- Envolvidos -->
+        <div id="boDetailEnvolvidos" class="hidden">
+          <div style="font-size:0.78rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-label);margin-bottom:8px;">Vítimas</div>
+          <div id="bdVitimas" style="margin-bottom:16px;"></div>
+          <div style="font-size:0.78rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-label);margin-bottom:8px;">Suspeitos</div>
+          <div id="bdSuspeitos"></div>
+        </div>
+        <!-- Ações -->
+        <div id="boDetailAcoes" class="hidden">
+          <p style="color:var(--color-text-muted);font-size:0.88rem;margin-bottom:16px;">Selecione uma ação para o boletim <strong id="bdAcoesNum">—</strong>.</p>
+          <div style="display:flex;flex-direction:column;gap:10px;" id="bdAcoesList"></div>
+        </div>
+      </div>
+      <div class="detail-footer">
+        <button class="detail-btn-close" onclick="fecharBODetail()">Fechar</button>
       </div>
     </div>
   </div>
@@ -385,7 +446,7 @@
         el = document.createElement('div');
         el.id = '_paginacao-bos';
         el.style.cssText = 'display:flex;align-items:center;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap;';
-        document.querySelector('.table-wrapper, table')?.after(el);
+        document.getElementById('listaBOs')?.after(el);
       }
       if (_totalPaginas <= 1) { el.innerHTML = ''; return; }
       el.innerHTML = `
@@ -509,53 +570,115 @@
     }
 
     function renderizar(bos, destaque) {
-      const tbody = document.getElementById('listaBOs');
+      const el = document.getElementById('listaBOs');
       if (!bos.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--color-hint);">Nenhum BO encontrado com os filtros aplicados.</td></tr>';
+        el.innerHTML = '<p style="text-align:center;color:var(--color-hint);padding:20px 0;">Nenhum BO encontrado com os filtros aplicados.</p>';
         return;
       }
-      tbody.innerHTML = bos.map(bo => {
+      el.innerHTML = '<div class="hist-list">' + bos.map(bo => {
         const d   = parseDados(bo);
         const oc  = d.dadosOcorrencia  || {};
         const sol = d.dadosSolicitacao || {};
         const vitimas   = (d.vitimas   || []).filter(v => v.nome);
         const suspeitos = (d.suspeitos || []).filter(s => s.nome);
-
-        const tip  = hl(oc.tipificacao || sol.natureza || '—', destaque);
-        const local = hl([oc.rua, oc.complemento].filter(Boolean).join(', ') || '—', destaque);
-        const dataOc = dataOcorrencia(d);
+        const tip   = oc.tipificacao || sol.natureza || '—';
+        const local = [oc.rua, oc.complemento].filter(Boolean).join(', ') || '—';
+        const dataOc  = dataOcorrencia(d);
         const dataStr = dataOc ? new Date(dataOc + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
-
-        const envolvidos = [
-          vitimas.length   ? `<span class="badge-count badge-vitima">${vitimas.length} vít.</span>`   : '',
+        const envBadges = [
+          vitimas.length   ? `<span class="badge-count badge-vitima">${vitimas.length} vít.</span>`     : '',
           suspeitos.length ? `<span class="badge-count badge-suspeito">${suspeitos.length} susp.</span>` : '',
-          (!vitimas.length && !suspeitos.length) ? '<span class="badge-zero">—</span>' : '',
-        ].join(' ');
-
-        const tdReg = perfilRole !== 'agente'
-          ? `<td>${hl(bo.criado_por || '—', destaque)}</td>`
-          : '';
-
-        const botoesPrivilegiados = (perfilRole === 'admin' || perfilRole === 'supervisor')
-          ? `<button class="btn-acao btn-acao-editar" title="Editar BO" onclick="editarBO(${bo.id}, '${bo.numero}')">✏️</button>
-             <button class="btn-acao btn-acao-excluir" title="Excluir BO" onclick="abrirModalExcluir(${bo.id}, '${bo.numero}')">🗑️</button>`
-          : '';
-
-        return `<tr>
-          <td><strong>${bo.numero}</strong></td>
-          <td>${dataStr}</td>
-          <td>${tip}</td>
-          <td class="col-local" title="${oc.rua || ''}">${local}</td>
-          <td class="col-envolvidos">${envolvidos}</td>
-          ${tdReg}
-          <td>
-            <div class="acoes-wrap">
-              <button class="btn-acao btn-acao-pdf" title="Baixar PDF" onclick="baixarPDF(${bo.id}, '${bo.numero}')">⬇️</button>
-              ${botoesPrivilegiados}
+        ].filter(Boolean).join(' ') || '';
+        return `<div class="hist-item" onclick="abrirBODetail(${bo.id})">
+          <div class="hist-item-icon">🚨</div>
+          <div class="hist-item-body">
+            <div class="hist-item-title">${bo.numero} — ${tip}</div>
+            <div class="hist-item-meta">
+              <span>${dataStr}</span>
+              <span>·</span>
+              <span>${local}</span>
+              ${envBadges ? `<span>·</span><span>${envBadges}</span>` : ''}
             </div>
-          </td>
-        </tr>`;
-      }).join('');
+          </div>
+          <div class="hist-item-right">
+            ${perfilRole !== 'agente' ? `<span style="font-size:0.75rem;color:var(--color-text-muted);">${bo.criado_por || ''}</span>` : ''}
+            <span class="hist-chevron">›</span>
+          </div>
+        </div>`;
+      }).join('') + '</div>';
+    }
+
+    let _boDetalhe = null;
+
+    function abrirBODetail(id) {
+      _boDetalhe = todosOsBOs.find(bo => bo.id === id);
+      if (!_boDetalhe) return;
+      const bo = _boDetalhe;
+      const d   = parseDados(bo);
+      const oc  = d.dadosOcorrencia  || {};
+      const sol = d.dadosSolicitacao || {};
+      const vitimas   = (d.vitimas   || []).filter(v => v.nome);
+      const suspeitos = (d.suspeitos || []).filter(s => s.nome);
+      const relato    = d.relato || '';
+
+      const dataOc  = dataOcorrencia(d);
+      const dataStr = dataOc ? new Date(dataOc + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+      const tip = oc.tipificacao || sol.natureza || '—';
+
+      document.getElementById('boDetailTitle').textContent    = `${bo.numero} — ${tip}`;
+      document.getElementById('boDetailSubtitle').textContent = `Registrado por: ${bo.criado_por || '—'} · ${dataStr}`;
+      document.getElementById('bdNumero').textContent     = bo.numero;
+      document.getElementById('bdData').textContent       = dataStr;
+      document.getElementById('bdTipificacao').textContent = tip;
+      document.getElementById('bdCanal').textContent      = sol.canal || '—';
+      document.getElementById('bdViatura').textContent    = oc.viatura || '—';
+      document.getElementById('bdRegistrado').textContent = bo.criado_por || '—';
+      document.getElementById('bdLocal').textContent      = [oc.rua, oc.complemento, oc.cidade].filter(Boolean).join(', ') || '—';
+      const equipe = [oc.comandante, oc.motorista, oc.patrulheiroI, oc.patrulheiroII].filter(Boolean).join(', ');
+      document.getElementById('bdEquipe').textContent     = equipe || '—';
+      document.getElementById('bdRelato').textContent     = relato || '—';
+
+      // Vítimas
+      const vit = document.getElementById('bdVitimas');
+      vit.innerHTML = vitimas.length
+        ? vitimas.map(v => `<div class="detail-envolvido">
+            <strong>${v.nome}</strong>
+            <span>${[v.cpf, v.alcunha, v.telefone].filter(Boolean).join(' · ') || 'Sem dados adicionais'}</span>
+          </div>`).join('')
+        : '<p style="color:var(--color-hint);font-size:0.85rem;">Nenhuma vítima registrada.</p>';
+
+      // Suspeitos
+      const sus = document.getElementById('bdSuspeitos');
+      sus.innerHTML = suspeitos.length
+        ? suspeitos.map(s => `<div class="detail-envolvido">
+            <strong>${s.nome}${s.alcunha ? ` (${s.alcunha})` : ''}</strong>
+            <span>${[s.cpf, s.rg].filter(Boolean).join(' · ') || 'Sem dados adicionais'}</span>
+          </div>`).join('')
+        : '<p style="color:var(--color-hint);font-size:0.85rem;">Nenhum suspeito registrado.</p>';
+
+      // Ações
+      document.getElementById('bdAcoesNum').textContent = bo.numero;
+      const priv = perfilRole === 'admin' || perfilRole === 'supervisor';
+      document.getElementById('bdAcoesList').innerHTML = `
+        <button class="detail-btn-pdf" style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#EEF2FF;color:#4F46E5;" onclick="baixarPDF(${bo.id},'${bo.numero}')">⬇️ Baixar PDF</button>
+        ${priv ? `<button class="detail-btn-edit" style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#FEF9C3;color:#854D0E;" onclick="editarBO(${bo.id},'${bo.numero}')">✏️ Editar BO</button>` : ''}
+        ${priv ? `<button class="detail-btn-del"  style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#FEE2E2;color:#991B1B;" onclick="fecharBODetail();abrirModalExcluir(${bo.id},'${bo.numero}')">🗑️ Excluir BO</button>` : ''}`;
+
+      boDetailTab('ocorrencia', document.querySelector('#boDetailTabs .tab-btn'));
+      document.getElementById('boDetailOverlay').classList.add('aberto');
+    }
+
+    function fecharBODetail(e) {
+      if (e && e.target !== document.getElementById('boDetailOverlay')) return;
+      document.getElementById('boDetailOverlay').classList.remove('aberto');
+    }
+
+    function boDetailTab(tab, btn) {
+      document.getElementById('boDetailOcorrencia').classList.toggle('hidden', tab !== 'ocorrencia');
+      document.getElementById('boDetailEnvolvidos').classList.toggle('hidden', tab !== 'envolvidos');
+      document.getElementById('boDetailAcoes').classList.toggle('hidden', tab !== 'acoes');
+      document.querySelectorAll('#boDetailTabs .tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
     }
 
     function hl(texto, termo) {
