@@ -211,7 +211,7 @@
         .filter(item => item.roles.includes(roleEfetivo))
         .map(item => {
           const active = currentPath.includes(item.href.replace('/pages/', '')) ? ' active' : '';
-          return `<a href="${item.href}" class="sb-link${active}"><span class="sb-icon">${item.icon}</span><span>${item.label}</span></a>`;
+          return `<a href="${item.href}" class="sb-link${active}" onclick="closeSidebar()"><span class="sb-icon">${item.icon}</span><span>${item.label}</span></a>`;
         }).join('');
     }
   };
