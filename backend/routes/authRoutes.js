@@ -10,6 +10,14 @@ const {
 
 const INATIVIDADE_MINUTOS = parseInt(process.env.INATIVIDADE_MINUTOS || '30');
 
+function validarSenha(senha) {
+  if (!senha || senha.length < 8) return 'A senha deve ter pelo menos 8 caracteres.';
+  if (!/[A-Z]/.test(senha))       return 'A senha deve conter pelo menos uma letra maiúscula.';
+  if (!/[0-9]/.test(senha))       return 'A senha deve conter pelo menos um número.';
+  if (!/[^A-Za-z0-9]/.test(senha)) return 'A senha deve conter pelo menos um caractere especial (!@#$%...).';
+  return null;
+}
+
 // Login
 router.post('/login', async (req, res) => {
   try {
@@ -112,6 +120,8 @@ router.post('/setup', async (req, res) => {
     if (!usuario || !senha) {
       return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
     }
+    const erroSenha = validarSenha(senha);
+    if (erroSenha) return res.status(400).json({ error: erroSenha });
     const hash = await bcrypt.hash(senha, 10);
     await db.query(
       "INSERT INTO usuarios (usuario, senha, role) VALUES ($1, $2, 'admin')",
@@ -143,6 +153,8 @@ router.post('/usuarios', verificarToken, verificarAdmin, async (req, res) => {
     if (!ROLES.includes(role)) {
       return res.status(400).json({ error: `Role inválido. Valores aceitos: ${ROLES.join(', ')}` });
     }
+    const erroSenha = validarSenha(senha);
+    if (erroSenha) return res.status(400).json({ error: erroSenha });
     const hash = await bcrypt.hash(senha, 10);
     const result = await db.query(
       'INSERT INTO usuarios (usuario, senha, role) VALUES ($1, $2, $3) RETURNING id',
@@ -270,9 +282,8 @@ router.post('/trocar-senha', verificarToken, async (req, res) => {
     if (!senhaAtual || !senhaNova) {
       return res.status(400).json({ error: 'Senha atual e nova senha são obrigatórias' });
     }
-    if (senhaNova.length < 6) {
-      return res.status(400).json({ error: 'A nova senha deve ter pelo menos 6 caracteres' });
-    }
+    const erroSenha = validarSenha(senhaNova);
+    if (erroSenha) return res.status(400).json({ error: erroSenha });
 
     const { rows } = await db.query('SELECT * FROM usuarios WHERE usuario = $1', [req.usuario.usuario]);
     const row = rows[0];
