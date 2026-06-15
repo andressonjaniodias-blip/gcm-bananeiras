@@ -47,7 +47,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Restaurar rascunho
-  const rascunho = localStorage.getItem('boTemp');
+  const rascunho = sessionStorage.getItem('boTemp');
   if (rascunho) {
     try {
       const dados = JSON.parse(rascunho);
@@ -77,21 +77,66 @@ function _validarAbaAtual() {
   return false;
 }
 
-function _toastErro(msg) {
+function _toastErro(msg) { showToast(msg, 'danger'); }
+
+function showToast(msg, tipo = 'danger') {
   document.getElementById('tab-toast')?.remove();
+  const cores = {
+    danger:  { bg: '#C62828', color: '#fff' },
+    success: { bg: '#1B5E20', color: '#fff' },
+    warning: { bg: '#E65100', color: '#fff' },
+    info:    { bg: '#0D47A1', color: '#fff' },
+  };
+  const { bg, color } = cores[tipo] || cores.danger;
   const t = document.createElement('div');
   t.id = 'tab-toast';
   t.textContent = msg;
   Object.assign(t.style, {
     position:'fixed', bottom:'90px', left:'50%', transform:'translateX(-50%)',
-    background:'#C62828', color:'#fff', padding:'10px 20px',
+    background: bg, color, padding:'10px 20px',
     borderRadius:'8px', fontSize:'0.88rem', fontWeight:'600',
     zIndex:'9999', boxShadow:'0 4px 16px rgba(0,0,0,0.3)',
     whiteSpace:'nowrap', pointerEvents:'none',
     animation:'fadeInUp 0.2s ease'
   });
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// Modal de confirmação — retorna Promise<boolean>
+function confirmar(mensagem, titulo = 'Confirmar') {
+  return new Promise(resolve => {
+    document.getElementById('_confirm-modal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = '_confirm-modal';
+    Object.assign(overlay.style, {
+      position:'fixed', inset:'0', background:'rgba(0,0,0,0.55)',
+      display:'flex', alignItems:'center', justifyContent:'center',
+      zIndex:'10000'
+    });
+    overlay.innerHTML = `
+      <div style="background:var(--bg-card,#fff);border-radius:12px;padding:28px 32px;max-width:420px;width:90%;
+                  box-shadow:0 8px 32px rgba(0,0,0,0.25);font-family:inherit;">
+        <h3 style="margin:0 0 12px;font-size:1rem;color:var(--color-text,#111)">${titulo}</h3>
+        <p style="margin:0 0 24px;font-size:0.9rem;color:var(--color-text-muted,#555);line-height:1.5">${mensagem}</p>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button id="_confirm-no"
+            style="padding:8px 20px;border-radius:8px;border:1px solid var(--color-border,#ccc);
+                   background:transparent;cursor:pointer;font-size:0.9rem;color:var(--color-text,#111)">
+            Cancelar
+          </button>
+          <button id="_confirm-yes"
+            style="padding:8px 20px;border-radius:8px;border:none;
+                   background:#C62828;color:#fff;cursor:pointer;font-size:0.9rem;font-weight:600">
+            Confirmar
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#_confirm-yes').onclick = () => { overlay.remove(); resolve(true); };
+    overlay.querySelector('#_confirm-no').onclick  = () => { overlay.remove(); resolve(false); };
+    overlay.addEventListener('click', e => { if (e.target === overlay) { overlay.remove(); resolve(false); } });
+  });
 }
 
 function showTab(tabId, scroll) {
@@ -331,12 +376,12 @@ function validarCamposObrigatorios() {
         showTab(secao.id);
         campo.focus();
       }
-      alert(`Campo obrigatório não preenchido: "${label}"`);
+      showToast(`Campo obrigatório não preenchido: "${label}"`, 'danger');
       return false;
     }
     if (campo.minLength > 0 && campo.value.trim().length < campo.minLength) {
       const label = campo.closest('.campo-group')?.querySelector('label')?.textContent?.trim() || campo.name;
-      alert(`"${label}" deve ter pelo menos ${campo.minLength} caracteres.`);
+      showToast(`"${label}" deve ter pelo menos ${campo.minLength} caracteres.`, 'danger');
       campo.focus();
       return false;
     }
@@ -349,12 +394,32 @@ let _autosaveTimer = null;
 function _autosave() {
   clearTimeout(_autosaveTimer);
   _autosaveTimer = setTimeout(() => {
-    localStorage.setItem('boTemp', JSON.stringify(coletarDadosBO()));
+    sessionStorage.setItem('boTemp', JSON.stringify(coletarDadosBO()));
   }, 800);
 }
 
+let _boEnviado = false;
+
 function iniciarAutosave() {
-  document.getElementById('bo-form')?.addEventListener('input', _autosave);
+  const form = document.getElementById('bo-form');
+  if (!form) return;
+  form.addEventListener('input', _autosave);
+
+  // Avisa ao tentar fechar/navegar com rascunho preenchido
+  window.addEventListener('beforeunload', e => {
+    if (_boEnviado) return;
+    const rascunho = sessionStorage.getItem('boTemp');
+    if (!rascunho) return;
+    try {
+      const dados = JSON.parse(rascunho);
+      const temConteudo = Object.values(dados).some(v =>
+        v && typeof v === 'string' && v.trim().length > 0
+      );
+      if (!temConteudo) return;
+    } catch { return; }
+    e.preventDefault();
+    e.returnValue = '';
+  });
 }
 
 async function finalizarBO() {
@@ -363,11 +428,15 @@ async function finalizarBO() {
   const dados = coletarDadosBO();
   if (!dados.relato) {
     showTab('relato');
-    alert('O relato da ocorrência é obrigatório.');
+    showToast('O relato da ocorrência é obrigatório.', 'danger');
     return;
   }
 
-  if (!confirm('Confirmar a finalização do BO? Esta ação não poderá ser desfeita.')) return;
+  const ok = await confirmar('Esta ação não poderá ser desfeita.', 'Finalizar Boletim de Ocorrência?');
+  if (!ok) return;
+
+  const btnFinalizar = document.getElementById('btn-finalizar');
+  if (btnFinalizar) { btnFinalizar.disabled = true; btnFinalizar.textContent = 'Enviando...'; }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/bo`, {
@@ -381,7 +450,8 @@ async function finalizarBO() {
 
     if (response.ok) {
       const result = await response.json();
-      localStorage.removeItem('boTemp');
+      _boEnviado = true;
+      sessionStorage.removeItem('boTemp');
       if (_anexosBO.length) {
         await enviarAnexosBO(result.id);
       }
@@ -392,11 +462,13 @@ async function finalizarBO() {
       if (modal) modal.style.display = 'flex';
     } else {
       const error = await response.json();
-      alert(`Erro: ${error.error}`);
+      showToast(error.error || 'Erro ao finalizar BO.', 'danger');
+      if (btnFinalizar) { btnFinalizar.disabled = false; btnFinalizar.textContent = 'Finalizar BO'; }
     }
   } catch (err) {
     console.error('Erro:', err);
-    alert('Erro de conexão ao finalizar BO.');
+    showToast('Erro de conexão ao finalizar BO.', 'danger');
+    if (btnFinalizar) { btnFinalizar.disabled = false; btnFinalizar.textContent = 'Finalizar BO'; }
   }
 }
 
@@ -499,13 +571,13 @@ async function confirmarPdfBO() {
   if (!_pdfBOId) return;
   try {
     const res = await fetch(`${API_BASE_URL}/api/bo/${_pdfBOId}/pdf`, { credentials: 'include' });
-    if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
+    if (!res.ok) { showToast('Erro ao gerar PDF.', 'danger'); return; }
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url; a.download = `bo_${_pdfBOId}.pdf`; a.click();
     URL.revokeObjectURL(url);
-  } catch { alert('Erro ao exportar PDF.'); }
+  } catch { showToast('Erro ao exportar PDF.', 'danger'); }
 }
 
 // ── Modal de conclusão do BO ─────────────────────────────────────────────────
@@ -558,7 +630,7 @@ async function logout() {
 async function login() {
   const usuario = document.getElementById('usuario')?.value.trim();
   const senha   = document.getElementById('senha')?.value;
-  if (!usuario || !senha) { alert('Usuário e senha são obrigatórios'); return; }
+  if (!usuario || !senha) { showToast('Usuário e senha são obrigatórios', 'danger'); return; }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -577,9 +649,9 @@ async function login() {
         window.location.href = 'pages/home.html';
       }
     } else {
-      alert(result.error || 'Erro ao fazer login');
+      showToast(result.error || 'Erro ao fazer login', 'danger');
     }
   } catch {
-    alert('Erro de conexão. Verifique se o servidor está rodando.');
+    showToast('Erro de conexão. Verifique se o servidor está rodando.', 'danger');
   }
 }
