@@ -144,6 +144,20 @@
       box-shadow: var(--shadow-input);
     }
 
+    .input-senha-wrap {
+      position: relative;
+    }
+    .input-senha-wrap input {
+      padding-right: 40px;
+    }
+    .btn-toggle-senha {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; padding: 0;
+      color: var(--color-text-muted); font-size: 1.1rem; line-height: 1;
+      transition: color 0.2s;
+    }
+    .btn-toggle-senha:hover { color: var(--color-primary); }
+
     .senha-strength {
       height: 4px; border-radius: 2px; margin-top: 6px;
       background: var(--color-border); overflow: hidden;
@@ -162,6 +176,23 @@
       font-weight: 600; transition: background 0.2s; margin-top: 4px;
     }
     .btn-primary:hover { background: var(--color-primary-hover); }
+
+    .btn-editar {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--color-primary-light); color: var(--color-primary);
+      border: 1px solid var(--color-primary); border-radius: var(--radius-sm);
+      padding: 6px 14px; cursor: pointer; font-size: 0.85rem;
+      font-weight: 600; transition: background 0.2s, color 0.2s;
+    }
+    .btn-editar:hover { background: var(--color-primary); color: #fff; }
+    .btn-cancelar-edicao {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: transparent; color: var(--color-text-muted);
+      border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+      padding: 6px 14px; cursor: pointer; font-size: 0.85rem;
+      font-weight: 600; transition: background 0.2s;
+    }
+    .btn-cancelar-edicao:hover { background: var(--color-border); }
 
     .msg-toast {
       display: none; padding: 11px 16px; border-radius: var(--radius-sm);
@@ -251,7 +282,26 @@
 
     <!-- Editar dados de contato -->
     <div class="card" id="cardContato" style="display:none;">
-      <div class="card-title">📞 Meus Dados de Contato</div>
+      <div class="card-title" style="justify-content:space-between;">
+        <span>📞 Meus Dados de Contato</span>
+        <div id="botoesContato" style="display:flex;gap:8px;">
+          <button type="button" class="btn-editar" id="btnEditarContato" onclick="abrirEdicaoContato()">✏️ Editar</button>
+        </div>
+      </div>
+
+      <!-- Visualização dos dados -->
+      <div id="viewContato" style="margin-top:4px;">
+        <div class="info-grid">
+          <div class="info-item"><label>E-mail Institucional</label><span id="viewEmail">—</span></div>
+          <div class="info-item"><label>Telefone / WhatsApp</label><span id="viewTelefone">—</span></div>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="info-item"><label>Endereço</label><span id="viewEndereco">—</span></div>
+        </div>
+      </div>
+
+      <!-- Formulário (oculto por padrão) -->
+      <div id="formContatoWrap" style="display:none;margin-top:16px;">
       <p style="font-size:0.83rem;color:var(--color-text-muted);margin-bottom:16px;">
         Mantenha seu telefone e endereço atualizados. Estas informações podem ser alteradas a qualquer momento.
       </p>
@@ -319,8 +369,12 @@
             </select>
           </div>
         </div>
-        <button type="submit" class="btn-primary">Salvar Dados de Contato</button>
+        <div style="display:flex;gap:10px;margin-top:4px;">
+          <button type="submit" class="btn-primary" style="margin-top:0;">Salvar Dados de Contato</button>
+          <button type="button" class="btn-cancelar-edicao" onclick="fecharEdicaoContato()">Cancelar</button>
+        </div>
       </form>
+      </div>
     </div>
 
     <!-- Alterar senha -->
@@ -329,18 +383,27 @@
       <form onsubmit="trocarSenha(event)">
         <div class="field">
           <label>Senha atual</label>
-          <input type="password" id="senhaAtual" placeholder="Digite sua senha atual" required>
+          <div class="input-senha-wrap">
+            <input type="password" id="senhaAtual" placeholder="Digite sua senha atual" required>
+            <button type="button" class="btn-toggle-senha" onclick="toggleSenha('senhaAtual', this)" title="Mostrar/ocultar senha">👁️</button>
+          </div>
         </div>
         <div class="field">
           <label>Nova senha</label>
-          <input type="password" id="senhaNova" placeholder="Mínimo 6 caracteres" required minlength="6"
-                 oninput="avaliarSenha(this.value)">
+          <div class="input-senha-wrap">
+            <input type="password" id="senhaNova" placeholder="Mínimo 6 caracteres" required minlength="6"
+                   oninput="avaliarSenha(this.value)">
+            <button type="button" class="btn-toggle-senha" onclick="toggleSenha('senhaNova', this)" title="Mostrar/ocultar senha">👁️</button>
+          </div>
           <div class="senha-strength"><div class="senha-strength-bar" id="strengthBar"></div></div>
           <div class="senha-hint" id="strengthHint">Digite a nova senha</div>
         </div>
         <div class="field">
           <label>Confirmar nova senha</label>
-          <input type="password" id="senhaConfirmar" placeholder="Repita a nova senha" required>
+          <div class="input-senha-wrap">
+            <input type="password" id="senhaConfirmar" placeholder="Repita a nova senha" required>
+            <button type="button" class="btn-toggle-senha" onclick="toggleSenha('senhaConfirmar', this)" title="Mostrar/ocultar senha">👁️</button>
+          </div>
         </div>
         <button type="submit" class="btn-primary">Alterar Senha</button>
       </form>
@@ -396,7 +459,7 @@
             setText('infoAdmissao',  ag.data_admissao ? new Date(ag.data_admissao + 'T00:00:00').toLocaleDateString('pt-BR') : null);
             setText('infoAtivo',     ag.ativo ? 'Ativo' : 'Inativo');
 
-            // Preenche formulário de contato
+            // Preenche dados de contato
             document.getElementById('cardContato').style.display = '';
             document.getElementById('contatoEmail').value      = ag.email || '';
             document.getElementById('contatoTelefone').value   = ag.telefone || '';
@@ -407,6 +470,8 @@
             document.getElementById('contatoBairro').value     = ag.bairro || '';
             document.getElementById('contatoCidade').value     = ag.cidade || '';
             document.getElementById('contatoUf').value         = ag.uf || '';
+            // Atualiza visualização
+            atualizarViewContato(ag);
           } else {
             const inicial = (perfil.usuario || '?')[0].toUpperCase();
             renderAvatar(null, inicial);
@@ -427,6 +492,31 @@
       if (!el) return;
       if (val) { el.textContent = val; el.className = ''; }
       else     { el.textContent = 'Não informado'; el.className = 'vazio'; }
+    }
+
+    function atualizarViewContato(ag) {
+      const setView = (id, val) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = val || '—';
+        el.className = val ? '' : 'vazio';
+      };
+      setView('viewEmail', ag.email);
+      setView('viewTelefone', ag.telefone);
+      const partes = [ag.logradouro, ag.numero_end, ag.complemento, ag.bairro, ag.cidade, ag.uf, ag.cep].filter(Boolean);
+      setView('viewEndereco', partes.length ? partes.join(', ') : null);
+    }
+
+    function abrirEdicaoContato() {
+      document.getElementById('viewContato').style.display = 'none';
+      document.getElementById('formContatoWrap').style.display = '';
+      document.getElementById('btnEditarContato').style.display = 'none';
+    }
+
+    function fecharEdicaoContato() {
+      document.getElementById('viewContato').style.display = '';
+      document.getElementById('formContatoWrap').style.display = 'none';
+      document.getElementById('btnEditarContato').style.display = '';
     }
 
     async function salvarContato(e) {
@@ -451,9 +541,21 @@
         const data = await res.json();
         if (res.ok) {
           toast('Dados de contato salvos com sucesso!', 'ok');
-          // Remove banner de aviso caso esteja visível
           const banner = document.getElementById('banner-dados');
           if (banner) banner.remove();
+          // Atualiza visualização e fecha formulário
+          atualizarViewContato({
+            email:       document.getElementById('contatoEmail').value.trim() || null,
+            telefone:    document.getElementById('contatoTelefone').value.trim() || null,
+            logradouro:  document.getElementById('contatoLogradouro').value.trim() || null,
+            numero_end:  document.getElementById('contatoNumeroEnd').value.trim() || null,
+            complemento: document.getElementById('contatoComplemento').value.trim() || null,
+            bairro:      document.getElementById('contatoBairro').value.trim() || null,
+            cidade:      document.getElementById('contatoCidade').value.trim() || null,
+            uf:          document.getElementById('contatoUf').value || null,
+            cep:         document.getElementById('contatoCep').value.trim() || null,
+          });
+          fecharEdicaoContato();
         } else { toast(data.error || 'Erro ao salvar.', 'erro'); }
       } catch { toast('Erro de conexão.', 'erro'); }
     }
@@ -608,6 +710,13 @@
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);
+    }
+
+    function toggleSenha(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const mostrar = input.type === 'password';
+      input.type = mostrar ? 'text' : 'password';
+      btn.textContent = mostrar ? '🙈' : '👁️';
     }
 
     function toast(texto, tipo) {
