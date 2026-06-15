@@ -74,13 +74,20 @@ router.post('/logout-inatividade', verificarToken, async (req, res) => {
 
 // Perfil do usuário logado
 router.get('/me', verificarToken, async (req, res) => {
-  const { rows } = await db.query('SELECT lgpd_aceito FROM usuarios WHERE usuario = $1', [req.usuario.usuario]);
+  const { rows } = await db.query(
+    `SELECT u.lgpd_aceito, a.foto
+     FROM usuarios u
+     LEFT JOIN agentes a ON a.usuario = u.usuario
+     WHERE u.usuario = $1`,
+    [req.usuario.usuario]
+  );
   res.json({
     usuario: req.usuario.usuario,
     role: req.usuario.role,
     sessao_id: req.usuario.sessao_id,
     inatividade_minutos: INATIVIDADE_MINUTOS,
     lgpd_aceito: !!(rows[0]?.lgpd_aceito),
+    foto: rows[0]?.foto || null,
   });
 });
 
