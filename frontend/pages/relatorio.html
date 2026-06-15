@@ -338,13 +338,13 @@
         : `relatorio_${id}.pdf`;
       try {
         const res = await fetch(`${API_BASE_URL}/api/relatorio/${id}/pdf`, { credentials: 'include' });
-        if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
+        if (!res.ok) { showToast('Erro ao gerar PDF.', 'danger'); return; }
         const blob = await res.blob();
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
         a.href = url; a.download = nomeDl; a.click();
         URL.revokeObjectURL(url);
-      } catch { alert('Erro ao baixar PDF.'); }
+      } catch { showToast('Erro ao baixar PDF.', 'danger'); }
     }
 
     function mostrarMsg(texto, tipo) {
