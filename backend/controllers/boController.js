@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { registrarAuditoria } = require('../middleware/auth');
+const erroServidor = require('../utils/erroServidor');
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs   = require('fs');
@@ -119,7 +120,7 @@ exports.criarBO = async (req, res) => {
 
     res.status(201).json({ message: 'BO criado com sucesso', id: result.rows[0].id, numero });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 };
 
@@ -153,24 +154,44 @@ exports.statsGlobais = async (req, res) => {
 
     res.json({ total: parseInt(total), hoje: parseInt(qtdHoje), semana: parseInt(semana), mes: parseInt(mes), ranking });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 };
 
 exports.listarBOs = async (req, res) => {
   try {
     const { usuario, role } = req.usuario;
-    let rows;
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 30));
+    const offset = (page - 1) * limit;
+
+    let rows, totalRows;
     if (role === 'agente') {
       ({ rows } = await db.query(
-        'SELECT * FROM boletins WHERE criado_por = $1 ORDER BY id DESC', [usuario]
+        'SELECT * FROM boletins WHERE criado_por = $1 ORDER BY id DESC LIMIT $2 OFFSET $3',
+        [usuario, limit, offset]
+      ));
+      ({ rows: [{ count: totalRows }] } = await db.query(
+        'SELECT COUNT(*) AS count FROM boletins WHERE criado_por = $1', [usuario]
       ));
     } else {
-      ({ rows } = await db.query('SELECT * FROM boletins ORDER BY id DESC'));
+      ({ rows } = await db.query(
+        'SELECT * FROM boletins ORDER BY id DESC LIMIT $1 OFFSET $2', [limit, offset]
+      ));
+      ({ rows: [{ count: totalRows }] } = await db.query(
+        'SELECT COUNT(*) AS count FROM boletins'
+      ));
     }
-    res.json(rows);
+
+    res.json({
+      data: rows,
+      total: parseInt(totalRows),
+      page,
+      limit,
+      pages: Math.ceil(parseInt(totalRows) / limit),
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 };
 
@@ -192,7 +213,7 @@ exports.consultarBO = async (req, res) => {
 
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    erroServidor(res, err);
   }
 };
 
@@ -472,6 +493,6 @@ exports.exportarPDF = async (req, res) => {
     doc.end();
   } catch (err) {
     console.error('Erro ao gerar PDF do BO:', err);
-    if (!res.headersSent) res.status(500).json({ error: err.message });
+    if (!res.headersSent) erroServidor(res, err);
   }
 };
