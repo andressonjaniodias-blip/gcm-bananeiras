@@ -216,7 +216,8 @@ router.get('/retencao', verificarToken, verificarAdmin, async (req, res) => {
     const anos = parseInt(process.env.RETENCAO_ANOS || '5');
     const { rows: total } = await db.query('SELECT COUNT(*) AS total FROM boletins');
     const { rows: antigos } = await db.query(
-      `SELECT COUNT(*) AS total FROM boletins WHERE data::timestamptz < NOW() - INTERVAL '${anos} years'`
+      `SELECT COUNT(*) AS total FROM boletins WHERE data::timestamptz < NOW() - make_interval(years => $1)`,
+      [anos]
     );
     res.json({
       retencao_anos: anos,
@@ -233,7 +234,8 @@ router.delete('/retencao/arquivar', verificarToken, verificarAdmin, async (req, 
   try {
     const anos = parseInt(process.env.RETENCAO_ANOS || '5');
     const { rows, rowCount } = await db.query(
-      `DELETE FROM boletins WHERE data::timestamptz < NOW() - INTERVAL '${anos} years' RETURNING numero`
+      `DELETE FROM boletins WHERE data::timestamptz < NOW() - make_interval(years => $1) RETURNING numero`,
+      [anos]
     );
     const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
     await registrarAuditoria(req.usuario.usuario, 'ARQUIVAR_BOs', `${rowCount} registros removidos`, ip, extraFromReq(req));
