@@ -62,9 +62,9 @@
             Temas
           </button>
           <div class="sb-tema-menu" id="sb-tema-menu">
-            <button class="sb-tema-item" data-theme="gov-modern"      onclick="window.aplicarTema('gov-modern')">Gov Modern</button>
-            <button class="sb-tema-item" data-theme="dark-command"    onclick="window.aplicarTema('dark-command')">Dark Command</button>
-            <button class="sb-tema-item" data-theme="google-material" onclick="window.aplicarTema('google-material')">Google Material</button>
+            <button class="sb-tema-item" data-theme="gov-modern"      onclick="window.aplicarTema('gov-modern')"><span class="sb-tema-dot" style="background:#2171B5"></span>Gov Modern</button>
+            <button class="sb-tema-item" data-theme="dark-command"    onclick="window.aplicarTema('dark-command')"><span class="sb-tema-dot" style="background:#1E3A5F"></span>Dark Command</button>
+            <button class="sb-tema-item" data-theme="google-material" onclick="window.aplicarTema('google-material')"><span class="sb-tema-dot" style="background:#1A73E8"></span>Claro Operacional</button>
           </div>
         </div>
         <button class="sb-btn-sair" onclick="logout()">Sair do Sistema</button>
