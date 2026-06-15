@@ -104,6 +104,56 @@
   --radius-pill:  20px;
 }
 
+/* Google Material — paleta Google limpa */
+[data-theme="google-material"] {
+  --bg-page:         #F8F9FA;
+  --bg-body-from:    #F8F9FA;
+  --bg-body-mid:     #F1F3F4;
+  --bg-body-to:      #E8EAED;
+  --bg-card:         #FFFFFF;
+  --bg-header-from:  #FFFFFF;
+  --bg-header-to:    #F8F9FA;
+  --header-accent:   #1A73E8;
+  --header-text:     #202124;
+  --header-text-sub: #5F6368;
+
+  --color-primary:       #1A73E8;
+  --color-primary-hover: #1557B0;
+  --color-primary-light: #E8F0FE;
+
+  --color-accent:        #FBBC04;
+  --color-accent-hover:  #F9A825;
+  --color-accent-light:  #FEF7E0;
+
+  --color-success:       #34A853;
+  --color-success-hover: #2D8E47;
+  --color-danger:        #EA4335;
+  --color-danger-hover:  #C5221F;
+
+  --color-text:       #202124;
+  --color-text-muted: #5F6368;
+  --color-label:      #3C4043;
+  --color-border:     #DADCE0;
+  --color-input-bg:   #FFFFFF;
+  --color-row-alt:    #F8F9FA;
+  --color-row-hover:  #E8F0FE;
+  --color-bloco-bg:   #F8F9FA;
+  --color-bloco-border:#DADCE0;
+  --color-hint:       #80868B;
+  --color-link:       #1A73E8;
+
+  --tab-active-bg:    #1A73E8;
+  --tab-active-text:  #FFFFFF;
+  --tab-inactive-bg:  #F8F9FA;
+  --tab-inactive-text:#1A73E8;
+
+  --shadow-card:  0 1px 2px rgba(60,64,67,0.10), 0 2px 6px rgba(60,64,67,0.08);
+  --shadow-input: 0 0 0 2px rgba(26,115,232,0.30);
+  --radius:       8px;
+  --radius-sm:    4px;
+  --radius-pill:  20px;
+}
+
 /* ============================================================
    RESET & BASE
    ============================================================ */
@@ -1934,6 +1984,121 @@ table th {
 .pub-panel-header {
   background: linear-gradient(135deg, #060f1c 0%, var(--bg-header-to) 100%) !important;
   border-bottom: 3px solid var(--header-accent) !important;
+}
+
+/* ── Tema google-material — overrides dos estilos hardcoded ── */
+[data-theme="google-material"] body {
+  background: #F1F3F4;
+}
+
+[data-theme="google-material"] #app-shell {
+  box-shadow: 0 1px 3px rgba(60,64,67,0.15), 0 4px 12px rgba(60,64,67,0.10);
+}
+
+[data-theme="google-material"] .header {
+  background: #FFFFFF;
+  box-shadow: 0 1px 0 #DADCE0, 0 2px 8px rgba(60,64,67,0.10);
+  border-bottom: 3px solid #1A73E8;
+  inset: unset;
+}
+
+[data-theme="google-material"] .header-linha-2 {
+  color: #1A73E8 !important;
+  text-shadow: none;
+  font-weight: 700;
+}
+
+[data-theme="google-material"] #sidebar {
+  background: #FFFFFF;
+  box-shadow: 1px 0 0 #DADCE0;
+  border-right: 1px solid #DADCE0;
+}
+
+[data-theme="google-material"] .sb-user {
+  background: #F8F9FA;
+  border-bottom-color: #DADCE0 !important;
+}
+
+[data-theme="google-material"] .sb-avatar {
+  background: linear-gradient(135deg, #1A73E8 0%, #1557B0 100%);
+  box-shadow: 0 2px 8px rgba(26,115,232,0.35);
+  border-color: #E8F0FE !important;
+}
+
+[data-theme="google-material"] .sb-link {
+  color: #5F6368;
+}
+
+[data-theme="google-material"] .sb-link:hover {
+  background: #F8F9FA;
+  color: #1A73E8;
+  border-left-color: #1A73E8 !important;
+}
+
+[data-theme="google-material"] .sb-link.active {
+  background: #E8F0FE !important;
+  color: #1A73E8 !important;
+  border-left-color: #1A73E8 !important;
+  font-weight: 700;
+}
+
+[data-theme="google-material"] .sb-link .sb-icon { opacity: 1; }
+
+[data-theme="google-material"] .sb-user-name { color: #202124; }
+[data-theme="google-material"] .sb-user-role  { color: #5F6368; }
+
+[data-theme="google-material"] .sb-btn-tema {
+  background: #F8F9FA;
+  border-color: #DADCE0;
+  color: #3C4043;
+}
+[data-theme="google-material"] .sb-btn-tema:hover { background: #E8F0FE; }
+
+[data-theme="google-material"] table th {
+  background: #1A73E8;
+  text-shadow: none;
+  border-color: #1557B0;
+}
+
+[data-theme="google-material"] .actions button,
+[data-theme="google-material"] .filters button {
+  background: #1A73E8;
+  box-shadow: 0 1px 3px rgba(26,115,232,0.30);
+}
+[data-theme="google-material"] .actions button:hover,
+[data-theme="google-material"] .filters button:hover {
+  background: #1557B0;
+  box-shadow: 0 2px 8px rgba(26,115,232,0.40);
+}
+
+[data-theme="google-material"] .tabs button.active,
+[data-theme="google-material"] .tabs .tab-btn.active {
+  background: #1A73E8;
+  box-shadow: 0 1px 4px rgba(26,115,232,0.25);
+}
+
+[data-theme="google-material"] .card h3 {
+  border-bottom-color: #1A73E8;
+}
+
+[data-theme="google-material"] .login-container {
+  border-top-color: #1A73E8;
+  box-shadow: 0 1px 3px rgba(60,64,67,0.12), 0 4px 16px rgba(60,64,67,0.08);
+}
+[data-theme="google-material"] .login-container button[type="submit"] {
+  background: #1A73E8;
+  box-shadow: 0 1px 3px rgba(26,115,232,0.30);
+  letter-spacing: 0.03em;
+  text-transform: none;
+}
+[data-theme="google-material"] .login-container button[type="submit"]:hover {
+  background: #1557B0;
+  box-shadow: 0 2px 8px rgba(26,115,232,0.40);
+}
+
+[data-theme="google-material"] .pub-panel-header {
+  background: #1A73E8 !important;
+  border-bottom-color: #1557B0 !important;
 }
 
 /* ── Tema dark-command — header mais profundo ─────────────── */
