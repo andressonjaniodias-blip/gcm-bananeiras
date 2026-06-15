@@ -187,6 +187,59 @@
     </section>
   </main>
 
+  <!-- MODAL DE DETALHES DA VIATURA -->
+  <div class="detail-overlay" id="viatDetailOverlay" onclick="fecharViatDetail(event)">
+    <div class="detail-modal" onclick="event.stopPropagation()">
+      <div class="detail-modal-head">
+        <div>
+          <div class="detail-modal-title" id="viatDetailTitle">—</div>
+          <div class="detail-modal-subtitle" id="viatDetailSubtitle">—</div>
+        </div>
+        <button class="detail-modal-close" onclick="fecharViatDetail()">×</button>
+      </div>
+      <nav class="tabs detail-tabs" id="viatDetailTabs">
+        <button class="tab-btn active" onclick="viatDetailTab('info',this)">Detalhes</button>
+        <button class="tab-btn" onclick="viatDetailTab('obs',this)">Observações</button>
+      </nav>
+      <div class="detail-modal-body">
+        <div id="viatDetailInfo">
+          <div class="detail-grid-2">
+            <div class="detail-field">
+              <div class="detail-field-label">Viatura</div>
+              <div class="detail-field-value" id="vdCodigo">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Tipo</div>
+              <div class="detail-field-value" id="vdTipo">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Data / Hora</div>
+              <div class="detail-field-value" id="vdDataHora">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">KM</div>
+              <div class="detail-field-value" id="vdKm">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Responsável</div>
+              <div class="detail-field-value" id="vdResponsavel">—</div>
+            </div>
+          </div>
+          <div id="vdDadosExtra"></div>
+        </div>
+        <div id="viatDetailObs" class="hidden">
+          <div class="detail-field">
+            <div class="detail-field-label">Observações</div>
+            <div class="detail-field-value pre" id="vdObs">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="detail-footer">
+        <button class="detail-btn-close" onclick="fecharViatDetail()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
   <script>
@@ -194,9 +247,14 @@
 
     window.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('viatDataHora').value = new Date().toISOString().slice(0, 16);
-      await new Promise(r => setTimeout(r, 300));
-      const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
-      if (perfil.usuario) document.getElementById('viatResponsavel').value = perfil.usuario;
+      try {
+        const me = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
+        if (!me.ok) { window.location.href = '/'; return; }
+        const perfil = await me.json();
+        sessionStorage.setItem('perfil', JSON.stringify(perfil));
+        if (perfil.usuario) document.getElementById('viatResponsavel').value = perfil.usuario;
+        if (typeof updateSidebarUser === 'function') updateSidebarUser(perfil);
+      } catch { window.location.href = '/'; return; }
       carregarViatura();
     });
 
@@ -283,28 +341,98 @@
       } catch {}
     }
 
+    const VIAT_ICON  = { abastecimento: '⛽', revisao: '🔧', manutencao: '🛠️' };
+    const VIAT_LABEL = { abastecimento: 'Abastecimento', revisao: 'Revisão', manutencao: 'Manutenção' };
+
     function renderizarViatura(lista) {
       const el = document.getElementById('listaViatura');
       if (!lista.length) { el.innerHTML = '<p style="text-align:center;color:var(--color-hint);">Nenhum registro encontrado.</p>'; return; }
-      const tipoLabel = { abastecimento: 'Abastecimento', revisao: 'Revisão', manutencao: 'Manutenção' };
-      el.innerHTML = `<div class="table-wrap"><table>
-        <thead><tr><th>Data/Hora</th><th>Viatura</th><th>Tipo</th><th>KM</th><th>Responsável</th><th>Detalhe</th></tr></thead>
-        <tbody>${lista.map(r => {
-          const dados = typeof r.dados === 'string' ? JSON.parse(r.dados) : (r.dados || {});
-          let detalhe = '';
-          if (r.tipo === 'abastecimento') detalhe = dados.litros ? `${dados.litros}L ${dados.combustivel || ''}` : '—';
-          else if (r.tipo === 'revisao')   detalhe = dados.tipoRevisao || '—';
-          else                             detalhe = dados.problema || '—';
-          return `<tr>
-            <td>${new Date(r.data_hora).toLocaleString('pt-BR')}</td>
-            <td>${r.codigo}</td>
-            <td><span class="badge badge-agente">${tipoLabel[r.tipo] || r.tipo}</span></td>
-            <td>${Number(r.km).toLocaleString('pt-BR')} km</td>
-            <td>${r.responsavel}</td>
-            <td style="font-size:0.8rem;color:var(--color-text-muted);">${detalhe}</td>
-          </tr>`;
-        }).join('')}</tbody>
-      </table></div>`;
+      el.innerHTML = '<div class="hist-list">' + lista.map(r => {
+        const dados = typeof r.dados === 'string' ? JSON.parse(r.dados) : (r.dados || {});
+        let detalhe = '';
+        if (r.tipo === 'abastecimento') detalhe = dados.litros ? `${dados.litros}L ${dados.combustivel || ''}` : '';
+        else if (r.tipo === 'revisao')   detalhe = dados.tipoRevisao || '';
+        else                             detalhe = dados.problema || '';
+        const dataStr = new Date(r.data_hora).toLocaleString('pt-BR');
+        const icon = VIAT_ICON[r.tipo] || '🚗';
+        return `<div class="hist-item" onclick="abrirViatDetail(${r.id})">
+          <div class="hist-item-icon">${icon}</div>
+          <div class="hist-item-body">
+            <div class="hist-item-title">${r.codigo} — ${VIAT_LABEL[r.tipo] || r.tipo}</div>
+            <div class="hist-item-meta">
+              <span>${dataStr}</span>
+              ${detalhe ? `<span>·</span><span>${detalhe}</span>` : ''}
+              <span>·</span>
+              <span>${Number(r.km).toLocaleString('pt-BR')} km</span>
+            </div>
+          </div>
+          <div class="hist-item-right">
+            <span style="font-size:0.78rem;color:var(--color-text-muted);">${r.responsavel}</span>
+            <span class="hist-chevron">›</span>
+          </div>
+        </div>`;
+      }).join('') + '</div>';
+    }
+
+    let _viatDetalhe = null;
+
+    function abrirViatDetail(id) {
+      _viatDetalhe = todosRegistros.find(r => r.id === id);
+      if (!_viatDetalhe) return;
+      const r = _viatDetalhe;
+      const dados = typeof r.dados === 'string' ? JSON.parse(r.dados) : (r.dados || {});
+      document.getElementById('viatDetailTitle').textContent = `${r.codigo} — ${VIAT_LABEL[r.tipo] || r.tipo}`;
+      document.getElementById('viatDetailSubtitle').textContent = new Date(r.data_hora).toLocaleString('pt-BR');
+      document.getElementById('vdCodigo').textContent    = r.codigo;
+      document.getElementById('vdTipo').textContent      = VIAT_LABEL[r.tipo] || r.tipo;
+      document.getElementById('vdDataHora').textContent  = new Date(r.data_hora).toLocaleString('pt-BR');
+      document.getElementById('vdKm').textContent        = `${Number(r.km).toLocaleString('pt-BR')} km`;
+      document.getElementById('vdResponsavel').textContent = r.responsavel;
+      document.getElementById('vdObs').textContent = r.obs || '—';
+
+      let extra = '';
+      if (r.tipo === 'abastecimento') {
+        extra = `
+          <div class="detail-grid-2">
+            <div class="detail-field"><div class="detail-field-label">Litros</div><div class="detail-field-value">${dados.litros || '—'}</div></div>
+            <div class="detail-field"><div class="detail-field-label">Combustível</div><div class="detail-field-value">${dados.combustivel || '—'}</div></div>
+            <div class="detail-field"><div class="detail-field-label">Valor/Litro</div><div class="detail-field-value">${dados.valorLitro ? 'R$ '+dados.valorLitro : '—'}</div></div>
+            <div class="detail-field"><div class="detail-field-label">Posto</div><div class="detail-field-value">${dados.posto || '—'}</div></div>
+          </div>`;
+      } else if (r.tipo === 'revisao') {
+        extra = `
+          <div class="detail-grid-2">
+            <div class="detail-field"><div class="detail-field-label">Tipo de Revisão</div><div class="detail-field-value">${dados.tipoRevisao || '—'}</div></div>
+            <div class="detail-field"><div class="detail-field-label">Oficina</div><div class="detail-field-value">${dados.oficina || '—'}</div></div>
+            <div class="detail-field"><div class="detail-field-label">Próxima KM</div><div class="detail-field-value">${dados.proximaKm ? Number(dados.proximaKm).toLocaleString('pt-BR')+' km' : '—'}</div></div>
+            <div class="detail-field"><div class="detail-field-label">Valor Total</div><div class="detail-field-value">${dados.valor ? 'R$ '+dados.valor : '—'}</div></div>
+          </div>
+          <div class="detail-field"><div class="detail-field-label">Itens Revisados</div><div class="detail-field-value pre">${dados.itens || '—'}</div></div>`;
+      } else {
+        extra = `
+          <div class="detail-grid-2">
+            <div class="detail-field"><div class="detail-field-label">Problema</div><div class="detail-field-value">${dados.problema || '—'}</div></div>
+            <div class="detail-field"><div class="detail-field-label">Oficina</div><div class="detail-field-value">${dados.oficina || '—'}</div></div>
+            <div class="detail-field"><div class="detail-field-label">Peças</div><div class="detail-field-value">${dados.pecas || '—'}</div></div>
+            <div class="detail-field"><div class="detail-field-label">Valor Total</div><div class="detail-field-value">${dados.valor ? 'R$ '+dados.valor : '—'}</div></div>
+          </div>
+          <div class="detail-field"><div class="detail-field-label">Descrição</div><div class="detail-field-value pre">${dados.descricao || '—'}</div></div>`;
+      }
+      document.getElementById('vdDadosExtra').innerHTML = extra;
+      viatDetailTab('info', document.querySelector('#viatDetailTabs .tab-btn'));
+      document.getElementById('viatDetailOverlay').classList.add('aberto');
+    }
+
+    function fecharViatDetail(e) {
+      if (e && e.target !== document.getElementById('viatDetailOverlay')) return;
+      document.getElementById('viatDetailOverlay').classList.remove('aberto');
+    }
+
+    function viatDetailTab(tab, btn) {
+      document.getElementById('viatDetailInfo').classList.toggle('hidden', tab !== 'info');
+      document.getElementById('viatDetailObs').classList.toggle('hidden', tab !== 'obs');
+      document.querySelectorAll('#viatDetailTabs .tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
     }
 
     function filtrarViatura() {
