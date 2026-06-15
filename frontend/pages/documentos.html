@@ -186,11 +186,9 @@
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
   <script>
-    let todosDocumentos = [];
-    let arquivoBase64 = null;
-    let arquivoNome   = null;
-    let arquivoMime   = null;
-    let podePublicar  = false;
+    let todosDocumentos   = [];
+    let arquivoSelecionado = null;
+    let podePublicar       = false;
 
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('docData').value = new Date().toISOString().slice(0, 10);
@@ -244,16 +242,10 @@
       if (file.size > 10 * 1024 * 1024) {
         mostrarMsgDoc('Arquivo muito grande. Máximo: 10 MB.', 'danger'); return;
       }
-      arquivoNome = file.name;
-      arquivoMime = file.type;
-      const reader = new FileReader();
-      reader.onload = e => {
-        arquivoBase64 = e.target.result.split(',')[1];
-        const nomeEl = document.getElementById('docArquivoNome');
-        nomeEl.textContent = file.name;
-        nomeEl.style.display = 'block';
-      };
-      reader.readAsDataURL(file);
+      arquivoSelecionado = file;
+      const nomeEl = document.getElementById('docArquivoNome');
+      nomeEl.textContent = file.name;
+      nomeEl.style.display = 'block';
     }
 
     async function publicarDocumento() {
@@ -261,25 +253,23 @@
       const titulo = document.getElementById('docTitulo').value.trim();
       const data   = document.getElementById('docData').value;
 
-      if (!tipo || !titulo || !data) { mostrarMsgDoc('Preencha os campos obrigatórios.', 'danger'); return; }
-      if (!arquivoBase64)            { mostrarMsgDoc('Selecione um arquivo.', 'danger'); return; }
+      if (!tipo || !titulo || !data)  { mostrarMsgDoc('Preencha os campos obrigatórios.', 'danger'); return; }
+      if (!arquivoSelecionado)        { mostrarMsgDoc('Selecione um arquivo.', 'danger'); return; }
 
-      const payload = {
-        tipo, titulo, data,
-        numero:      document.getElementById('docNumero').value.trim(),
-        descricao:   document.getElementById('docDescricao').value.trim(),
-        arquivo:     arquivoBase64,
-        arquivoNome,
-        arquivoMime,
-        destaqueHome: document.getElementById('docDestaqueHome').checked,
-      };
+      const form = new FormData();
+      form.append('arquivo',     arquivoSelecionado);
+      form.append('tipo',        tipo);
+      form.append('titulo',      titulo);
+      form.append('data',        data);
+      form.append('numero',      document.getElementById('docNumero').value.trim());
+      form.append('descricao',   document.getElementById('docDescricao').value.trim());
+      form.append('destaqueHome', document.getElementById('docDestaqueHome').checked);
 
       try {
         const res = await fetch(`${API_BASE_URL}/api/documentos`, {
           method: 'POST',
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: form,
         });
         if (res.status === 401) { logout(); return; }
         if (!res.ok) { const e = await res.json(); mostrarMsgDoc(e.error || 'Erro ao publicar.', 'danger'); return; }
@@ -342,7 +332,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ destaque_home: novoValor }),
         });
-        if (!res.ok) { alert('Erro ao atualizar destaque.'); btn.disabled = false; return; }
+        if (!res.ok) { showToast('Erro ao atualizar destaque.', 'danger'); btn.disabled = false; return; }
         const doc = todosDocumentos.find(d => d.id === id);
         if (doc) doc.destaque_home = novoValor;
         renderizarDocs(todosDocumentos.filter(d => {
@@ -351,7 +341,7 @@
           return (!busca || d.titulo.toLowerCase().includes(busca) || (d.numero || '').toLowerCase().includes(busca))
               && (!tipo  || d.tipo === tipo);
         }));
-      } catch { alert('Erro de conexão.'); btn.disabled = false; }
+      } catch { showToast('Erro de conexão.', 'danger'); btn.disabled = false; }
     }
 
     function filtrarDocs() {
@@ -372,7 +362,7 @@
     async function baixarDoc(id, nome) {
       try {
         const res = await fetch(`${API_BASE_URL}/api/documentos/${id}/download`, { credentials: 'include' });
-        if (!res.ok) { alert('Erro ao baixar arquivo.'); return; }
+        if (!res.ok) { showToast('Erro ao baixar arquivo.', 'danger'); return; }
         const blob = await res.blob();
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
@@ -380,7 +370,7 @@
         a.download = nome || `documento_${id}`;
         a.click();
         URL.revokeObjectURL(url);
-      } catch { alert('Erro ao baixar arquivo.'); }
+      } catch { showToast('Erro ao baixar arquivo.', 'danger'); }
     }
 
     function limparFormDoc() {
@@ -389,7 +379,7 @@
         if (el) el.value = id === 'docData' ? new Date().toISOString().slice(0, 10) : '';
       });
       document.getElementById('docDestaqueHome').checked = false;
-      arquivoBase64 = arquivoNome = arquivoMime = null;
+      arquivoSelecionado = null;
       document.getElementById('docArquivoNome').style.display = 'none';
       document.getElementById('docArquivo').value = '';
     }
