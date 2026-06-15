@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meu Perfil - GCM</title>
+  <title>Meu Perfil - GCM Bananeiras</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,30 +11,7 @@
   <script src="../assets/js/theme-switcher.js"></script>
   <script src="../assets/js/sidebar.js"></script>
   <style>
-    .page-wrap { width: 92%; max-width: 680px; margin: 28px auto; }
-
-    .page-title {
-      font-size: 1.25rem; font-weight: 700;
-      color: var(--color-text); margin-bottom: 22px;
-      display: flex; align-items: center; gap: 10px;
-    }
-
-    .card {
-      background: var(--bg-card);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-card);
-      padding: 24px;
-      margin-bottom: 22px;
-      border: 1px solid var(--color-border);
-    }
-    .card-title {
-      font-size: 0.95rem; font-weight: 700;
-      color: var(--color-primary);
-      margin-bottom: 18px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--color-border);
-      display: flex; align-items: center; gap: 8px;
-    }
+    .page-wrap { max-width: 680px; }
 
     /* Avatar */
     .perfil-header {
@@ -109,13 +86,6 @@
     .info-item span.vazio { color: var(--color-hint); font-style: italic; }
 
     /* Formulário de senha / contato */
-    .secao-label {
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
-      text-transform: uppercase; color: var(--color-label);
-      margin: 18px 0 10px; padding-bottom: 6px;
-      border-bottom: 1px dashed var(--color-border);
-    }
-    .secao-label:first-child { margin-top: 0; }
 
     .fg-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .fg-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
@@ -126,23 +96,6 @@
     }
 
     .field { margin-bottom: 14px; }
-    .field label {
-      display: block; font-size: 0.78rem; font-weight: 600;
-      color: var(--color-label); margin-bottom: 5px; letter-spacing: 0.03em;
-    }
-    .field input {
-      width: 100%; padding: 10px 12px;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      font-size: 0.92rem;
-      background: var(--color-input-bg);
-      color: var(--color-text);
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .field input:focus {
-      outline: none; border-color: var(--color-primary);
-      box-shadow: var(--shadow-input);
-    }
 
     .input-senha-wrap {
       position: relative;
@@ -169,13 +122,7 @@
     }
     .senha-hint { font-size: 0.75rem; color: var(--color-hint); margin-top: 4px; }
 
-    .btn-primary {
-      width: 100%; background: var(--color-primary); color: #fff;
-      border: none; border-radius: var(--radius-sm);
-      padding: 11px; cursor: pointer; font-size: 0.95rem;
-      font-weight: 600; transition: background 0.2s; margin-top: 4px;
-    }
-    .btn-primary:hover { background: var(--color-primary-hover); }
+    .btn-primary { width: 100%; margin-top: 4px; }
 
     .btn-editar {
       display: inline-flex; align-items: center; gap: 6px;
@@ -194,13 +141,6 @@
     }
     .btn-cancelar-edicao:hover { background: var(--color-border); }
 
-    .msg-toast {
-      display: none; padding: 11px 16px; border-radius: var(--radius-sm);
-      margin-bottom: 18px; font-size: 0.9rem; font-weight: 600;
-      border-left: 4px solid;
-    }
-    .msg-ok   { background: #D1FAE5; color: #065F46; border-color: var(--color-success); }
-    .msg-erro { background: #FEE2E2; color: #991B1B; border-color: var(--color-danger); }
 
     /* Últimos acessos */
     .acesso-lista { list-style: none; }
@@ -702,7 +642,16 @@
               body: JSON.stringify({ foto: base64 })
             });
             const data = await res.json();
-            if (res.ok) { toast('Foto atualizada com sucesso!', 'ok'); }
+            if (res.ok) {
+              toast('Foto atualizada com sucesso!', 'ok');
+              // Atualiza sessionStorage e sidebar com a nova foto
+              try {
+                const perf = JSON.parse(sessionStorage.getItem('perfil') || '{}');
+                perf.foto = base64;
+                sessionStorage.setItem('perfil', JSON.stringify(perf));
+                if (typeof updateSidebarUser === 'function') updateSidebarUser(perf);
+              } catch {}
+            }
             else { toast(data.error || 'Erro ao salvar foto.', 'erro'); }
           } catch { toast('Erro de conexão.', 'erro'); }
           finally { spinner.style.display = 'none'; input.value = ''; }
