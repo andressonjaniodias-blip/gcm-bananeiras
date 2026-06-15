@@ -1116,11 +1116,12 @@ table button:hover { background: var(--color-primary-hover); }
    ============================================================ */
 #sidebar {
   width: 230px;
-  overflow-y: auto;
+  overflow-y: hidden;
   background: linear-gradient(180deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%);
   border-right: 1px solid rgba(255,255,255,0.07);
   display: flex;
   flex-direction: column;
+  height: 100%;
   z-index: 300;
   transition: transform 0.28s cubic-bezier(.4,0,.2,1);
 }
@@ -1130,8 +1131,8 @@ table button:hover { background: var(--color-primary-hover); }
   #sidebar {
     position: sticky;
     top: 0;
-    align-self: flex-start;
-    min-height: calc(100vh - clamp(16px, 3vw, 40px));
+    align-self: stretch;
+    height: calc(100vh - clamp(16px, 3vw, 40px));
     box-shadow: 2px 0 16px rgba(0,0,0,0.2);
     transform: none !important;
   }
@@ -1264,6 +1265,7 @@ table button:hover { background: var(--color-primary-hover); }
 
 .sb-nav {
   flex: 1;
+  overflow-y: auto;
   padding: 8px 0;
   display: flex;
   flex-direction: column;
@@ -1381,7 +1383,7 @@ table button:hover { background: var(--color-primary-hover); }
     position: fixed;
     top: 0;
     left: 0;
-    min-height: 100vh;
+    height: 100vh;
     width: 260px;
     z-index: 400;
     transform: translateX(-100%);
