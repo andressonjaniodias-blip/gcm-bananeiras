@@ -149,6 +149,70 @@
     </section>
   </main>
 
+  <!-- MODAL DE DETALHES DO RELATÓRIO -->
+  <div class="detail-overlay" id="relDetailOverlay" onclick="fecharRelDetail(event)">
+    <div class="detail-modal" onclick="event.stopPropagation()">
+      <div class="detail-modal-head">
+        <div>
+          <div class="detail-modal-title" id="relDetailTitle">—</div>
+          <div class="detail-modal-subtitle" id="relDetailSubtitle">—</div>
+        </div>
+        <button class="detail-modal-close" onclick="fecharRelDetail()">×</button>
+      </div>
+      <nav class="tabs detail-tabs" id="relDetailTabs">
+        <button class="tab-btn active" onclick="relDetailTab('info',this)">Informações</button>
+        <button class="tab-btn" onclick="relDetailTab('acoes',this)">Ações</button>
+      </nav>
+      <div class="detail-modal-body">
+        <!-- Aba Informações -->
+        <div id="relDetailInfo">
+          <div class="detail-grid-2">
+            <div class="detail-field">
+              <div class="detail-field-label">Número</div>
+              <div class="detail-field-value" id="rdNumero">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Data</div>
+              <div class="detail-field-value" id="rdData">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Tipo</div>
+              <div class="detail-field-value" id="rdTipo">—</div>
+            </div>
+            <div class="detail-field">
+              <div class="detail-field-label">Status</div>
+              <div class="detail-field-value" id="rdStatus">—</div>
+            </div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Local / Área Coberta</div>
+            <div class="detail-field-value" id="rdLocal">—</div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Viaturas / Equipe</div>
+            <div class="detail-field-value" id="rdEquipe">—</div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Conteúdo</div>
+            <div class="detail-field-value pre" id="rdConteudo">—</div>
+          </div>
+          <div class="detail-field" id="rdObsWrap">
+            <div class="detail-field-label">Observações</div>
+            <div class="detail-field-value pre" id="rdObs">—</div>
+          </div>
+        </div>
+        <!-- Aba Ações -->
+        <div id="relDetailAcoes" class="hidden">
+          <p style="color:var(--color-text-muted);font-size:0.88rem;margin-bottom:16px;">Selecione uma ação para o relatório <strong id="rdAcoesNum">—</strong>.</p>
+          <div style="display:flex;flex-direction:column;gap:10px;" id="rdAcoesList"></div>
+        </div>
+      </div>
+      <div class="detail-footer">
+        <button class="detail-btn-close" onclick="fecharRelDetail()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
 
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
@@ -161,10 +225,15 @@
       document.getElementById('anoRelatorio').textContent = new Date().getFullYear();
       document.getElementById('dataRelatorio').value = new Date().toISOString().slice(0, 10);
 
-      // Aguarda perfil ficar disponível
-      await new Promise(r => setTimeout(r, 300));
-      const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
-      if (perfil.usuario) document.getElementById('relatorNome').value = perfil.usuario;
+      // Verifica autenticação
+      try {
+        const me = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
+        if (!me.ok) { window.location.href = '/'; return; }
+        const perfil = await me.json();
+        sessionStorage.setItem('perfil', JSON.stringify(perfil));
+        if (perfil.usuario) document.getElementById('relatorNome').value = perfil.usuario;
+        if (typeof updateSidebarUser === 'function') updateSidebarUser(perfil);
+      } catch { window.location.href = '/'; return; }
 
       // Busca próximo número do servidor
       try {
@@ -301,20 +370,77 @@
       } catch {}
     }
 
+    const TIPO_ICON = {
+      'Relatório de Ronda': '🚶', 'Relatório de Ocorrência': '🚨',
+      'Relatório Administrativo': '📋', 'Relatório de Fiscalização': '🔍',
+      'Relatório de Operação': '⚙️', 'Outro': '📄',
+    };
+
     function renderizarRelatorios(lista) {
       const el = document.getElementById('listaRelatorios');
       if (!lista.length) { el.innerHTML = '<p style="text-align:center;color:var(--color-hint);">Nenhum relatório encontrado.</p>'; return; }
-      el.innerHTML = `<div class="table-wrap"><table>
-        <thead><tr><th>Número</th><th>Data</th><th>Tipo</th><th>Título</th><th>Status</th><th>PDF</th></tr></thead>
-        <tbody>${lista.map(r => `<tr>
-          <td>${r.numero}</td>
-          <td>${new Date(r.data).toLocaleDateString('pt-BR')}</td>
-          <td>${r.tipo}</td>
-          <td>${r.titulo}</td>
-          <td><span class="badge ${r.status === 'finalizado' ? 'badge-supervisor' : 'badge-usuario'}">${r.status}</span></td>
-          <td>${r.status === 'finalizado' ? `<button class="btn-pdf" onclick="baixarPDFRel(${r.id},'${r.numero}')">PDF</button>` : '—'}</td>
-        </tr>`).join('')}</tbody>
-      </table></div>`;
+      el.innerHTML = '<div class="hist-list">' + lista.map(r => {
+        const icon = TIPO_ICON[r.tipo] || '📄';
+        const dataStr = new Date(r.data).toLocaleDateString('pt-BR');
+        const badgeClass = r.status === 'finalizado' ? 'badge-supervisor' : 'badge-usuario';
+        return `<div class="hist-item" onclick="abrirRelDetail(${r.id})">
+          <div class="hist-item-icon">${icon}</div>
+          <div class="hist-item-body">
+            <div class="hist-item-title">${r.titulo}</div>
+            <div class="hist-item-meta">
+              <span>${r.numero}</span>
+              <span>·</span>
+              <span>${dataStr}</span>
+              <span>·</span>
+              <span>${r.tipo}</span>
+            </div>
+          </div>
+          <div class="hist-item-right">
+            <span class="badge ${badgeClass}">${r.status}</span>
+            <span class="hist-chevron">›</span>
+          </div>
+        </div>`;
+      }).join('') + '</div>';
+    }
+
+    let _relDetalhe = null;
+
+    function abrirRelDetail(id) {
+      _relDetalhe = todosRelatorios.find(r => r.id === id);
+      if (!_relDetalhe) return;
+      const r = _relDetalhe;
+      const dataStr = new Date(r.data).toLocaleDateString('pt-BR');
+      document.getElementById('relDetailTitle').textContent = r.titulo;
+      document.getElementById('relDetailSubtitle').textContent = `${r.numero} · ${dataStr}`;
+      document.getElementById('rdNumero').textContent  = r.numero;
+      document.getElementById('rdData').textContent    = dataStr;
+      document.getElementById('rdTipo').textContent    = r.tipo;
+      document.getElementById('rdStatus').textContent  = r.status;
+      document.getElementById('rdLocal').textContent   = r.local   || '—';
+      document.getElementById('rdEquipe').textContent  = r.equipe  || '—';
+      document.getElementById('rdConteudo').textContent = r.conteudo || '—';
+      const obsWrap = document.getElementById('rdObsWrap');
+      document.getElementById('rdObs').textContent = r.obs || '';
+      obsWrap.style.display = r.obs ? '' : 'none';
+      document.getElementById('rdAcoesNum').textContent = r.numero;
+      const acoesList = document.getElementById('rdAcoesList');
+      acoesList.innerHTML = r.status === 'finalizado'
+        ? `<button class="detail-btn-pdf" style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#EEF2FF;color:#4F46E5;" onclick="baixarPDFRel(${r.id},'${r.numero}')">⬇️ Baixar PDF</button>`
+        : `<p style="color:var(--color-hint);font-size:0.85rem;">Apenas relatórios finalizados podem ser exportados em PDF.</p>`;
+      relDetailTab('info', document.querySelector('#relDetailTabs .tab-btn'));
+      document.getElementById('relDetailOverlay').classList.add('aberto');
+    }
+
+    function fecharRelDetail(e) {
+      if (e && e.target !== document.getElementById('relDetailOverlay')) return;
+      document.getElementById('relDetailOverlay').classList.remove('aberto');
+    }
+
+    function relDetailTab(tab, btn) {
+      document.getElementById('relDetailInfo').classList.toggle('hidden', tab !== 'info');
+      document.getElementById('relDetailAcoes').classList.toggle('hidden', tab !== 'acoes');
+      document.querySelectorAll('#relDetailTabs .tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
     }
 
     function filtrarRelatorios() {
