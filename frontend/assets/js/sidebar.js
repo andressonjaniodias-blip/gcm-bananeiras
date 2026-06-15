@@ -4,16 +4,28 @@
   const skipPages = ['index.html', 'setup.html', 'aviso-lgpd.html'];
   if (path === '/' || skipPages.some(p => path.endsWith(p))) return;
 
+  const ICONS = {
+    home:      `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L10 3l7 6.5V17a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M7 18v-6h6v6"/></svg>`,
+    novobo:    `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M8 10h4M10 8v4"/><path d="M7 6h3"/></svg>`,
+    historico: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="4.5"/><path d="M15.5 15.5l-3-3"/><path d="M8.5 6.5v2.2l1.3 1.3"/></svg>`,
+    relatorio: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="1.5"/><path d="M7 13v-3M10 13V7M13 13v-5"/></svg>`,
+    viatura:   `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="16" height="7" rx="1.5"/><path d="M4 8l2-4h8l2 4"/><circle cx="6" cy="15" r="1.5"/><circle cx="14" cy="15" r="1.5"/></svg>`,
+    documentos:`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/></svg>`,
+    perfil:    `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg>`,
+    logs:      `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg>`,
+    usuarios:  `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="3"/><path d="M1 17c0-3.31 2.91-6 6.5-6"/><circle cx="14" cy="8" r="2.5"/><path d="M19 17c0-2.76-2.24-5-5-5"/></svg>`,
+  };
+
   const MENU = [
-    { href: '/pages/home.html',       label: '🏠 Início',              roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/dashboard.html',  label: '📝 Novo BO',             roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/consulta.html',   label: '🔍 Histórico de BOs',    roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/relatorio.html',  label: '📊 Relatório Interno',   roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/viatura.html',    label: '🚗 Controle de Viatura', roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/documentos.html', label: '📁 Documentos',          roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/perfil.html',     label: '👤 Meu Perfil',          roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/logs.html',       label: '📋 Log de Auditoria',    roles: ['supervisor', 'admin'] },
-    { href: '/pages/usuarios.html',   label: '👥 Usuários',            roles: ['admin'] },
+    { href: '/pages/home.html',       icon: ICONS.home,       label: 'Início',              roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/dashboard.html',  icon: ICONS.novobo,     label: 'Novo BO',             roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/consulta.html',   icon: ICONS.historico,  label: 'Histórico de BOs',    roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/relatorio.html',  icon: ICONS.relatorio,  label: 'Relatório Interno',   roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/viatura.html',    icon: ICONS.viatura,    label: 'Controle de Viatura', roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/documentos.html', icon: ICONS.documentos, label: 'Documentos',          roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/perfil.html',     icon: ICONS.perfil,     label: 'Meu Perfil',          roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/logs.html',       icon: ICONS.logs,       label: 'Log de Auditoria',    roles: ['supervisor', 'admin'] },
+    { href: '/pages/usuarios.html',   icon: ICONS.usuarios,   label: 'Usuários',            roles: ['admin'] },
   ];
 
   function buildSidebar() {
@@ -24,22 +36,24 @@
 
     const navHTML = allMenu.map(item => {
       const active = window.location.pathname.includes(item.href.replace('/pages/', '')) ? ' active' : '';
-      return `<a href="${item.href}" class="sb-link${active}">${item.label}</a>`;
+      return `<a href="${item.href}" class="sb-link${active}" onclick="closeSidebar()"><span class="sb-icon">${item.icon}</span><span>${item.label}</span></a>`;
     }).join('');
 
     const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' }[roleEfetivo] || 'Agente GCM';
     const initial = (perfil.usuario || '?')[0].toUpperCase();
+    const avatarContent = perfil.foto
+      ? `<img src="${perfil.foto}" alt="Foto de perfil">`
+      : initial;
 
     const aside = document.createElement('aside');
     aside.id = 'sidebar';
     aside.innerHTML = `
       <div class="sb-user">
-        <div class="sb-avatar" id="sbAvatar">${initial}</div>
+        <div class="sb-avatar" id="sbAvatar">${avatarContent}</div>
         <div class="sb-user-info">
           <span class="sb-user-name" id="sbNome">${perfil.usuario || '—'}</span>
           <span class="sb-user-role" id="sbRole">${roleLabel}</span>
         </div>
-        <button class="sb-close-btn" onclick="toggleSidebar()" title="Fechar menu">✕</button>
       </div>
       <nav class="sb-nav">${navHTML}</nav>
       <div class="sb-footer">
@@ -134,7 +148,13 @@
     const sbAvatar = document.getElementById('sbAvatar');
     const sbRole   = document.getElementById('sbRole');
     if (sbNome && perfil.usuario)   sbNome.textContent   = perfil.usuario;
-    if (sbAvatar && perfil.usuario) sbAvatar.textContent = perfil.usuario[0].toUpperCase();
+    if (sbAvatar) {
+      if (perfil.foto) {
+        sbAvatar.innerHTML = `<img src="${perfil.foto}" alt="Foto de perfil">`;
+      } else if (perfil.usuario) {
+        sbAvatar.textContent = perfil.usuario[0].toUpperCase();
+      }
+    }
     if (sbRole && perfil.role) {
       sbRole.textContent = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' }[perfil.role] || perfil.role;
     }
@@ -149,7 +169,7 @@
         .filter(item => item.roles.includes(roleEfetivo))
         .map(item => {
           const active = currentPath.includes(item.href.replace('/pages/', '')) ? ' active' : '';
-          return `<a href="${item.href}" class="sb-link${active}">${item.label}</a>`;
+          return `<a href="${item.href}" class="sb-link${active}"><span class="sb-icon">${item.icon}</span><span>${item.label}</span></a>`;
         }).join('');
     }
   };
