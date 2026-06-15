@@ -2,24 +2,24 @@
    TEMAS — variáveis CSS por data-theme no <html>
    ============================================================ */
 
-/* Gov Modern (padrão) — azul institucional, fundo claro */
+/* Gov Modern (padrão) — paleta azul Uxintace #2171B5 → #EFF3FF */
 :root,
 [data-theme="gov-modern"] {
   --header-h: 110px;
-  --bg-page:         #EEF2FA;
-  --bg-body-from:    #071422;
-  --bg-body-mid:     #0D1B2A;
-  --bg-body-to:      #142840;
+  --bg-page:         #EFF3FF;
+  --bg-body-from:    #0a1a2e;
+  --bg-body-mid:     #112444;
+  --bg-body-to:      #1a3560;
   --bg-card:         #FFFFFF;
-  --bg-header-from:  #0D1B2A;
-  --bg-header-to:    #1E3A5F;
+  --bg-header-from:  #0e1f3d;
+  --bg-header-to:    #2171B5;
   --header-accent:   #F59E0B;
   --header-text:     #FFFFFF;
-  --header-text-sub: #BED3F0;
+  --header-text-sub: #BDD7E7;
 
-  --color-primary:       #1565C0;
-  --color-primary-hover: #0D47A1;
-  --color-primary-light: #E3EFFB;
+  --color-primary:       #2171B5;
+  --color-primary-hover: #174f8a;
+  --color-primary-light: #BDD7E7;
 
   --color-accent:        #F59E0B;
   --color-accent-hover:  #D97706;
@@ -33,22 +33,22 @@
   --color-text:       #1A202C;
   --color-text-muted: #6B7280;
   --color-label:      #374151;
-  --color-border:     #D1D5DB;
+  --color-border:     #BDD7E7;
   --color-input-bg:   #FFFFFF;
-  --color-row-alt:    #F7FAFF;
-  --color-row-hover:  #EBF3FF;
-  --color-bloco-bg:   #F8FAFD;
-  --color-bloco-border:#E2E8F0;
+  --color-row-alt:    #EFF3FF;
+  --color-row-hover:  #BDD7E7;
+  --color-bloco-bg:   #EFF3FF;
+  --color-bloco-border:#6BAED6;
   --color-hint:       #9CA3AF;
-  --color-link:       #1565C0;
+  --color-link:       #2171B5;
 
-  --tab-active-bg:    #0D1B2A;
+  --tab-active-bg:    #2171B5;
   --tab-active-text:  #FFFFFF;
-  --tab-inactive-bg:  #E3EFFB;
-  --tab-inactive-text:#1565C0;
+  --tab-inactive-bg:  #EFF3FF;
+  --tab-inactive-text:#2171B5;
 
-  --shadow-card:  0 4px 18px rgba(0,0,0,0.09);
-  --shadow-input: 0 0 0 3px rgba(21,101,192,0.15);
+  --shadow-card:  0 4px 18px rgba(33,113,181,0.10);
+  --shadow-input: 0 0 0 3px rgba(107,174,214,0.30);
   --radius:       12px;
   --radius-sm:    7px;
   --radius-pill:  20px;
