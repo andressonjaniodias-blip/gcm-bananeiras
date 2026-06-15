@@ -14,7 +14,7 @@
     /* ── Layout da home ──────────────────────────────────────────────────────── */
     .home-body {
       display: grid;
-      grid-template-columns: 1fr 360px;
+      grid-template-columns: 1fr 340px;
       gap: 24px;
       align-items: start;
     }
@@ -22,14 +22,75 @@
       .home-body { grid-template-columns: 1fr; }
     }
 
-    /* ── Cards de estatística ────────────────────────────────────────────────── */
+    /* ── Boas-vindas ─────────────────────────────────────────────────────────── */
+    .home-welcome {
+      margin-bottom: 24px;
+    }
+    .home-welcome h2 {
+      font-size: 1.25rem; font-weight: 700;
+      color: var(--color-text); margin: 0 0 4px;
+    }
+    .home-welcome p {
+      font-size: 0.85rem; color: var(--color-text-muted); margin: 0;
+    }
+
+    /* ── Ações rápidas ───────────────────────────────────────────────────────── */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .quick-action-btn {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 8px; padding: 16px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--color-bloco-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      text-decoration: none;
+      color: var(--color-text);
+      font-size: 0.78rem; font-weight: 600;
+      text-align: center;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      cursor: pointer;
+    }
+    .quick-action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    .quick-action-btn .qa-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--color-row-alt);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .quick-action-btn .qa-icon svg {
+      width: 20px; height: 20px;
+      stroke: var(--color-primary);
+    }
+
+    /* ── Seção title ─────────────────────────────────────────────────────────── */
     .stat-section-title {
       font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
       text-transform: uppercase; color: var(--color-text-muted);
       margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
     }
-    .stat-section-title::after { content: ''; flex: 1; height: 1px; background: var(--color-border); }
+    .stat-section-title .sst-icon {
+      width: 14px; height: 14px; display: inline-flex;
+      align-items: center; justify-content: center;
+    }
+    .stat-section-title .sst-icon svg {
+      width: 14px; height: 14px;
+      stroke: var(--color-text-muted);
+    }
+    .stat-section-title::after {
+      content: ''; flex: 1; height: 1px; background: var(--color-border);
+    }
 
+    /* ── Cards de estatística ────────────────────────────────────────────────── */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -72,6 +133,8 @@
     .stat-card.accent-slate  .stat-num { color: #64748B; }
     .stat-card.accent-rose   { border-left-color: #E11D48; }
     .stat-card.accent-rose   .stat-num { color: #E11D48; }
+    .stat-card.accent-blue   { border-left-color: var(--color-primary); }
+    .stat-card.accent-blue   .stat-num { color: var(--color-primary); }
 
     /* ── Ranking de tipificações ─────────────────────────────────────────────── */
     .ranking-card {
@@ -123,8 +186,9 @@
       background: linear-gradient(135deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%);
       border-bottom: 3px solid var(--color-accent);
       color: #fff;
-      display: flex; align-items: center; gap: 8px;
+      display: flex; align-items: center; gap: 10px;
     }
+    .pub-panel-header svg { width: 18px; height: 18px; stroke: rgba(255,255,255,0.8); flex-shrink: 0; }
     .pub-panel-header-title { font-size: 0.95rem; font-weight: 700; }
     .pub-panel-header-sub   { font-size: 0.72rem; opacity: 0.8; margin-top: 1px; }
     .pub-list { padding: 0; }
@@ -141,12 +205,17 @@
     .pub-icon {
       width: 36px; height: 36px; border-radius: var(--radius-sm);
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem; flex-shrink: 0;
+      flex-shrink: 0;
     }
+    .pub-icon svg { width: 18px; height: 18px; }
     .pub-icon.icon-pdf      { background: #FEE2E2; }
+    .pub-icon.icon-pdf svg  { stroke: #DC2626; }
     .pub-icon.icon-doc      { background: #DBEAFE; }
+    .pub-icon.icon-doc svg  { stroke: #2563EB; }
     .pub-icon.icon-img      { background: #D1FAE5; }
+    .pub-icon.icon-img svg  { stroke: #059669; }
     .pub-icon.icon-default  { background: var(--color-primary-light); }
+    .pub-icon.icon-default svg { stroke: var(--color-primary); }
 
     .pub-info { flex: 1; min-width: 0; }
     .pub-titulo {
@@ -167,7 +236,9 @@
       background: none; border: none; cursor: pointer; padding: 2px 0;
       text-decoration: underline; white-space: nowrap;
       align-self: center; flex-shrink: 0;
+      display: flex; align-items: center; gap: 4px;
     }
+    .pub-baixar svg { width: 13px; height: 13px; stroke: currentColor; }
     .pub-baixar:hover { opacity: 0.75; }
 
     .pub-vazio {
@@ -183,6 +254,9 @@
       text-decoration: none;
     }
     .pub-rodape a:hover { text-decoration: underline; }
+
+    /* ── Visibilidade por role (gerenciada via JS) ───────────────────────────── */
+    .role-hidden { display: none !important; }
   </style>
 </head>
 <body>
@@ -197,20 +271,63 @@
   </header>
 
   <main style="padding: 0 clamp(12px,2vw,24px);">
-    <div class="home-container">
+    <div class="home-container" id="homeRoot">
 
       <!-- Boas-vindas -->
       <div class="home-welcome">
-        <h2>Bem-vindo, <span id="nomeUsuario">—</span></h2>
+        <h2 id="welcomeTitle">Bem-vindo!</h2>
         <p id="dataHoje"></p>
       </div>
 
       <div class="home-body">
-        <!-- Coluna principal: estatísticas -->
+        <!-- Coluna principal -->
         <div>
 
-          <!-- Stats BOs -->
-          <div class="stat-section-title">📋 Boletins de Ocorrência</div>
+          <!-- Ações rápidas (todos) -->
+          <div class="stat-section-title">
+            <span class="sst-icon"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4v12M4 10h12"/></svg></span>
+            Ações Rápidas
+          </div>
+          <div class="quick-actions" id="quickActions">
+            <a href="/pages/dashboard.html" class="quick-action-btn">
+              <div class="qa-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M8 10h4M10 8v4"/><path d="M7 6h3"/></svg></div>
+              Novo BO
+            </a>
+            <a href="/pages/consulta.html" class="quick-action-btn">
+              <div class="qa-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="4.5"/><path d="M15.5 15.5l-3-3"/></svg></div>
+              Consultar BOs
+            </a>
+            <a href="/pages/viatura.html" class="quick-action-btn">
+              <div class="qa-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="16" height="7" rx="1.5"/><path d="M4 8l2-4h8l2 4"/><circle cx="6" cy="15" r="1.5"/><circle cx="14" cy="15" r="1.5"/></svg></div>
+              Viatura
+            </a>
+            <a href="/pages/documentos.html" class="quick-action-btn">
+              <div class="qa-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/></svg></div>
+              Documentos
+            </a>
+            <a href="/pages/relatorio.html" class="quick-action-btn" data-role-min="supervisor">
+              <div class="qa-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="1.5"/><path d="M7 13v-3M10 13V7M13 13v-5"/></svg></div>
+              Relatórios
+            </a>
+            <a href="/pages/usuarios.html" class="quick-action-btn" data-role-min="admin">
+              <div class="qa-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="3"/><path d="M1 17c0-3.31 2.91-6 6.5-6"/><circle cx="14" cy="8" r="2.5"/><path d="M19 17c0-2.76-2.24-5-5-5"/></svg></div>
+              Usuários
+            </a>
+            <a href="/pages/logs.html" class="quick-action-btn" data-role-min="supervisor">
+              <div class="qa-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg></div>
+              Auditoria
+            </a>
+            <a href="/pages/perfil.html" class="quick-action-btn">
+              <div class="qa-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg></div>
+              Meu Perfil
+            </a>
+          </div>
+
+          <!-- Stats BOs (todos) -->
+          <div class="stat-section-title">
+            <span class="sst-icon"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg></span>
+            Boletins de Ocorrência
+          </div>
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-num" id="statTotal">—</div>
@@ -234,12 +351,15 @@
             </div>
           </div>
 
-          <!-- Stats operacionais -->
-          <div class="stat-section-title">🚔 Operacional</div>
-          <div class="stats-grid">
+          <!-- Stats operacionais (supervisor/admin) -->
+          <div class="stat-section-title" data-role-min="supervisor">
+            <span class="sst-icon"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="16" height="7" rx="1.5"/><path d="M4 8l2-4h8l2 4"/><circle cx="6" cy="15" r="1.5"/><circle cx="14" cy="15" r="1.5"/></svg></span>
+            Operacional
+          </div>
+          <div class="stats-grid" data-role-min="supervisor">
             <div class="stat-card accent-roxo">
               <div class="stat-num" id="statRelatorios">—</div>
-              <div class="stat-label">Relatórios Internos</div>
+              <div class="stat-label">Relatórios</div>
               <div class="stat-sub">total publicados</div>
             </div>
             <div class="stat-card accent-slate">
@@ -254,15 +374,57 @@
             </div>
             <div class="stat-card accent-amber">
               <div class="stat-num" id="statViaturas">—</div>
-              <div class="stat-label">Registros Viatura</div>
+              <div class="stat-label">Reg. Viatura</div>
               <div class="stat-sub">abastec. e revisões</div>
             </div>
           </div>
 
-          <!-- Ranking tipificações -->
-          <div class="ranking-card">
-            <div class="ranking-title">🔢 Ocorrências Mais Frequentes <span style="font-size:0.72rem;font-weight:400;color:var(--color-text-muted);">— últimos 30 dias</span></div>
+          <!-- Stats sistema (admin) -->
+          <div class="stat-section-title" data-role-min="admin">
+            <span class="sst-icon"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="3"/><path d="M1 17c0-3.31 2.91-6 6.5-6"/><circle cx="14" cy="8" r="2.5"/><path d="M19 17c0-2.76-2.24-5-5-5"/></svg></span>
+            Gestão de Usuários
+          </div>
+          <div class="stats-grid" data-role-min="admin">
+            <div class="stat-card accent-blue">
+              <div class="stat-num" id="statUsuariosTotal">—</div>
+              <div class="stat-label">Total Usuários</div>
+              <div class="stat-sub">cadastrados</div>
+            </div>
+            <div class="stat-card accent-verde">
+              <div class="stat-num" id="statUsuariosAtivos">—</div>
+              <div class="stat-label">Usuários Ativos</div>
+              <div class="stat-sub">com acesso</div>
+            </div>
+            <div class="stat-card accent-slate">
+              <div class="stat-num" id="statAdmins">—</div>
+              <div class="stat-label">Administradores</div>
+              <div class="stat-sub">no sistema</div>
+            </div>
+            <div class="stat-card accent-rose">
+              <div class="stat-num" id="statInativos">—</div>
+              <div class="stat-label">Inativos</div>
+              <div class="stat-sub">sem acesso</div>
+            </div>
+          </div>
+
+          <!-- Ranking tipificações (supervisor/admin) -->
+          <div class="ranking-card" data-role-min="supervisor">
+            <div class="ranking-title">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0"><rect x="3" y="3" width="14" height="14" rx="1.5"/><path d="M7 13v-3M10 13V7M13 13v-5"/></svg>
+              Ocorrências Mais Frequentes
+              <span style="font-size:0.72rem;font-weight:400;color:var(--color-text-muted);">— últimos 30 dias</span>
+            </div>
             <div id="rankingTipificacoes"><div class="ranking-vazio">Carregando...</div></div>
+          </div>
+
+          <!-- Ranking para agente (resumido) -->
+          <div class="ranking-card" id="rankingAgenteCard" style="display:none">
+            <div class="ranking-title">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0"><rect x="3" y="3" width="14" height="14" rx="1.5"/><path d="M7 13v-3M10 13V7M13 13v-5"/></svg>
+              Ocorrências Mais Frequentes
+              <span style="font-size:0.72rem;font-weight:400;color:var(--color-text-muted);">— últimos 30 dias</span>
+            </div>
+            <div id="rankingTipificacoesAgente"><div class="ranking-vazio">Carregando...</div></div>
           </div>
 
         </div>
@@ -271,8 +433,9 @@
         <div>
           <div class="pub-panel">
             <div class="pub-panel-header">
+              <svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h14M3 10h14M3 15h8"/></svg>
               <div>
-                <div class="pub-panel-header-title">📢 Publicações Oficiais</div>
+                <div class="pub-panel-header-title">Publicações Oficiais</div>
                 <div class="pub-panel-header-sub">Documentos disponibilizados pela chefia</div>
               </div>
             </div>
@@ -298,19 +461,35 @@
         agora.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
       const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
-      if (perfil.usuario) document.getElementById('nomeUsuario').textContent = perfil.usuario;
+      const role = perfil.role || 'agente';
+
+      // Oculta elementos restritos por role
+      const ROLE_RANK = { agente: 0, supervisor: 1, admin: 2 };
+      const myRank = ROLE_RANK[role] ?? 0;
+      document.querySelectorAll('[data-role-min]').forEach(el => {
+        const minRank = ROLE_RANK[el.dataset.roleMin] ?? 99;
+        if (myRank < minRank) el.classList.add('role-hidden');
+      });
+
+      // Personaliza saudação
+      const nomeDisplay = perfil.usuario || 'Agente';
+      const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' }[role] || 'Agente GCM';
+      document.getElementById('welcomeTitle').textContent = `Bem-vindo, ${nomeDisplay}`;
+      document.getElementById('dataHoje').textContent =
+        roleLabel + ' · ' + agora.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+      // Para agentes, mostra ranking resumido em vez do completo
+      if (role === 'agente') {
+        document.getElementById('rankingAgenteCard').style.display = '';
+      }
 
       const hoje      = agora.toISOString().slice(0, 10);
-      const mesAtual  = hoje.slice(0, 7);
-      const seteDias  = new Date(agora); seteDias.setDate(agora.getDate() - 6);
-      const seteDiasStr = seteDias.toISOString().slice(0, 10);
-
       document.getElementById('statHojeData').textContent =
         agora.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
       document.getElementById('statMesLabel').textContent =
         agora.toLocaleDateString('pt-BR', { month: 'long' });
 
-      // BOs — estatísticas globais da instituição
+      // BOs — estatísticas globais
       try {
         const res = await fetch(`${API_BASE_URL}/api/bo/stats`, { credentials: 'include' });
         if (res.ok) {
@@ -321,49 +500,68 @@
           document.getElementById('statMes').textContent    = s.mes;
 
           const max = s.ranking[0]?.[1] || 1;
-          const el  = document.getElementById('rankingTipificacoes');
-          if (!s.ranking.length) {
-            el.innerHTML = '<div class="ranking-vazio">Nenhuma ocorrência nos últimos 30 dias.</div>';
-          } else {
-            el.innerHTML = s.ranking.map(([tip, n], i) => `
-              <div class="ranking-row">
-                <span class="ranking-pos">${i + 1}º</span>
-                <span class="ranking-label">${tip}</span>
-                <div class="ranking-bar-wrap">
-                  <div class="ranking-bar" style="width:${Math.round((n/max)*100)}%"></div>
-                </div>
-                <span class="ranking-count">${n}</span>
-              </div>`).join('');
-          }
+          const rankHTML = s.ranking.length
+            ? s.ranking.map(([tip, n], i) => `
+                <div class="ranking-row">
+                  <span class="ranking-pos">${i + 1}º</span>
+                  <span class="ranking-label">${tip}</span>
+                  <div class="ranking-bar-wrap">
+                    <div class="ranking-bar" style="width:${Math.round((n/max)*100)}%"></div>
+                  </div>
+                  <span class="ranking-count">${n}</span>
+                </div>`).join('')
+            : '<div class="ranking-vazio">Nenhuma ocorrência nos últimos 30 dias.</div>';
+
+          const elSup = document.getElementById('rankingTipificacoes');
+          const elAge = document.getElementById('rankingTipificacoesAgente');
+          if (elSup) elSup.innerHTML = rankHTML;
+          if (elAge) elAge.innerHTML = rankHTML;
         }
       } catch {}
 
-      // Relatórios
-      try {
-        const r = await fetch(`${API_BASE_URL}/api/relatorio`, { credentials: 'include' });
-        if (r.ok) document.getElementById('statRelatorios').textContent = (await r.json()).length;
-      } catch { document.getElementById('statRelatorios').textContent = '0'; }
+      // Stats operacionais (carregam para supervisor/admin)
+      if (role === 'supervisor' || role === 'admin') {
+        try {
+          const r = await fetch(`${API_BASE_URL}/api/relatorio`, { credentials: 'include' });
+          if (r.ok) document.getElementById('statRelatorios').textContent = (await r.json()).length;
+        } catch { document.getElementById('statRelatorios').textContent = '0'; }
 
-      // Documentos
-      try {
-        const r = await fetch(`${API_BASE_URL}/api/documentos`, { credentials: 'include' });
-        if (r.ok) document.getElementById('statDocumentos').textContent = (await r.json()).length;
-      } catch { document.getElementById('statDocumentos').textContent = '0'; }
+        try {
+          const r = await fetch(`${API_BASE_URL}/api/documentos`, { credentials: 'include' });
+          if (r.ok) document.getElementById('statDocumentos').textContent = (await r.json()).length;
+        } catch { document.getElementById('statDocumentos').textContent = '0'; }
 
-      // Agentes ativos
-      try {
-        const r = await fetch(`${API_BASE_URL}/api/agentes`, { credentials: 'include' });
-        if (r.ok) {
-          const ag = await r.json();
-          document.getElementById('statAgentes').textContent = ag.filter(a => a.ativo).length;
+        try {
+          const r = await fetch(`${API_BASE_URL}/api/agentes`, { credentials: 'include' });
+          if (r.ok) {
+            const ag = await r.json();
+            document.getElementById('statAgentes').textContent = ag.filter(a => a.ativo).length;
+          }
+        } catch { document.getElementById('statAgentes').textContent = '—'; }
+
+        try {
+          const r = await fetch(`${API_BASE_URL}/api/viatura`, { credentials: 'include' });
+          if (r.ok) document.getElementById('statViaturas').textContent = (await r.json()).length;
+        } catch { document.getElementById('statViaturas').textContent = '—'; }
+      }
+
+      // Stats de usuários (admin)
+      if (role === 'admin') {
+        try {
+          const r = await fetch(`${API_BASE_URL}/api/usuarios`, { credentials: 'include' });
+          if (r.ok) {
+            const users = await r.json();
+            document.getElementById('statUsuariosTotal').textContent  = users.length;
+            document.getElementById('statUsuariosAtivos').textContent = users.filter(u => u.ativo !== false).length;
+            document.getElementById('statAdmins').textContent         = users.filter(u => u.role === 'admin').length;
+            document.getElementById('statInativos').textContent       = users.filter(u => u.ativo === false).length;
+          }
+        } catch {
+          ['statUsuariosTotal','statUsuariosAtivos','statAdmins','statInativos'].forEach(id => {
+            document.getElementById(id).textContent = '—';
+          });
         }
-      } catch { document.getElementById('statAgentes').textContent = '—'; }
-
-      // Controle de viatura
-      try {
-        const r = await fetch(`${API_BASE_URL}/api/viatura`, { credentials: 'include' });
-        if (r.ok) document.getElementById('statViaturas').textContent = (await r.json()).length;
-      } catch { document.getElementById('statViaturas').textContent = '—'; }
+      }
 
       // Publicações em destaque
       try {
@@ -378,25 +576,33 @@
             const data = new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
             return `
             <div class="pub-item">
-              <div class="pub-icon ${icon.cls}">${icon.emoji}</div>
+              <div class="pub-icon ${icon.cls}">${icon.svg}</div>
               <div class="pub-info">
                 <div class="pub-titulo" title="${d.titulo}">${d.titulo}</div>
                 <div class="pub-meta">${data} · ${d.publicado_por}</div>
               </div>
               <span class="pub-badge">${d.tipo}</span>
-              <button class="pub-baixar" onclick="baixarDoc(${d.id}, '${d.arquivo_nome}')">⬇ Baixar</button>
+              <button class="pub-baixar" onclick="baixarDoc(${d.id}, '${d.arquivo_nome}')">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v10M6 9l4 4 4-4"/><path d="M4 17h12"/></svg>
+                Baixar
+              </button>
             </div>`;
           }).join('');
         }
       } catch {}
     })();
 
+    const SVG_PDF = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M7 13h2c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1H7v4"/></svg>`;
+    const SVG_DOC = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M7 11h6M7 14h4"/></svg>`;
+    const SVG_IMG = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="1.5"/><circle cx="7.5" cy="8.5" r="1.5"/><path d="M3 14l4-4 3 3 2-2 5 5"/></svg>`;
+    const SVG_FILE= `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/></svg>`;
+
     function iconeDoc(mime, nome) {
       if (!mime && nome) mime = nome.endsWith('.pdf') ? 'application/pdf' : '';
-      if (mime?.includes('pdf'))   return { cls: 'icon-pdf',     emoji: '📄' };
-      if (mime?.includes('image')) return { cls: 'icon-img',     emoji: '🖼️' };
-      if (mime?.includes('word') || nome?.match(/\.docx?$/i)) return { cls: 'icon-doc', emoji: '📝' };
-      return { cls: 'icon-default', emoji: '📎' };
+      if (mime?.includes('pdf'))   return { cls: 'icon-pdf',     svg: SVG_PDF };
+      if (mime?.includes('image')) return { cls: 'icon-img',     svg: SVG_IMG };
+      if (mime?.includes('word') || nome?.match(/\.docx?$/i)) return { cls: 'icon-doc', svg: SVG_DOC };
+      return { cls: 'icon-default', svg: SVG_FILE };
     }
 
     async function baixarDoc(id, nome) {
