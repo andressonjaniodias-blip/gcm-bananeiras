@@ -47,10 +47,19 @@
   <main class="dashboard">
 
     <!-- Abas: Criar / Histórico -->
-    <nav class="tabs" style="margin-bottom:20px;">
-      <button class="tab-btn active" onclick="showRelTab('criar')">Criar Relatório</button>
-      <button class="tab-btn" onclick="showRelTab('historico')">Histórico</button>
-    </nav>
+    <div class="tabs-scroll-wrap">
+      <nav class="tabs">
+        <button class="tab-btn active" onclick="showRelTab('criar')">Criar Relatório</button>
+        <button class="tab-btn" onclick="showRelTab('historico')">Histórico</button>
+      </nav>
+    </div>
+
+    <!-- Navegação mobile entre abas (oculta no desktop) -->
+    <div class="mobile-tab-nav" id="mobileRelNav">
+      <button class="mobile-nav-btn" id="relBtnAnterior" onclick="navRelTab(-1)" style="visibility:hidden">← Anterior</button>
+      <span class="mobile-nav-counter" id="relNavCounter">1 / 2</span>
+      <button class="mobile-nav-btn" id="relBtnProximo" onclick="navRelTab(1)">Próxima →</button>
+    </div>
 
     <!-- CRIAR -->
     <section id="criar" class="tab-content">
@@ -247,11 +256,34 @@
       carregarRelatorios();
     });
 
+    const REL_TABS = ['criar', 'historico'];
+    const REL_LABELS = ['Criar Relatório', 'Histórico'];
+    let relTabIdx = 0;
+
+    function _updateRelMobileNav() {
+      const counter = document.getElementById('relNavCounter');
+      const btnAnt  = document.getElementById('relBtnAnterior');
+      const btnProx = document.getElementById('relBtnProximo');
+      if (counter) counter.textContent = `${relTabIdx + 1} / ${REL_TABS.length}`;
+      if (btnAnt)  btnAnt.style.visibility  = relTabIdx === 0 ? 'hidden' : 'visible';
+      if (btnProx) btnProx.style.visibility = relTabIdx === REL_TABS.length - 1 ? 'hidden' : 'visible';
+    }
+
+    window.navRelTab = async function(dir) {
+      const next = relTabIdx + dir;
+      if (next < 0 || next >= REL_TABS.length) return;
+      relTabIdx = next;
+      await showRelTab(REL_TABS[relTabIdx]);
+    };
+
     async function showRelTab(id) {
       document.querySelectorAll('#criar, #historico').forEach(s => s.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(id).classList.remove('hidden');
       event?.target?.classList.add('active');
+      relTabIdx = REL_TABS.indexOf(id);
+      if (relTabIdx < 0) relTabIdx = 0;
+      _updateRelMobileNav();
       if (id === 'historico') {
         await carregarRelatorios();
         renderizarRelatorios(todosRelatorios);
