@@ -406,24 +406,30 @@ body {
 .tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: clamp(16px, 2vw, 22px);
-  padding-bottom: 10px;
+  gap: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
   border-bottom: 2px solid var(--color-border);
+  align-items: flex-end;
 }
 
 .tabs button,
 .tabs .tab-btn {
-  padding: 8px clamp(10px, 1.5vw, 16px);
+  position: relative;
+  padding: 9px clamp(12px, 1.6vw, 20px);
   background: var(--tab-inactive-bg);
   color: var(--tab-inactive-text);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-border);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
   cursor: pointer;
   font-size: clamp(0.78rem, 1.1vw, 0.9rem);
   font-weight: 600;
   white-space: nowrap;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+  margin-right: 4px;
+  bottom: -2px;
+  line-height: 1.4;
 }
 
 .tabs button:hover,
@@ -431,6 +437,7 @@ body {
   background: var(--color-primary);
   color: #fff;
   border-color: var(--color-primary);
+  z-index: 1;
 }
 
 .tabs button.active,
@@ -438,6 +445,9 @@ body {
   background: var(--tab-active-bg);
   color: var(--tab-active-text);
   border-color: var(--tab-active-bg);
+  border-bottom: 2px solid var(--tab-active-bg);
+  z-index: 2;
+  bottom: -2px;
 }
 
 .tab-content {
