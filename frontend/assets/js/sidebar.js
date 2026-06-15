@@ -57,8 +57,8 @@
       </div>
       <nav class="sb-nav">${navHTML}</nav>
       <div class="sb-footer">
-        <button class="sb-btn-tema" id="sb-btn-tema" onclick="(function(){const themes=['gov-modern','dark-command'];const cur=document.documentElement.getAttribute('data-theme')||'gov-modern';const next=themes[(themes.indexOf(cur)+1)%themes.length];document.documentElement.setAttribute('data-theme',next);localStorage.setItem('gcm-tema',next);const btn=document.getElementById('sb-btn-tema');if(btn){btn.innerHTML=next==='dark-command'?'☀️ Tema Claro':'🌙 Tema Escuro';}})()" title="Alternar tema">
-          🌙 Tema Escuro
+        <button class="sb-btn-tema" id="sb-btn-tema" onclick="(function(){const themes=['gov-modern','dark-command','google-material'];const labels={'gov-modern':'🏛️ Gov Modern','dark-command':'🌙 Dark Command','google-material':'🎨 Google Material'};const cur=document.documentElement.getAttribute('data-theme')||'gov-modern';const next=themes[(themes.indexOf(cur)+1)%themes.length];document.documentElement.setAttribute('data-theme',next);localStorage.setItem('gcm-tema',next);const btn=document.getElementById('sb-btn-tema');if(btn){const after=themes[(themes.indexOf(next)+1)%themes.length];btn.innerHTML=labels[after];}})()" title="Alternar tema">
+          🌙 Dark Command
         </button>
         <button class="sb-btn-sair" onclick="logout()">Sair do Sistema</button>
       </div>
@@ -107,7 +107,12 @@
     // Inicializa label do botão de tema conforme tema salvo
     const temaAtual = localStorage.getItem('gcm-tema') || 'gov-modern';
     const btnTema = document.getElementById('sb-btn-tema');
-    if (btnTema) btnTema.innerHTML = temaAtual === 'dark-command' ? '☀️ Tema Claro' : '🌙 Tema Escuro';
+    if (btnTema) {
+      const _themes = ['gov-modern','dark-command','google-material'];
+      const _labels = {'gov-modern':'🏛️ Gov Modern','dark-command':'🌙 Dark Command','google-material':'🎨 Google Material'};
+      const _next = _themes[(_themes.indexOf(temaAtual) + 1) % _themes.length];
+      btnTema.innerHTML = _labels[_next];
+    }
 
     // Ajusta --header-h com a altura real do cabeçalho
     function syncHeaderHeight() {
