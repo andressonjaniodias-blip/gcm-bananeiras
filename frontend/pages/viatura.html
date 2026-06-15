@@ -200,12 +200,15 @@
       carregarViatura();
     });
 
-    function showViatTab(id) {
+    async function showViatTab(id) {
       document.querySelectorAll('#registrar, #historico').forEach(s => s.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(id).classList.remove('hidden');
       event?.target?.classList.add('active');
-      if (id === 'historico') renderizarViatura(todosRegistros);
+      if (id === 'historico') {
+        await carregarViatura();
+        renderizarViatura(todosRegistros);
+      }
     }
 
     function setTipo(tipo, btn) {
