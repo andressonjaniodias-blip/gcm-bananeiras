@@ -33,26 +33,6 @@
     }
     .dz-over { border-color:var(--color-primary) !important; background:var(--color-primary-light) !important; }
 
-    /* Modal PDF */
-    #modal-pdf-opts {
-      display:none; position:fixed; inset:0; z-index:9999;
-      background:rgba(0,0,0,0.55); align-items:center; justify-content:center;
-    }
-    #modal-pdf-opts.show { display:flex; }
-    #modal-pdf-opts .mpo-card {
-      background:#fff; border-radius:12px; padding:30px 28px;
-      max-width:380px; width:90%; box-shadow:0 16px 48px rgba(0,0,0,0.3);
-    }
-    #modal-pdf-opts .mpo-title { font-size:1rem; font-weight:800; color:#1E3A5F; margin-bottom:8px; }
-    #modal-pdf-opts .mpo-msg   { font-size:0.87rem; color:#6B7280; margin-bottom:20px; }
-    #modal-pdf-opts .mpo-btns  { display:flex; gap:10px; flex-wrap:wrap; }
-    #modal-pdf-opts .mpo-btn   {
-      flex:1; padding:11px; border:none; border-radius:8px;
-      font-size:0.92rem; font-weight:700; cursor:pointer;
-    }
-    #modal-pdf-opts .mpo-btn-sim  { background:#1E3A5F; color:#fff; }
-    #modal-pdf-opts .mpo-btn-nao  { background:#e5e7eb; color:#374151; }
-    #modal-pdf-opts .mpo-btn:hover { opacity:0.88; }
   </style>
 </head>
 <body>
@@ -259,14 +239,41 @@
     <p style="font-size:0.8rem;color:var(--color-hint);text-align:center;margin-top:8px;">* Campos obrigatórios</p>
   </main>
 
-  <!-- Modal opções PDF -->
-  <div id="modal-pdf-opts">
-    <div class="mpo-card">
-      <div class="mpo-title">📄 Exportar PDF</div>
-      <div class="mpo-msg">Deseja incluir os anexos nas páginas finais do documento?</div>
-      <div class="mpo-btns">
-        <button class="mpo-btn mpo-btn-sim" onclick="confirmarPdfBO(true)">✔ Sim, incluir anexos</button>
-        <button class="mpo-btn mpo-btn-nao" onclick="confirmarPdfBO(false)">Não incluir</button>
+
+  <!-- Modal de conclusão / compartilhar BO -->
+  <div id="modal-bo-concluido" style="
+    display:none; position:fixed; inset:0; z-index:10000;
+    background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
+    <div style="
+      background:#fff; border-radius:14px; padding:32px 28px;
+      max-width:420px; width:92%; box-shadow:0 20px 60px rgba(0,0,0,0.35);
+      text-align:center;">
+      <div style="font-size:2.8rem; margin-bottom:10px;">✅</div>
+      <div style="font-size:1.1rem; font-weight:800; color:#1E3A5F; margin-bottom:6px;">BO Finalizado com Sucesso!</div>
+      <div style="font-size:0.88rem; color:#6B7280; margin-bottom:4px;">Número registrado:</div>
+      <div id="modal-bo-numero" style="font-size:1.3rem; font-weight:800; color:#059669; margin-bottom:22px; letter-spacing:0.04em;"></div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button onclick="modalBOBaixarPDF()" style="
+          background:#1E3A5F; color:#fff; border:none; border-radius:8px;
+          padding:12px; font-size:0.95rem; font-weight:700; cursor:pointer; width:100%;">
+          📄 Baixar PDF
+        </button>
+        <button onclick="modalBOCompartilhar()" style="
+          background:#25D366; color:#fff; border:none; border-radius:8px;
+          padding:12px; font-size:0.95rem; font-weight:700; cursor:pointer; width:100%;">
+          📤 Compartilhar
+        </button>
+        <button onclick="modalBOHistorico()" style="
+          background:#e5e7eb; color:#374151; border:none; border-radius:8px;
+          padding:12px; font-size:0.95rem; font-weight:700; cursor:pointer; width:100%;">
+          📋 Ver Histórico de BOs
+        </button>
+        <button onclick="modalBONovo()" style="
+          background:transparent; color:#6B7280; border:1px solid #d1d5db; border-radius:8px;
+          padding:10px; font-size:0.88rem; font-weight:600; cursor:pointer; width:100%;">
+          + Criar Novo BO
+        </button>
       </div>
     </div>
   </div>
