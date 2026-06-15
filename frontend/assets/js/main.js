@@ -39,6 +39,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     adicionarSuspeito();
     adicionarObjeto();
     iniciarAutosave();
+    // Move modais para o body para evitar clipping pelo overflow:hidden do #app-shell
+    ['modal-bo-concluido', 'modal-pdf-opts'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) document.body.appendChild(el);
+    });
   }
 
   // Restaurar rascunho
@@ -74,6 +79,7 @@ function _renderMobileNav() {
   const visible = document.querySelector('.tab-content:not(.hidden)');
   if (!visible) return;
   const idx = TAB_ORDER.indexOf(visible.id);
+  if (idx === -1) return;
   const nav = document.createElement('div');
   nav.className = 'mobile-tab-nav';
   if (idx > 0) {
@@ -335,12 +341,14 @@ async function finalizarBO() {
     if (response.ok) {
       const result = await response.json();
       localStorage.removeItem('boTemp');
-      // Enviar anexos vinculados ao BO recém-criado
       if (_anexosBO.length) {
         await enviarAnexosBO(result.id);
       }
-      alert(`BO finalizado com sucesso!\nNúmero: ${result.numero}`);
-      window.location.href = '/pages/consulta.html';
+      _boIdAtual = result.id;
+      _pdfBOId   = result.id;
+      document.getElementById('modal-bo-numero').textContent = result.numero;
+      const modal = document.getElementById('modal-bo-concluido');
+      if (modal) modal.style.display = 'flex';
     } else {
       const error = await response.json();
       alert(`Erro: ${error.error}`);
@@ -440,17 +448,16 @@ function dzDrop(e, inputId, dzId) {
   }
 }
 
-// Modal de opções de PDF para BO
+// Download de PDF do BO — anexos sempre incluídos
 let _pdfBOId = null;
 function abrirModalPdfBO(boId) {
   _pdfBOId = boId;
-  document.getElementById('modal-pdf-opts')?.classList.add('show');
+  confirmarPdfBO();
 }
-async function confirmarPdfBO(comAnexos) {
-  document.getElementById('modal-pdf-opts')?.classList.remove('show');
+async function confirmarPdfBO() {
   if (!_pdfBOId) return;
   try {
-    const res = await fetch(`${API_BASE_URL}/api/bo/${_pdfBOId}/pdf?anexos=${comAnexos}`, { credentials: 'include' });
+    const res = await fetch(`${API_BASE_URL}/api/bo/${_pdfBOId}/pdf`, { credentials: 'include' });
     if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
@@ -458,6 +465,41 @@ async function confirmarPdfBO(comAnexos) {
     a.href = url; a.download = `bo_${_pdfBOId}.pdf`; a.click();
     URL.revokeObjectURL(url);
   } catch { alert('Erro ao exportar PDF.'); }
+}
+
+// ── Modal de conclusão do BO ─────────────────────────────────────────────────
+function _fecharModalBOConcluido() {
+  const modal = document.getElementById('modal-bo-concluido');
+  if (modal) modal.style.display = 'none';
+}
+
+function modalBOBaixarPDF() {
+  _fecharModalBOConcluido();
+  confirmarPdfBO();
+}
+
+async function modalBOCompartilhar() {
+  const numero = document.getElementById('modal-bo-numero')?.textContent || '';
+  const texto  = `Boletim de Ocorrência registrado pela GCM Bananeiras\nNúmero: ${numero}`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: `BO GCM - ${numero}`, text: texto });
+      return;
+    } catch {}
+  }
+
+  // Fallback: WhatsApp
+  const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+  window.open(url, '_blank', 'noopener');
+}
+
+function modalBOHistorico() {
+  window.location.href = '/pages/consulta.html';
+}
+
+function modalBONovo() {
+  window.location.reload();
 }
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
