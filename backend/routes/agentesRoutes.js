@@ -3,6 +3,7 @@ const router   = express.Router();
 const db       = require('../config/db');
 const { verificarToken, verificarAdmin } = require('../middleware/auth');
 const exigirAdmin = verificarAdmin;
+const erroServidor = require('../utils/erroServidor');
 
 const CAMPOS_AGENTE = `
   id, nome, matricula, cargo, usuario, ativo, criado_em, atualizado_em,
@@ -17,7 +18,7 @@ router.get('/', verificarToken, async (req, res) => {
       `SELECT ${CAMPOS_AGENTE} FROM agentes ORDER BY nome ASC`
     );
     res.json(rows);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { erroServidor(res, err); }
 });
 
 // Criar agente
@@ -50,7 +51,7 @@ router.post('/', verificarToken, exigirAdmin, async (req, res) => {
       ]
     );
     res.status(201).json(rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { erroServidor(res, err); }
 });
 
 // Atualizar agente (admin)
@@ -86,7 +87,7 @@ router.put('/:id', verificarToken, exigirAdmin, async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Agente não encontrado.' });
     res.json(rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { erroServidor(res, err); }
 });
 
 // Auto-edição de contato — qualquer usuário autenticado atualiza os próprios dados mutáveis
@@ -110,7 +111,7 @@ router.patch('/meu-contato', verificarToken, async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Agente vinculado ao usuário não encontrado.' });
     res.json(rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { erroServidor(res, err); }
 });
 
 // Salvar foto de perfil (próprio usuário)
@@ -126,7 +127,7 @@ router.patch('/minha-foto', verificarToken, async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Agente não encontrado.' });
     res.json({ ok: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { erroServidor(res, err); }
 });
 
 // Remover agente
@@ -135,7 +136,7 @@ router.delete('/:id', verificarToken, exigirAdmin, async (req, res) => {
     const { rows } = await db.query(`DELETE FROM agentes WHERE id=$1 RETURNING id`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Agente não encontrado.' });
     res.json({ ok: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { erroServidor(res, err); }
 });
 
 module.exports = router;
