@@ -1702,6 +1702,29 @@ body.has-sidebar .header {
   .header-linha-3 { font-size: 0.63rem; }
 
   .header h1 { font-size: 1rem; }
+}
+
+/* Em telas muito estreitas oculta o segundo brasão para aliviar o header */
+@media (max-width: 390px) {
+  :root { --header-h: 72px; }
+
+  .header {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  /* Mantém apenas o primeiro brasão (GCM), oculta o da prefeitura */
+  .header .logo:last-of-type { display: none; }
+
+  .header .logo { height: 40px; }
+
+  .header-linha-1 { font-size: 0.78rem; }
+  .header-linha-2 { font-size: 0.62rem; letter-spacing: 0.1em; }
+  .header-linha-3 { font-size: 0.57rem; }
+
+  #sb-fab {
+    top: calc(var(--header-h, 72px) + 8px);
+  }
 
 
   .dashboard,

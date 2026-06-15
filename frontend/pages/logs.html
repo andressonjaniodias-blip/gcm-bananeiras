@@ -246,9 +246,10 @@
 
     async function carregarLogs() {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/auditoria`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE_URL}/api/auth/auditoria?limit=200`, { credentials: 'include' });
         if (!res.ok) { toast('Sem permissão para acessar os logs.', 'erro'); return; }
-        todosLogs = await res.json();
+        const json = await res.json();
+        todosLogs = json.data || [];
         logsFiltrados = [...todosLogs];
         atualizarStats();
         renderizar();

@@ -133,12 +133,15 @@ exports.statsGlobais = async (req, res) => {
     const limite30  = new Date(); limite30.setDate(limite30.getDate() - 30);
     const lim30Str  = limite30.toISOString().slice(0, 10);
 
+    const amanha = new Date(); amanha.setDate(amanha.getDate() + 1);
+    const amanhaStr = amanha.toISOString().slice(0, 10);
+
     const [{ rows: [{ total }] }, { rows: [{ hoje: qtdHoje }] }, { rows: [{ semana }] }, { rows: [{ mes }] }, { rows: bos30 }] =
       await Promise.all([
         db.query('SELECT COUNT(*) AS total FROM boletins'),
-        db.query("SELECT COUNT(*) AS hoje FROM boletins WHERE data >= $1 AND data < $1::date + interval '1 day'", [hoje]),
+        db.query('SELECT COUNT(*) AS hoje FROM boletins WHERE data >= $1 AND data < $2', [hoje, amanhaStr]),
         db.query('SELECT COUNT(*) AS semana FROM boletins WHERE data >= $1', [seteDiasStr]),
-        db.query("SELECT COUNT(*) AS mes FROM boletins WHERE data >= $1", [mesAtual + '-01']),
+        db.query('SELECT COUNT(*) AS mes FROM boletins WHERE data >= $1', [mesAtual + '-01']),
         db.query('SELECT dados FROM boletins WHERE data >= $1', [lim30Str]),
       ]);
 
