@@ -61,7 +61,48 @@ window.addEventListener('DOMContentLoaded', async () => {
 // ── Navegação de abas ────────────────────────────────────────────────────────
 const TAB_ORDER = ['solicitacao','ocorrencia','vitima','suspeito','relato','anexos','objetos','autoridade'];
 
+function _validarAbaAtual() {
+  const current = document.querySelector('.tab-content:not(.hidden)');
+  if (!current) return true;
+  const invalidos = [...current.querySelectorAll('[required]')].filter(f => !f.value.trim());
+  if (!invalidos.length) return true;
+
+  // Destaca os inválidos e exibe toast
+  invalidos.forEach(f => {
+    f.classList.add('campo-invalido');
+    f.addEventListener('input', () => f.classList.remove('campo-invalido'), { once: true });
+  });
+  invalidos[0].focus({ preventScroll: false });
+  _toastErro('Preencha os campos obrigatórios antes de continuar.');
+  return false;
+}
+
+function _toastErro(msg) {
+  document.getElementById('tab-toast')?.remove();
+  const t = document.createElement('div');
+  t.id = 'tab-toast';
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position:'fixed', bottom:'90px', left:'50%', transform:'translateX(-50%)',
+    background:'#C62828', color:'#fff', padding:'10px 20px',
+    borderRadius:'8px', fontSize:'0.88rem', fontWeight:'600',
+    zIndex:'9999', boxShadow:'0 4px 16px rgba(0,0,0,0.3)',
+    whiteSpace:'nowrap', pointerEvents:'none',
+    animation:'fadeInUp 0.2s ease'
+  });
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
 function showTab(tabId, scroll) {
+  const current = document.querySelector('.tab-content:not(.hidden)');
+  const currentId = current?.id;
+  const currentIdx = TAB_ORDER.indexOf(currentId);
+  const targetIdx  = TAB_ORDER.indexOf(tabId);
+
+  // Bloqueia avanço se aba atual tem campos obrigatórios vazios
+  if (targetIdx > currentIdx && !_validarAbaAtual()) return;
+
   document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   const section = document.getElementById(tabId);
