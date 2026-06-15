@@ -337,9 +337,12 @@
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
   <script>
-    let todosOsBOs = [];
-    let perfilRole = 'agente';
-    let advAberto  = false;
+    let todosOsBOs  = [];
+    let perfilRole  = 'agente';
+    let advAberto   = false;
+    let _paginaAtual = 1;
+    let _totalPaginas = 1;
+    const _LIMIT = 30;
 
     (async () => {
       try {
@@ -358,16 +361,42 @@
       carregarBOs();
     })();
 
-    async function carregarBOs() {
+    async function carregarBOs(pagina = 1, acumular = false) {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/bo`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE_URL}/api/bo?page=${pagina}&limit=${_LIMIT}`, { credentials: 'include' });
         if (res.status === 401) { logout(); return; }
-        todosOsBOs = await res.json();
+        const json = await res.json();
+        const novos = json.data || json; // compatibilidade se servidor ainda retornar array
+        todosOsBOs = acumular ? [...todosOsBOs, ...novos] : novos;
+        _paginaAtual  = json.page  || pagina;
+        _totalPaginas = json.pages || 1;
         filtrar();
+        renderizarPaginacao();
       } catch {
         document.getElementById('listaBOs').innerHTML =
           '<tr><td colspan="7" style="text-align:center;color:var(--color-danger);">Erro ao carregar boletins.</td></tr>';
       }
+    }
+
+    function renderizarPaginacao() {
+      let el = document.getElementById('_paginacao-bos');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = '_paginacao-bos';
+        el.style.cssText = 'display:flex;align-items:center;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap;';
+        document.querySelector('.table-wrapper, table')?.after(el);
+      }
+      if (_totalPaginas <= 1) { el.innerHTML = ''; return; }
+      el.innerHTML = `
+        <button onclick="carregarBOs(${_paginaAtual - 1})"
+          style="padding:6px 14px;border-radius:8px;border:1px solid var(--color-border);background:var(--bg-card);cursor:pointer;"
+          ${_paginaAtual <= 1 ? 'disabled' : ''}>← Anterior</button>
+        <span style="font-size:0.9rem;color:var(--color-text-muted);">
+          Página ${_paginaAtual} de ${_totalPaginas}
+        </span>
+        <button onclick="carregarBOs(${_paginaAtual + 1})"
+          style="padding:6px 14px;border-radius:8px;border:1px solid var(--color-border);background:var(--bg-card);cursor:pointer;"
+          ${_paginaAtual >= _totalPaginas ? 'disabled' : ''}>Próxima →</button>`;
     }
 
     function toggleAdv() {
@@ -597,15 +626,15 @@
           fecharModalExcluir();
         } else {
           const data = await res.json().catch(() => ({}));
-          alert(data.error || 'Erro ao excluir o boletim.');
+          showToast(data.error || 'Erro ao excluir o boletim.', 'danger');
         }
-      } catch { alert('Erro de conexão ao tentar excluir.'); }
+      } catch { showToast('Erro de conexão ao tentar excluir.', 'danger'); }
     }
 
     async function baixarPDF(id, numero) {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/bo/${id}/pdf`, { credentials: 'include' }); // anexos sempre incluídos
-        if (!res.ok) { alert('Erro ao gerar PDF.'); return; }
+        const res = await fetch(`${API_BASE_URL}/api/bo/${id}/pdf`, { credentials: 'include' });
+        if (!res.ok) { showToast('Erro ao gerar PDF.', 'danger'); return; }
         const blob = await res.blob();
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
@@ -613,7 +642,7 @@
         a.download = `bo_${numero}.pdf`;
         a.click();
         URL.revokeObjectURL(url);
-      } catch { alert('Erro ao baixar PDF.'); }
+      } catch { showToast('Erro ao baixar PDF.', 'danger'); }
     }
   </script>
 </body>
