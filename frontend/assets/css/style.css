@@ -133,7 +133,9 @@ body {
   width: 100%;
   margin: 0 auto;
   border-radius: clamp(10px, 1.5vw, 18px);
-  overflow: hidden;
+  /* overflow: clip preserva o recorte visual das bordas arredondadas
+     sem criar um scroll container — o que quebraria position: sticky */
+  overflow: clip;
   box-shadow: 0 24px 72px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05);
   background: var(--bg-page);
   min-height: calc(100vh - clamp(16px, 3vw, 40px));
@@ -450,8 +452,15 @@ form textarea:focus {
 }
 
 input:invalid,
-textarea:invalid {
+textarea:invalid,
+.campo-invalido {
   border-color: var(--color-danger) !important;
+  box-shadow: 0 0 0 3px rgba(198,40,40,0.15) !important;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 .campo-group select {
@@ -874,6 +883,140 @@ table button:hover { background: var(--color-primary-hover); }
   padding-top: 14px;
 }
 
+/* ============================================================
+   MSG TOAST — feedback de ação
+   ============================================================ */
+.msg-toast {
+  display: none;
+  padding: 11px 16px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-left: 4px solid;
+}
+.msg-ok   { background: #D1FAE5; color: #065F46; border-color: var(--color-success); }
+.msg-erro { background: #FEE2E2; color: #991B1B; border-color: var(--color-danger); }
+
+/* ============================================================
+   PAGE WRAP — container padrão de páginas internas
+   ============================================================ */
+.page-wrap {
+  width: 92%;
+  margin: 28px auto;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ============================================================
+   CARD — componente padrão de cartão
+   ============================================================ */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 22px 24px;
+  margin-bottom: 22px;
+  border: 1px solid var(--color-border);
+}
+
+.card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ============================================================
+   FIELD — campo de formulário padrão
+   ============================================================ */
+.field label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-label);
+  margin-bottom: 5px;
+  letter-spacing: 0.03em;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-input);
+}
+
+.field input::placeholder { color: var(--color-hint); }
+
+/* ============================================================
+   SECAO-LABEL — separador de seção em formulários
+   ============================================================ */
+.secao-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-label);
+  margin: 18px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--color-border);
+}
+.secao-label:first-child { margin-top: 0; }
+
+/* ============================================================
+   BOTÕES PADRÃO
+   ============================================================ */
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 24px;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--color-primary-hover); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.btn-secondary:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
 /* Relato textarea */
 #relato textarea {
   width: 100%;
@@ -1039,20 +1182,20 @@ table button:hover { background: var(--color-primary-hover); }
   right: 18px;
   width: 44px;
   height: 44px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text, #1A202C);
+  border: 2px solid rgba(0,0,0,0.18);
   font-size: 1.35rem;
   line-height: 1;
   cursor: pointer;
   z-index: 400;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  box-shadow: none;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, transform 0.15s;
+  transition: background 0.2s, border-color 0.2s;
 }
-#sb-fab:hover { background: var(--color-primary-dark, #1a56db); transform: scale(1.08); }
+#sb-fab:hover { background: rgba(0,0,0,0.07); border-color: rgba(0,0,0,0.35); }
 
 /* Botão fechar — oculto no desktop */
 .sb-close-btn {
@@ -1092,6 +1235,14 @@ table button:hover { background: var(--color-primary-hover); }
   flex-shrink: 0;
   border: 2px solid rgba(255,255,255,0.2);
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+
+.sb-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .sb-user-name {
@@ -1119,8 +1270,10 @@ table button:hover { background: var(--color-primary-hover); }
 }
 
 .sb-link {
-  display: block;
-  padding: 11px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
   color: var(--header-text-sub);
   text-decoration: none;
   font-size: 0.855rem;
@@ -1130,6 +1283,27 @@ table button:hover { background: var(--color-primary-hover); }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.sb-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.sb-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sb-link:hover .sb-icon,
+.sb-link.active .sb-icon {
+  opacity: 1;
 }
 
 .sb-link:hover {
@@ -1453,7 +1627,8 @@ body.has-sidebar .header {
 
   /* Mostra botão flutuante e botão de fechar */
   #sb-fab { display: flex; }
-  .sb-close-btn { display: block; }
+  body.sb-open #sb-fab { display: none !important; }
+  .sb-close-btn { display: none !important; }
 }
 
 /* ── Navegação mobile entre abas ─────────────────────────────────────────── */
@@ -1551,9 +1726,9 @@ body.has-sidebar .header {
     left: 10px;
   }
 
-  /* Botão de tema: canto inferior direito */
+  /* Botão de tema: canto inferior direito com folga para não sobrepor botões de ação */
   #theme-switcher {
-    bottom: 18px;
+    bottom: 80px;
     top: auto;
     right: 10px;
   }
