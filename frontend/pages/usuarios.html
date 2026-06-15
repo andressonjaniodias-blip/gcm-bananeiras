@@ -134,7 +134,62 @@
     .btn-salvar:hover { background: var(--color-success-hover); }
     .btn-excluir { background: var(--color-danger); color: #fff; }
     .btn-excluir:hover { background: var(--color-danger-hover); }
-    .acoes-cell { display: flex; gap: 5px; flex-wrap: wrap; }
+    .acoes-cell { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+
+    .btn-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px; border-radius: var(--radius-sm);
+      border: none; cursor: pointer; font-size: 0.85rem;
+      transition: opacity 0.15s, transform 0.1s; flex-shrink: 0;
+    }
+    .btn-icon:hover { opacity: 0.82; transform: scale(1.1); }
+    .btn-icon-editar  { background: #FEF9C3; color: #854D0E; }
+    .btn-icon-excluir { background: #FEE2E2; color: #991B1B; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.45); align-items: center; justify-content: center;
+    }
+    .modal-overlay.aberto { display: flex; }
+    .modal-box {
+      background: var(--bg-card); border-radius: var(--radius);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25); padding: 28px 28px 22px;
+      max-width: 480px; width: 94%;
+    }
+    .modal-box h3 { margin: 0 0 16px; font-size: 1.05rem; color: var(--color-text); }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+    .btn-confirmar-excluir {
+      padding: 9px 22px; background: var(--color-danger); color: #fff;
+      border: none; border-radius: var(--radius-sm); font-weight: 700;
+      cursor: pointer; font-size: 0.9rem;
+    }
+    .btn-confirmar-excluir:hover { opacity: 0.88; }
+    .btn-cancelar-modal {
+      padding: 9px 20px; background: transparent;
+      border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+      color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;
+    }
+    .modal-field { margin-bottom: 12px; }
+    .modal-field label {
+      display: block; font-size: 0.78rem; font-weight: 600;
+      color: var(--color-label); margin-bottom: 5px;
+    }
+    .modal-field input, .modal-field select {
+      width: 100%; padding: 9px 11px; border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm); font-size: 0.9rem;
+      background: var(--color-input-bg); color: var(--color-text);
+      box-sizing: border-box;
+    }
+    .modal-field input:focus, .modal-field select:focus {
+      outline: none; border-color: var(--color-primary); box-shadow: var(--shadow-input);
+    }
+    .modal-secao {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--color-label);
+      margin: 16px 0 10px; padding-bottom: 6px;
+      border-bottom: 1px dashed var(--color-border);
+    }
 
     /* LGPD */
     .lgpd-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 8px; }
@@ -328,13 +383,18 @@
         <div class="row-submit">
           <button type="submit" class="btn-primary">✔ Cadastrar Servidor</button>
           <button type="button" class="btn-secondary" onclick="this.closest('form').reset(); document.getElementById('novoUf').value='PB';">Limpar</button>
+          <button type="button" class="btn-secondary" onclick="fecharFormNovoUsuario()">✕ Cancelar</button>
         </div>
       </form>
     </div>
 
     <!-- Lista de usuários -->
     <div class="card" id="cardListaUsuarios" style="display:none;">
-      <div class="card-title">📋 Servidores Cadastrados</div>
+      <div class="card-title" style="justify-content:space-between;">
+        <span>📋 Servidores Cadastrados</span>
+        <button class="btn-primary" id="btnNovoUsuario" onclick="abrirFormNovoUsuario()"
+                style="padding:6px 16px;font-size:0.85rem;margin:0;">➕ Novo Usuário</button>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -372,9 +432,139 @@
     </div>
   </div>
 
+  <!-- Modal de edição -->
+  <div class="modal-overlay" id="modalEditar">
+    <div class="modal-box" style="max-width:560px;">
+      <h3>✏️ Editar Servidor</h3>
+      <input type="hidden" id="editId">
+      <input type="hidden" id="editAgenteId">
+
+      <p class="modal-secao">🔐 Acesso ao Sistema</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="modal-field">
+          <label>Usuário</label>
+          <input type="text" id="editUsuario" disabled style="opacity:0.6;cursor:not-allowed;">
+        </div>
+        <div class="modal-field">
+          <label>Nova Senha <span style="font-weight:400;color:var(--color-hint)">(deixe em branco para manter)</span></label>
+          <input type="password" id="editSenha" placeholder="Nova senha (mín. 6 caracteres)" minlength="6" autocomplete="new-password">
+        </div>
+      </div>
+
+      <p class="modal-secao">🪪 Identificação</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="modal-field" style="grid-column:1/-1;">
+          <label>Nome Completo</label>
+          <input type="text" id="editNome" maxlength="150">
+        </div>
+        <div class="modal-field">
+          <label>CPF</label>
+          <input type="text" id="editCpf" maxlength="14" oninput="mascaraCpf(this)">
+        </div>
+        <div class="modal-field">
+          <label>RG</label>
+          <input type="text" id="editRg" maxlength="20">
+        </div>
+        <div class="modal-field">
+          <label>Data de Nascimento</label>
+          <input type="date" id="editNascimento">
+        </div>
+        <div class="modal-field">
+          <label>Sexo</label>
+          <select id="editSexo">
+            <option value="">Não informado</option>
+            <option value="M">Masculino</option>
+            <option value="F">Feminino</option>
+            <option value="O">Outro</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="modal-secao">🏛️ Dados Funcionais</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div class="modal-field">
+          <label>Matrícula</label>
+          <input type="text" id="editMatricula" maxlength="30">
+        </div>
+        <div class="modal-field">
+          <label>Cargo / Função</label>
+          <input type="text" id="editCargo" maxlength="100">
+        </div>
+        <div class="modal-field">
+          <label>Lotação / Setor</label>
+          <input type="text" id="editLotacao" maxlength="100">
+        </div>
+        <div class="modal-field">
+          <label>Turno</label>
+          <select id="editTurno">
+            <option value="">Não definido</option>
+            <option value="Matutino">Matutino</option>
+            <option value="Vespertino">Vespertino</option>
+            <option value="Noturno">Noturno</option>
+            <option value="Integral">Integral</option>
+            <option value="Escala 12x36">Escala 12×36</option>
+            <option value="Escala 24x72">Escala 24×72</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label>Data de Admissão</label>
+          <input type="date" id="editAdmissao">
+        </div>
+        <div class="modal-field">
+          <label>Status</label>
+          <select id="editAtivo">
+            <option value="true">Ativo</option>
+            <option value="false">Inativo</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="modal-secao">📞 Contato</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="modal-field">
+          <label>E-mail</label>
+          <input type="email" id="editEmail" maxlength="150">
+        </div>
+        <div class="modal-field">
+          <label>Telefone / WhatsApp</label>
+          <input type="text" id="editTelefone" maxlength="20" oninput="mascaraTelefone(this)">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-cancelar-modal" onclick="fecharModalEditar()">Cancelar</button>
+        <button class="btn-primary" onclick="salvarEdicao()" style="padding:9px 24px;">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmação de exclusão -->
+  <div class="modal-overlay" id="modalExcluir">
+    <div class="modal-box" style="text-align:center;">
+      <h3>⚠️ Remover Usuário</h3>
+      <p id="modalExcluirTexto" style="font-size:0.9rem;color:var(--color-text-muted);margin:0 0 4px;"></p>
+      <p style="font-size:0.82rem;color:var(--color-hint);margin:0 0 8px;">Esta ação não pode ser desfeita.</p>
+      <div class="modal-actions" style="justify-content:center;">
+        <button class="btn-cancelar-modal" onclick="fecharModalExcluir()">Cancelar</button>
+        <button class="btn-confirmar-excluir" onclick="confirmarExclusao()">Remover</button>
+      </div>
+    </div>
+  </div>
+
   <script src="../assets/js/config.js"></script>
   <script>
     let meUsuario = '';
+
+    function abrirFormNovoUsuario() {
+      document.getElementById('cardNovoUsuario').style.display = '';
+      document.getElementById('btnNovoUsuario').style.display  = 'none';
+      document.getElementById('cardNovoUsuario').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function fecharFormNovoUsuario() {
+      document.getElementById('cardNovoUsuario').style.display = 'none';
+      document.getElementById('btnNovoUsuario').style.display  = '';
+    }
 
     (async () => {
       try {
@@ -383,7 +573,6 @@
         const perfil = await res.json();
         meUsuario = perfil.usuario;
         if (perfil.role !== 'admin') { window.location.href = '/pages/home.html'; return; }
-        document.getElementById('cardNovoUsuario').style.display = '';
         document.getElementById('cardListaUsuarios').style.display = '';
         document.getElementById('cardRetencao').style.display = '';
         carregarUsuarios();
@@ -433,7 +622,8 @@
                 <div class="acoes-cell">
                   ${sou ? '<span style="color:var(--color-hint);font-size:0.82rem;">—</span>' : `
                     <button class="btn-acao btn-salvar" onclick="alterarRole(${u.id})">Salvar</button>
-                    <button class="btn-acao btn-excluir" onclick="excluirUsuario(${u.id},'${u.usuario}')">Remover</button>
+                    <button class="btn-icon btn-icon-editar" title="Editar servidor" onclick="abrirModalEditar(${u.id}, '${u.usuario}')">✏️</button>
+                    <button class="btn-icon btn-icon-excluir" title="Remover usuário" onclick="abrirModalExcluir(${u.id}, '${u.usuario}')">🗑️</button>
                   `}
                 </div>
               </td>
@@ -494,7 +684,131 @@
         toast('Servidor cadastrado com sucesso!', 'ok');
         e.target.reset();
         document.getElementById('novoUf').value = 'PB';
+        fecharFormNovoUsuario();
         carregarUsuarios();
+      } catch { toast('Erro de conexão.', 'erro'); }
+    }
+
+    let _excluirId = null;
+
+    async function abrirModalEditar(userId, usuario) {
+      document.getElementById('editId').value      = userId;
+      document.getElementById('editUsuario').value = usuario;
+      document.getElementById('editSenha').value   = '';
+
+      // Limpa campos do agente
+      ['editNome','editCpf','editRg','editNascimento','editMatricula',
+       'editCargo','editLotacao','editAdmissao','editEmail','editTelefone'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('editSexo').value  = '';
+      document.getElementById('editTurno').value = '';
+      document.getElementById('editAtivo').value = 'true';
+      document.getElementById('editAgenteId').value = '';
+
+      // Carrega dados do agente vinculado
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/agentes`, { credentials: 'include' });
+        if (res.ok) {
+          const agentes = await res.json();
+          const ag = agentes.find(a => a.usuario === usuario);
+          if (ag) {
+            document.getElementById('editAgenteId').value  = ag.id;
+            document.getElementById('editNome').value      = ag.nome || '';
+            document.getElementById('editCpf').value       = ag.cpf || '';
+            document.getElementById('editRg').value        = ag.rg || '';
+            document.getElementById('editNascimento').value= ag.data_nascimento ? ag.data_nascimento.slice(0,10) : '';
+            document.getElementById('editSexo').value      = ag.sexo || '';
+            document.getElementById('editMatricula').value = ag.matricula || '';
+            document.getElementById('editCargo').value     = ag.cargo || '';
+            document.getElementById('editLotacao').value   = ag.lotacao || '';
+            document.getElementById('editTurno').value     = ag.turno || '';
+            document.getElementById('editAdmissao').value  = ag.data_admissao ? ag.data_admissao.slice(0,10) : '';
+            document.getElementById('editAtivo').value     = ag.ativo ? 'true' : 'false';
+            document.getElementById('editEmail').value     = ag.email || '';
+            document.getElementById('editTelefone').value  = ag.telefone || '';
+          }
+        }
+      } catch {}
+
+      document.getElementById('modalEditar').classList.add('aberto');
+    }
+
+    function fecharModalEditar() {
+      document.getElementById('modalEditar').classList.remove('aberto');
+    }
+
+    async function salvarEdicao() {
+      const userId    = document.getElementById('editId').value;
+      const agenteId  = document.getElementById('editAgenteId').value;
+      const novaSenha = document.getElementById('editSenha').value.trim();
+
+      // Atualiza senha se preenchida
+      if (novaSenha) {
+        if (novaSenha.length < 6) { toast('A senha deve ter pelo menos 6 caracteres.', 'erro'); return; }
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${userId}/senha`, {
+            method: 'PATCH', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ senha: novaSenha })
+          });
+          if (!res.ok) { const d = await res.json(); toast(d.error || 'Erro ao alterar senha.', 'erro'); return; }
+        } catch { toast('Erro de conexão.', 'erro'); return; }
+      }
+
+      // Atualiza dados do agente
+      if (agenteId) {
+        const payload = {
+          nome:             document.getElementById('editNome').value.trim() || null,
+          cpf:              document.getElementById('editCpf').value.trim() || null,
+          rg:               document.getElementById('editRg').value.trim() || null,
+          data_nascimento:  document.getElementById('editNascimento').value || null,
+          sexo:             document.getElementById('editSexo').value || null,
+          matricula:        document.getElementById('editMatricula').value.trim() || null,
+          cargo:            document.getElementById('editCargo').value.trim() || null,
+          lotacao:          document.getElementById('editLotacao').value.trim() || null,
+          turno:            document.getElementById('editTurno').value || null,
+          data_admissao:    document.getElementById('editAdmissao').value || null,
+          ativo:            document.getElementById('editAtivo').value === 'true',
+          email:            document.getElementById('editEmail').value.trim() || null,
+          telefone:         document.getElementById('editTelefone').value.trim() || null,
+        };
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/agentes/${agenteId}`, {
+            method: 'PUT', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) { const d = await res.json(); toast(d.error || 'Erro ao salvar dados.', 'erro'); return; }
+        } catch { toast('Erro de conexão.', 'erro'); return; }
+      }
+
+      toast('Servidor atualizado com sucesso!', 'ok');
+      fecharModalEditar();
+      carregarUsuarios();
+    }
+
+    function abrirModalExcluir(id, usuario) {
+      _excluirId = id;
+      document.getElementById('modalExcluirTexto').textContent =
+        `Deseja remover o usuário "${usuario}" permanentemente?`;
+      document.getElementById('modalExcluir').classList.add('aberto');
+    }
+
+    function fecharModalExcluir() {
+      document.getElementById('modalExcluir').classList.remove('aberto');
+      _excluirId = null;
+    }
+
+    async function confirmarExclusao() {
+      if (!_excluirId) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${_excluirId}`, {
+          method: 'DELETE', credentials: 'include'
+        });
+        const data = await res.json();
+        if (res.ok) { toast('Usuário removido.', 'ok'); fecharModalExcluir(); carregarUsuarios(); }
+        else toast(data.error || 'Erro ao remover.', 'erro');
       } catch { toast('Erro de conexão.', 'erro'); }
     }
 
@@ -514,17 +828,6 @@
       } catch { toast('Erro de conexão.', 'erro'); }
     }
 
-    async function excluirUsuario(id, nome) {
-      if (!confirm(`Remover o usuário "${nome}"? Esta ação não pode ser desfeita.`)) return;
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${id}`, {
-          method: 'DELETE', credentials: 'include'
-        });
-        const data = await res.json();
-        if (res.ok) { toast('Usuário removido.', 'ok'); carregarUsuarios(); }
-        else toast(data.error || 'Erro ao remover.', 'erro');
-      } catch { toast('Erro de conexão.', 'erro'); }
-    }
 
     async function carregarRetencao() {
       try {
