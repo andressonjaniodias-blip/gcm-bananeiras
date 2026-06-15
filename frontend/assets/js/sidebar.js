@@ -47,25 +47,44 @@
       </div>
     `;
 
-    // Overlay para fechar ao clicar fora
+    // Overlay para fechar ao clicar fora (permanece no body, fora do shell)
     const overlay = document.createElement('div');
     overlay.id = 'sb-overlay';
     overlay.onclick = closeSidebar;
 
-    // Botão flutuante para abrir o menu
+    // Botão flutuante para abrir o menu (permanece no body)
     const fab = document.createElement('button');
     fab.id = 'sb-fab';
     fab.title = 'Menu';
     fab.innerHTML = '☰';
     fab.onclick = toggleSidebar;
 
+    // app-content recebe todo o conteúdo atual do body
     const wrapper = document.createElement('div');
     wrapper.id = 'app-content';
     Array.from(document.body.children).forEach(c => wrapper.appendChild(c));
-    document.body.appendChild(aside);
+
+    // Extrai o header do app-content para colocá-lo acima do shell-body
+    const headerEl = wrapper.querySelector('header.header, .header');
+
+    // shell-body agrupa sidebar + app-content lado a lado
+    const shellBody = document.createElement('div');
+    shellBody.id = 'shell-body';
+    shellBody.appendChild(aside);
+    shellBody.appendChild(wrapper);
+
+    // app-shell é o card flutuante principal
+    const appShell = document.createElement('div');
+    appShell.id = 'app-shell';
+    if (headerEl) {
+      wrapper.removeChild(headerEl);
+      appShell.appendChild(headerEl);
+    }
+    appShell.appendChild(shellBody);
+
+    document.body.appendChild(appShell);
     document.body.appendChild(overlay);
     document.body.appendChild(fab);
-    document.body.appendChild(wrapper);
     document.body.classList.add('has-sidebar');
 
     // Ajusta --header-h com a altura real do cabeçalho
