@@ -6,7 +6,7 @@
 :root,
 [data-theme="gov-modern"] {
   --header-h: 110px;
-  --bg-page:         #F0F4FB;
+  --bg-page:         #EEF2FA;
   --bg-card:         #FFFFFF;
   --bg-header-from:  #0D1B2A;
   --bg-header-to:    #1E3A5F;
@@ -17,6 +17,10 @@
   --color-primary:       #1565C0;
   --color-primary-hover: #0D47A1;
   --color-primary-light: #E3EFFB;
+
+  --color-accent:        #F59E0B;
+  --color-accent-hover:  #D97706;
+  --color-accent-light:  #FEF3C7;
 
   --color-success:       #1a7a1a;
   --color-success-hover: #155e15;
@@ -40,10 +44,10 @@
   --tab-inactive-bg:  #E3EFFB;
   --tab-inactive-text:#1565C0;
 
-  --shadow-card:  0 2px 10px rgba(0,0,0,0.07);
+  --shadow-card:  0 4px 18px rgba(0,0,0,0.09);
   --shadow-input: 0 0 0 3px rgba(21,101,192,0.15);
-  --radius:       10px;
-  --radius-sm:    6px;
+  --radius:       12px;
+  --radius-sm:    7px;
   --radius-pill:  20px;
 }
 
@@ -60,6 +64,10 @@
   --color-primary:       #3B82F6;
   --color-primary-hover: #2563EB;
   --color-primary-light: #1E3A5F;
+
+  --color-accent:        #F59E0B;
+  --color-accent-hover:  #D97706;
+  --color-accent-light:  #1C1407;
 
   --color-success:       #16A34A;
   --color-success-hover: #15803D;
@@ -83,10 +91,10 @@
   --tab-inactive-bg:  #162032;
   --tab-inactive-text:#93C5FD;
 
-  --shadow-card:  0 4px 20px rgba(0,0,0,0.4);
+  --shadow-card:  0 4px 24px rgba(0,0,0,0.45);
   --shadow-input: 0 0 0 3px rgba(59,130,246,0.25);
-  --radius:       10px;
-  --radius-sm:    6px;
+  --radius:       12px;
+  --radius-sm:    7px;
   --radius-pill:  20px;
 }
 
@@ -1018,17 +1026,19 @@ body.has-sidebar {
 }
 
 .sb-avatar {
-  width: 34px;
-  height: 34px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  background: var(--color-primary);
+  background: var(--color-accent);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-weight: 800;
+  font-size: 1.1rem;
   flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,0.2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .sb-user-name {
@@ -1057,12 +1067,12 @@ body.has-sidebar {
 
 .sb-link {
   display: block;
-  padding: 10px 18px;
+  padding: 11px 18px;
   color: var(--header-text-sub);
   text-decoration: none;
   font-size: 0.855rem;
   font-weight: 500;
-  border-left: 3px solid transparent;
+  border-left: 4px solid transparent;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
   white-space: nowrap;
   overflow: hidden;
@@ -1072,11 +1082,11 @@ body.has-sidebar {
 .sb-link:hover {
   background: rgba(255,255,255,0.08);
   color: var(--header-text);
-  border-left-color: rgba(245,158,11,0.5);
+  border-left-color: rgba(245,158,11,0.55);
 }
 
 .sb-link.active {
-  background: rgba(255,255,255,0.13);
+  background: rgba(245,158,11,0.12);
   color: #fff;
   border-left-color: var(--header-accent);
   font-weight: 700;
@@ -1165,16 +1175,16 @@ body.has-sidebar #app-content {
   text-decoration: none;
   color: var(--color-text);
   border: 1px solid var(--color-bloco-border);
-  border-top: 4px solid var(--color-primary);
-  transition: transform 0.15s, box-shadow 0.15s;
+  border-top: 4px solid var(--color-accent);
+  transition: transform 0.18s, box-shadow 0.18s;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
 .home-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 24px rgba(0,0,0,0.13);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.14);
 }
 
 .home-card-title {
@@ -1189,10 +1199,10 @@ body.has-sidebar #app-content {
   line-height: 1.4;
 }
 
-.home-card.card-bo      { border-top-color: var(--color-primary); }
+.home-card.card-bo      { border-top-color: var(--color-accent); }
 .home-card.card-rel     { border-top-color: #7C3AED; }
 .home-card.card-viatura { border-top-color: #059669; }
-.home-card.card-docs    { border-top-color: #D97706; }
+.home-card.card-docs    { border-top-color: var(--color-accent); }
 .home-card.card-hist    { border-top-color: #64748B; }
 
 .home-stats {
@@ -1214,7 +1224,7 @@ body.has-sidebar #app-content {
 .stat-card .stat-num {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-accent);
   line-height: 1;
 }
 
