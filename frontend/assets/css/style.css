@@ -401,34 +401,44 @@ body {
 }
 
 /* ============================================================
-   TABS
+   TABS  (estilo Chrome — linha única, scroll horizontal)
    ============================================================ */
+
+/* Wrapper: scroll horizontal invisível + linha colorida embaixo */
+.tabs-scroll-wrap {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  border-bottom: 3px solid var(--tab-active-bg); /* faixa colorida de transição */
+}
+.tabs-scroll-wrap::-webkit-scrollbar { display: none; }
+
 .tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;          /* nunca quebra linha */
   gap: 0;
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: 2px solid var(--color-border);
+  padding: 0;
+  border-bottom: none;        /* borda fica no wrapper */
   align-items: flex-end;
+  width: max-content;         /* expande além da tela se necessário */
+  min-width: 100%;            /* mas ocupa 100% quando cabe */
 }
 
 .tabs button,
 .tabs .tab-btn {
-  position: relative;
-  padding: 9px clamp(12px, 1.6vw, 20px);
+  flex-shrink: 0;
+  padding: 9px clamp(10px, 1.4vw, 18px);
   background: var(--tab-inactive-bg);
   color: var(--tab-inactive-text);
-  border: 2px solid var(--color-border);
+  border: 1px solid var(--color-border);
   border-bottom: none;
   border-radius: 8px 8px 0 0;
   cursor: pointer;
-  font-size: clamp(0.78rem, 1.1vw, 0.9rem);
+  font-size: clamp(0.75rem, 1.05vw, 0.88rem);
   font-weight: 600;
   white-space: nowrap;
   transition: background 0.18s, color 0.18s, border-color 0.18s;
-  margin-right: 4px;
-  bottom: -2px;
+  margin-right: 3px;
   line-height: 1.4;
 }
 
@@ -437,23 +447,28 @@ body {
   background: var(--color-primary);
   color: #fff;
   border-color: var(--color-primary);
-  z-index: 1;
 }
 
 .tabs button.active,
 .tabs .tab-btn.active {
-  background: var(--tab-active-bg);
-  color: var(--tab-active-text);
-  border-color: var(--tab-active-bg);
-  border-bottom: 2px solid var(--tab-active-bg);
-  z-index: 2;
-  bottom: -2px;
+  background: var(--tab-inactive-bg);          /* igual ao fundo do formulário */
+  color: var(--tab-active-bg);                 /* texto na cor de destaque */
+  font-weight: 700;
+  border-color: var(--color-border);
+  border-top: 3px solid var(--tab-active-bg);  /* indicador colorido no topo */
+  border-bottom: none;
 }
 
+/* ── Conteúdo da aba — mesmo fundo da aba ativa ────────────── */
 .tab-content {
   display: block;
-  margin-top: 20px;
+  margin-top: 0;
   margin-bottom: 20px;
+  background: var(--tab-inactive-bg);
+  border: 1px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 var(--radius) var(--radius) var(--radius);
+  padding: clamp(16px, 2.5vw, 24px);
 }
 
 .tab-content.hidden { display: none; }
@@ -1645,8 +1660,11 @@ body.has-sidebar .header {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.viatura-tipo-tabs::-webkit-scrollbar { display: none; }
 
 .viatura-tipo-btn {
   padding: 8px 20px;
@@ -1984,13 +2002,7 @@ table th {
   background: linear-gradient(135deg, var(--color-primary-hover) 0%, #083585 100%);
 }
 
-/* ── Tabs — active com sombra e gradiente ─────────────────── */
-.tabs button.active,
-.tabs .tab-btn.active {
-  background: linear-gradient(135deg, #0a1628 0%, #1E3A5F 100%);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  border-color: transparent;
-}
+/* (tabs override removido — estilo unificado no bloco principal) */
 
 /* ── Cards — layered shadow para profundidade ─────────────── */
 .card,
@@ -2125,11 +2137,7 @@ table th {
   box-shadow: 0 2px 8px rgba(26,115,232,0.40);
 }
 
-[data-theme="google-material"] .tabs button.active,
-[data-theme="google-material"] .tabs .tab-btn.active {
-  background: #1A73E8;
-  box-shadow: 0 1px 4px rgba(26,115,232,0.25);
-}
+/* (google-material tabs override removido — estilo unificado no bloco principal) */
 
 [data-theme="google-material"] .card h3 {
   border-bottom-color: #1A73E8;
@@ -2292,7 +2300,9 @@ table th {
 .detail-tabs {
   padding: 10px 20px 0;
   margin-bottom: 0 !important;
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 3px solid var(--tab-active-bg); /* faixa colorida sem wrapper */
+  width: auto;
+  min-width: unset;
 }
 .detail-tabs button, .detail-tabs .tab-btn {
   font-size: 0.82rem;
@@ -2302,6 +2312,7 @@ table th {
 .detail-modal-body {
   flex: 1; overflow-y: auto;
   padding: 18px 20px;
+  background: var(--tab-inactive-bg);
 }
 
 .detail-field { margin-bottom: 12px; }
