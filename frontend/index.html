@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Registro de BO - Login</title>
+  <title>Sistema de Registro de BO</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -19,34 +19,189 @@
       <span class="header-linha-3">Secretaria de Administração Pública Municipal</span>
     </div>
     <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+
+    <div class="header-actions-row">
+      <div class="header-nav-wrapper" id="hdr-nav-wrapper">
+        <button class="header-icon-btn" id="hdr-btn-menu" title="Menu" onclick="toggleNavMenu()">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
+        </button>
+        <div class="header-nav-menu" id="hdr-nav-menu"></div>
+      </div>
+      <div class="header-tema-wrapper" id="hdr-tema-wrapper">
+        <button class="header-icon-btn" id="hdr-btn-tema" title="Tema" onclick="toggleTemaMenu()">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><circle cx="7.2" cy="8" r="1.1" fill="currentColor"/><circle cx="10" cy="6.2" r="1.1" fill="currentColor"/><circle cx="12.8" cy="8" r="1.1" fill="currentColor"/><circle cx="8" cy="12.5" r="1.1" fill="currentColor"/></svg>
+        </button>
+        <div class="header-tema-menu" id="hdr-tema-menu">
+          <button class="sb-tema-item" data-theme="gov-modern" onclick="aplicarTema('gov-modern')"><span class="sb-tema-dot" style="background:#2171B5"></span>Gov Modern</button>
+          <button class="sb-tema-item" data-theme="dark-command" onclick="aplicarTema('dark-command')"><span class="sb-tema-dot" style="background:#1E3A5F"></span>Dark Command</button>
+          <button class="sb-tema-item" data-theme="google-material" onclick="aplicarTema('google-material')"><span class="sb-tema-dot" style="background:#1A73E8"></span>Claro Operacional</button>
+        </div>
+      </div>
+    </div>
   </header>
 
-  <section class="login-shell">
-    <main class="login-container login-container--hero">
-      <h2>Acessar o Sistema</h2>
-      <div id="avisoInatividade" style="display:none;background:#FEF3C7;border-left:4px solid #F59E0B;
-        color:#92400E;padding:10px 14px;border-radius:6px;font-size:0.84rem;font-weight:600;margin-bottom:14px;">
-        ⏱️ Sua sessão foi encerrada por inatividade. Faça login novamente.
+  <!-- Box fixa: enquanto não logado fica só com o fundo; após login mostra a ação central -->
+  <main class="app-stage" id="appStage">
+    <div class="app-stage-bg" id="appStageBg">
+      <div class="app-stage-bg-layer"></div>
+      <div class="app-stage-bg-layer"></div>
+    </div>
+    <div class="app-stage-overlay"></div>
+    <button class="app-stage-btn" id="btnNovoBO" style="display:none" onclick="openPageModal('/pages/dashboard.html','Novo Boletim de Ocorrência')">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M8 10h4M10 8v4"/><path d="M7 6h3"/></svg>
+      Criar Boletim de Ocorrência
+    </button>
+  </main>
+
+  <!-- Modal flutuante único — usado para o login e para todos os formulários do menu -->
+  <div class="pg-overlay" id="pg-overlay">
+    <div class="pg-modal" id="pg-modal">
+      <div class="pg-modal-head">
+        <span class="pg-modal-title" id="pg-modal-title"></span>
+        <button class="pg-modal-close" id="pg-modal-close" title="Fechar" onclick="closePageModal()">&times;</button>
       </div>
-      <form onsubmit="login(); return false;">
-        <input type="text" id="usuario" placeholder="Usuário" required>
-        <input type="password" id="senha" placeholder="Senha" required>
-        <button type="submit" class="btn-gerar-bo">ENTRAR</button>
-      </form>
-      <p style="font-size:0.82rem;color:#888;text-align:center;margin-top:8px;">
-        <a href="/pages/recuperar-senha.html" style="color:#1d4ed8;">Esqueceu sua senha?</a>
-      </p>
-    </main>
-  </section>
+      <div class="pg-modal-body" id="pg-modal-body"></div>
+    </div>
+  </div>
 
-  <script>
-    if (new URLSearchParams(window.location.search).get('motivo') === 'inatividade') {
-      document.getElementById('avisoInatividade').style.display = 'block';
-    }
-  </script>
-
-  <!-- ✅ IMPORTANTE: Carregar config ANTES de main.js -->
   <script src="assets/js/config.js"></script>
   <script src="assets/js/main.js"></script>
+  <script>
+    const LOGIN_FORM_HTML = `
+      <div style="padding:28px 30px;">
+        <div id="avisoInatividade" style="display:none;background:#FEF3C7;border-left:4px solid #F59E0B;
+          color:#92400E;padding:10px 14px;border-radius:6px;font-size:0.84rem;font-weight:600;margin-bottom:14px;">
+          ⏱️ Sua sessão foi encerrada por inatividade. Faça login novamente.
+        </div>
+        <form onsubmit="login(); return false;">
+          <input type="text" id="usuario" placeholder="Usuário" required>
+          <input type="password" id="senha" placeholder="Senha" required>
+          <button type="submit" class="btn-gerar-bo">ENTRAR</button>
+        </form>
+        <p style="font-size:0.82rem;color:#888;text-align:center;margin-top:8px;">
+          <a href="#" onclick="openPageModal('/pages/recuperar-senha.html','Recuperar Senha',{narrow:true});return false;" style="color:#1d4ed8;">Esqueceu sua senha?</a>
+        </p>
+      </div>`;
+
+    // ── Fundo dinâmico da box fixa — alterna fotos da guarda em crossfade ──
+    const STAGE_IMAGES = [
+      'assets/img/stage-1.jpg',
+      'assets/img/stage-2.jpg',
+      'assets/img/stage-3.jpg',
+      'assets/img/stage-4.jpg',
+      'assets/img/stage-5.jpg',
+    ];
+    (function initStageBg() {
+      const layers = document.querySelectorAll('.app-stage-bg-layer');
+      if (!layers.length) return;
+      let activeLayer = 0;
+      let imgIdx = 0;
+      layers[0].style.backgroundImage = `url('${STAGE_IMAGES[0]}')`;
+      layers[0].classList.add('active');
+      setInterval(() => {
+        imgIdx = (imgIdx + 1) % STAGE_IMAGES.length;
+        const nextLayer = 1 - activeLayer;
+        layers[nextLayer].style.backgroundImage = `url('${STAGE_IMAGES[imgIdx]}')`;
+        layers[nextLayer].classList.add('active');
+        layers[activeLayer].classList.remove('active');
+        activeLayer = nextLayer;
+      }, 6000);
+    })();
+
+    const MENU = [
+      { href: '/pages/dashboard.html',  label: 'Novo BO',             roles: ['agente', 'supervisor', 'admin'] },
+      { href: '/pages/consulta.html',   label: 'Histórico de BOs',    roles: ['agente', 'supervisor', 'admin'] },
+      { href: '/pages/relatorio.html',  label: 'Relatório Interno',   roles: ['agente', 'supervisor', 'admin'] },
+      { href: '/pages/viatura.html',    label: 'Controle de Viatura', roles: ['agente', 'supervisor', 'admin'] },
+      { href: '/pages/documentos.html', label: 'Documentos',          roles: ['agente', 'supervisor', 'admin'] },
+      { href: '/pages/perfil.html',     label: 'Meu Perfil',          roles: ['agente', 'supervisor', 'admin'] },
+      { href: '/pages/logs.html',       label: 'Log de Auditoria',    roles: ['supervisor', 'admin'] },
+      { href: '/pages/usuarios.html',   label: 'Usuários',            roles: ['admin'] },
+    ];
+
+    function openPageModal(href, title, opts) {
+      closeNavMenu();
+      const modal = document.getElementById('pg-modal');
+      const body  = document.getElementById('pg-modal-body');
+      document.getElementById('pg-modal-title').textContent = title || '';
+      modal.classList.toggle('pg-modal--wide', !(opts && opts.narrow));
+      document.getElementById('pg-modal-close').style.display = '';
+      body.innerHTML = '';
+      const iframe = document.createElement('iframe');
+      iframe.className = 'pg-modal-frame';
+      iframe.src = href;
+      body.appendChild(iframe);
+      document.getElementById('pg-overlay').classList.add('aberto');
+    }
+
+    function openLoginModal() {
+      const modal = document.getElementById('pg-modal');
+      modal.classList.remove('pg-modal--wide');
+      document.getElementById('pg-modal-title').textContent = 'Acessar o Sistema';
+      document.getElementById('pg-modal-close').style.display = 'none';
+      document.getElementById('pg-modal-body').innerHTML = LOGIN_FORM_HTML;
+      document.getElementById('pg-overlay').classList.add('aberto');
+      if (new URLSearchParams(window.location.search).get('motivo') === 'inatividade') {
+        document.getElementById('avisoInatividade').style.display = 'block';
+      }
+    }
+
+    function closePageModal() {
+      document.getElementById('pg-overlay').classList.remove('aberto');
+      document.getElementById('pg-modal-body').innerHTML = '';
+    }
+
+    function toggleNavMenu() { document.getElementById('hdr-nav-menu').classList.toggle('open'); }
+    function closeNavMenu()  { document.getElementById('hdr-nav-menu').classList.remove('open'); }
+    function toggleTemaMenu() { document.getElementById('hdr-tema-menu').classList.toggle('open'); }
+
+    function aplicarTema(tema) {
+      document.documentElement.setAttribute('data-theme', tema);
+      localStorage.setItem('gcm-tema', tema);
+      document.querySelectorAll('.sb-tema-item').forEach(btn => btn.classList.toggle('active', btn.dataset.theme === tema));
+      document.getElementById('hdr-tema-menu').classList.remove('open');
+    }
+
+    function buildNavMenu(role) {
+      const nav = document.getElementById('hdr-nav-menu');
+      const itens = MENU.filter(i => i.roles.includes(role)).map(i =>
+        `<a href="#" class="header-nav-item" onclick="openPageModal('${i.href}','${i.label}');return false;">${i.label}</a>`
+      ).join('');
+      nav.innerHTML = itens + `<a href="#" class="header-nav-item nav-item-sair" onclick="logout();return false;">Sair do Sistema</a>`;
+    }
+
+    // Hook chamado por login() (assets/js/main.js) após autenticação bem-sucedida
+    window.aposLoginSucesso = function (perfil) {
+      closePageModal();
+      document.getElementById('btnNovoBO').style.display = '';
+      buildNavMenu(perfil.role || 'agente');
+    };
+
+    document.addEventListener('click', e => {
+      const navWrap = document.getElementById('hdr-nav-wrapper');
+      if (navWrap && !navWrap.contains(e.target)) closeNavMenu();
+      const temaWrap = document.getElementById('hdr-tema-wrapper');
+      if (temaWrap && !temaWrap.contains(e.target)) document.getElementById('hdr-tema-menu').classList.remove('open');
+    });
+
+    (async function start() {
+      const temaAtual = localStorage.getItem('gcm-tema') || 'gov-modern';
+      document.documentElement.setAttribute('data-theme', temaAtual);
+      document.querySelectorAll('.sb-tema-item').forEach(btn => btn.classList.toggle('active', btn.dataset.theme === temaAtual));
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
+        if (res.ok) {
+          const perfil = await res.json();
+          sessionStorage.setItem('perfil', JSON.stringify(perfil));
+          document.getElementById('btnNovoBO').style.display = '';
+          buildNavMenu(perfil.role || 'agente');
+          return;
+        }
+      } catch {}
+      buildNavMenu('');
+      openLoginModal();
+    })();
+  </script>
 </body>
 </html>
