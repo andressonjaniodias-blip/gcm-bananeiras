@@ -1830,15 +1830,23 @@ body.has-sidebar .header {
 @media (max-width: 1024px) {
   :root { --header-h: 90px; }
 
+  /* Mantém padding pequeno para o card aparecer com fundo visível */
   body {
-    padding: 0;
+    padding: 8px;
   }
 
   #app-shell {
-    border-radius: 0;
-    min-height: 100vh;
-    margin: 0;
-    box-shadow: none;
+    border-radius: 12px;
+    height: calc(100vh - 16px);
+    min-height: unset;
+    margin: 0 auto;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05);
+    overflow: hidden;
+  }
+
+  /* Stage ocupa o restante do card — garante espaço para o botão Novo BO */
+  .app-stage {
+    min-height: 220px;
   }
 
   body.sb-open #sb-overlay { display: block; }
@@ -1848,6 +1856,22 @@ body.has-sidebar .header {
   }
 
   .sb-close-btn { display: none !important; }
+}
+
+/* Modal responsivo em telas médias e pequenas */
+@media (max-width: 768px) {
+  .pg-modal {
+    width: 96%;
+    max-height: 88vh;
+  }
+  .pg-modal.pg-modal--wide {
+    width: 98%;
+    max-width: 98vw;
+    max-height: 92vh;
+  }
+  .pg-modal-frame {
+    min-height: 72vh;
+  }
 }
 
 /* ── Navegação mobile entre abas ─────────────────────────────────────────── */
