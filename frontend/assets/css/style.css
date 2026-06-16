@@ -243,6 +243,19 @@ body {
   left: 0;
   z-index: 500;
   padding: 4px 0;
+  /* Limita altura em telas pequenas e permite rolar dentro do menu */
+  max-height: calc(100dvh - 120px);
+  overflow-y: auto;
+  overflow-x: visible;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary) transparent;
+}
+.header-nav-menu::-webkit-scrollbar,
+.header-tema-menu::-webkit-scrollbar { width: 4px; }
+.header-nav-menu::-webkit-scrollbar-thumb,
+.header-tema-menu::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 4px;
 }
 .header-nav-menu.open,
 .header-tema-menu.open { display: flex; }
