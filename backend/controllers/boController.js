@@ -8,6 +8,9 @@ const fs   = require('fs');
 const brasaoGCM        = path.join(__dirname, '../../public/brasao-gcm.png');
 const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.png');
 
+// Azul institucional GCM Bananeiras — usado em títulos e linhas do BO em PDF
+const NAVY = '#0e2a52';
+
 // ── Mapeamento de chaves → rótulos em português ──────────────────────────────
 const LABELS = {
   // Solicitação
@@ -262,36 +265,36 @@ exports.exportarPDF = async (req, res) => {
     if (temPrefeitura) doc.image(brasaoPrefeitura, pageW - margem - imgSize, 30, { width: imgSize });
 
     const topoTextoY = 32;
-    doc.fontSize(18).font('Helvetica-Bold')
+    doc.fontSize(18).font('Helvetica-Bold').fillColor(NAVY)
        .text('PREFEITURA MUNICIPAL DE BANANEIRAS', margem, topoTextoY, { width: conteudoW, align: 'center' });
     doc.fontSize(16).font('Helvetica-Bold')
        .text('GUARDA CIVIL MUNICIPAL', { width: conteudoW, align: 'center' });
-    doc.fontSize(12).font('Helvetica')
+    doc.fontSize(12).font('Helvetica').fillColor('#444')
        .text('Secretaria de Administração Pública Municipal', { width: conteudoW, align: 'center' });
 
     // Linha separadora após brasões
     const posAposBrasao = Math.max(doc.y + 4, 98);
-    doc.moveTo(margem, posAposBrasao).lineTo(pageW - margem, posAposBrasao).lineWidth(2).stroke('#000');
+    doc.moveTo(margem, posAposBrasao).lineTo(pageW - margem, posAposBrasao).lineWidth(2).stroke(NAVY);
 
     // Título do documento
     doc.y = posAposBrasao + 8;
-    doc.fontSize(17).font('Helvetica-Bold')
+    doc.fontSize(17).font('Helvetica-Bold').fillColor(NAVY)
        .text(`BOLETIM DE OCORRÊNCIA  Nº ${row.numero}`, { width: conteudoW, align: 'center' });
-    doc.fontSize(12).font('Helvetica')
+    doc.fontSize(12).font('Helvetica').fillColor('#444')
        .text(
          `Registrado em: ${new Date(row.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}     |     Por: ${String(row.criado_por).toUpperCase()}`,
          { width: conteudoW, align: 'center' }
        );
     doc.moveDown(0.5);
-    doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(0.5).stroke('#444');
+    doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(0.5).stroke('#9CA3AF');
     doc.moveDown(0.8);
 
     // ── Funções auxiliares de renderização ───────────────────────────────────
     function tituloSecao(texto) {
       doc.fontSize(13).font('Helvetica-Bold')
-         .fillColor('#000')
+         .fillColor(NAVY)
          .text(texto.toUpperCase(), { width: conteudoW });
-      doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(1).stroke('#222');
+      doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(1).stroke(NAVY);
       doc.moveDown(0.5);
     }
 
@@ -367,10 +370,10 @@ exports.exportarPDF = async (req, res) => {
 
     // ── Recibo de Entrega de Ocorrência ───────────────────────────────────────
     doc.moveDown(1);
-    doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(1).stroke('#000');
+    doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(1).stroke(NAVY);
     doc.moveDown(0.8);
 
-    doc.fontSize(13).font('Helvetica-Bold').fillColor('#000')
+    doc.fontSize(13).font('Helvetica-Bold').fillColor(NAVY)
        .text('RECIBO DE ENTREGA DE OCORRÊNCIA', { align: 'center' });
     doc.moveDown(0.8);
 
