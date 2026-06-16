@@ -2371,10 +2371,10 @@ table th {
 }
 
 .app-stage-btn {
-  position: fixed;
-  z-index: 900;
-  right: clamp(16px, 4vw, 40px);
-  bottom: clamp(16px, 4vw, 40px);
+  position: absolute;
+  z-index: 2;
+  right: clamp(20px, 4vw, 40px);
+  bottom: clamp(20px, 4vw, 40px);
   width: 60px;
   height: 60px;
   display: flex;
@@ -2396,6 +2396,15 @@ table th {
   height: 26px;
   stroke: #fff;
   flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .app-stage-btn {
+    position: fixed;
+    z-index: 900;
+    right: 20px;
+    bottom: 20px;
+  }
 }
 
 @media (max-width: 480px) {
