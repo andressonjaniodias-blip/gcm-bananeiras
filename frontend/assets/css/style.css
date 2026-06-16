@@ -1518,7 +1518,7 @@ table button:hover { background: var(--color-primary-hover); }
 .sb-tema-menu.open { display: flex; }
 
 .sb-tema-item.active {
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.5) inset;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.42);
 }
 
 
