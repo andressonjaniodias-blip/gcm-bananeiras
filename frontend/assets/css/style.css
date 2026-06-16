@@ -339,29 +339,8 @@ body {
   transform: translateX(0);
 }
 
-/* Itens de tema — mesma estrutura, cor mais escura */
-.sb-tema-item {
-  background: linear-gradient(135deg, #1a2840 0%, #243554 100%);
-  padding: 0;
-}
-.sb-tema-dot {
-  min-width: 52px;
-  width: 52px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.sb-tema-dot::after {
-  content: '';
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: inherit;
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.25);
-}
-.sb-tema-item:hover { color: #fff; }
+/* Tema: herda tudo do nav-item, sem overrides visuais */
+.sb-tema-item { padding: 0; }
 
 .header .usuario-nome {
   font-size: 0.82rem;
@@ -1538,27 +1517,8 @@ table button:hover { background: var(--color-primary-hover); }
 
 .sb-tema-menu.open { display: flex; }
 
-.sb-tema-item {
-  background: transparent;
-  border: none;
-  padding: 10px 14px;
-  font-size: 0.81rem;
-  font-weight: 500;
-  color: #cbd5e1;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.sb-tema-item:last-child { border-bottom: none; }
-.sb-tema-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
 .sb-tema-item.active {
-  background: rgba(255,255,255,0.13);
-  color: #fff;
-  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.5) inset;
 }
 
 
