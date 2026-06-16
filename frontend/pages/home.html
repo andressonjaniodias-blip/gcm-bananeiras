@@ -99,22 +99,30 @@
     }
 
     .stat-card {
+      position: relative;
       background: var(--bg-card);
-      border-radius: var(--radius);
+      border-radius: 14px;
       box-shadow: var(--shadow-card);
       padding: 18px 16px 16px;
       border: 1px solid var(--color-bloco-border);
-      border-left: 4px solid var(--color-accent);
       display: flex; flex-direction: column; gap: 4px;
       transition: transform 0.18s, box-shadow 0.18s;
+      overflow: hidden;
     }
     .stat-card:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(0,0,0,0.12);
     }
+    .stat-card .stat-icon {
+      position: absolute; top: 14px; right: 14px;
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--color-accent); color: #fff;
+    }
+    .stat-card .stat-icon svg { width: 15px; height: 15px; stroke: #fff; fill: none; }
     .stat-card .stat-num {
       font-size: 2rem; font-weight: 800;
-      color: var(--color-accent); line-height: 1;
+      color: var(--color-text); line-height: 1;
     }
     .stat-card .stat-label {
       font-size: 0.72rem; color: var(--color-text-muted); font-weight: 600;
@@ -123,18 +131,22 @@
     .stat-card .stat-sub {
       font-size: 0.7rem; color: var(--color-hint); margin-top: 2px;
     }
-    .stat-card.accent-verde  { border-left-color: #059669; }
-    .stat-card.accent-verde  .stat-num { color: #059669; }
-    .stat-card.accent-amber  { border-left-color: var(--color-accent); }
-    .stat-card.accent-amber  .stat-num { color: var(--color-accent); }
-    .stat-card.accent-roxo   { border-left-color: #7C3AED; }
-    .stat-card.accent-roxo   .stat-num { color: #7C3AED; }
-    .stat-card.accent-slate  { border-left-color: #64748B; }
-    .stat-card.accent-slate  .stat-num { color: #64748B; }
-    .stat-card.accent-rose   { border-left-color: #E11D48; }
-    .stat-card.accent-rose   .stat-num { color: #E11D48; }
-    .stat-card.accent-blue   { border-left-color: var(--color-primary); }
-    .stat-card.accent-blue   .stat-num { color: var(--color-primary); }
+    .stat-card.accent-verde  .stat-icon { background: #059669; }
+    .stat-card.accent-amber  .stat-icon { background: var(--color-accent); }
+    .stat-card.accent-roxo   .stat-icon { background: #7C3AED; }
+    .stat-card.accent-slate  .stat-icon { background: #64748B; }
+    .stat-card.accent-rose   .stat-icon { background: #E11D48; }
+    .stat-card.accent-blue   .stat-icon { background: var(--color-primary); }
+
+    /* Card em destaque (estilo "Earning" do mockup) */
+    .stat-card.stat-card--dark {
+      background: linear-gradient(135deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%);
+      border-color: transparent;
+    }
+    .stat-card.stat-card--dark .stat-num   { color: #fff; }
+    .stat-card.stat-card--dark .stat-label { color: rgba(255,255,255,0.75); }
+    .stat-card.stat-card--dark .stat-sub   { color: rgba(255,255,255,0.55); }
+    .stat-card.stat-card--dark .stat-icon  { background: rgba(255,255,255,0.18); }
 
     /* ── Ranking de tipificações ─────────────────────────────────────────────── */
     .ranking-card {
@@ -329,22 +341,26 @@
             Boletins de Ocorrência
           </div>
           <div class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card stat-card--dark">
+              <div class="stat-icon"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg></div>
               <div class="stat-num" id="statTotal">—</div>
               <div class="stat-label">Total de BOs</div>
               <div class="stat-sub">desde o início</div>
             </div>
             <div class="stat-card accent-verde">
+              <div class="stat-icon"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg></div>
               <div class="stat-num" id="statHoje">—</div>
               <div class="stat-label">BOs Hoje</div>
               <div class="stat-sub" id="statHojeData">—</div>
             </div>
             <div class="stat-card accent-amber">
+              <div class="stat-icon"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M7 3v3M13 3v3"/></svg></div>
               <div class="stat-num" id="statSemana">—</div>
               <div class="stat-label">Esta Semana</div>
               <div class="stat-sub">últimos 7 dias</div>
             </div>
             <div class="stat-card accent-rose">
+              <div class="stat-icon"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17s6-4.2 6-9.2A4 4 0 0010 4a4 4 0 00-6 3.8C4 12.8 10 17 10 17z"/></svg></div>
               <div class="stat-num" id="statMes">—</div>
               <div class="stat-label">Este Mês</div>
               <div class="stat-sub" id="statMesLabel">—</div>
@@ -358,21 +374,25 @@
           </div>
           <div class="stats-grid" data-role-min="supervisor">
             <div class="stat-card accent-roxo">
+              <div class="stat-icon"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="1.5"/><path d="M7 13v-3M10 13V7M13 13v-5"/></svg></div>
               <div class="stat-num" id="statRelatorios">—</div>
               <div class="stat-label">Relatórios</div>
               <div class="stat-sub">total publicados</div>
             </div>
             <div class="stat-card accent-slate">
+              <div class="stat-icon"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/></svg></div>
               <div class="stat-num" id="statDocumentos">—</div>
               <div class="stat-label">Documentos</div>
               <div class="stat-sub">no acervo</div>
             </div>
             <div class="stat-card accent-verde">
+              <div class="stat-icon"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="3"/><path d="M1 17c0-3.31 2.91-6 6.5-6"/><circle cx="14" cy="8" r="2.5"/><path d="M19 17c0-2.76-2.24-5-5-5"/></svg></div>
               <div class="stat-num" id="statAgentes">—</div>
               <div class="stat-label">Agentes Ativos</div>
               <div class="stat-sub">cadastrados</div>
             </div>
             <div class="stat-card accent-amber">
+              <div class="stat-icon"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="16" height="7" rx="1.5"/><path d="M4 8l2-4h8l2 4"/><circle cx="6" cy="15" r="1.5"/><circle cx="14" cy="15" r="1.5"/></svg></div>
               <div class="stat-num" id="statViaturas">—</div>
               <div class="stat-label">Reg. Viatura</div>
               <div class="stat-sub">abastec. e revisões</div>
@@ -386,21 +406,25 @@
           </div>
           <div class="stats-grid" data-role-min="admin">
             <div class="stat-card accent-blue">
+              <div class="stat-icon"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg></div>
               <div class="stat-num" id="statUsuariosTotal">—</div>
               <div class="stat-label">Total Usuários</div>
               <div class="stat-sub">cadastrados</div>
             </div>
             <div class="stat-card accent-verde">
+              <div class="stat-icon"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l3.5 3.5L16 5"/></svg></div>
               <div class="stat-num" id="statUsuariosAtivos">—</div>
               <div class="stat-label">Usuários Ativos</div>
               <div class="stat-sub">com acesso</div>
             </div>
             <div class="stat-card accent-slate">
+              <div class="stat-icon"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3l6 3v4c0 4-2.7 6.5-6 7-3.3-.5-6-3-6-7V6l6-3z"/></svg></div>
               <div class="stat-num" id="statAdmins">—</div>
               <div class="stat-label">Administradores</div>
               <div class="stat-sub">no sistema</div>
             </div>
             <div class="stat-card accent-rose">
+              <div class="stat-icon"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M7 7l6 6M13 7l-6 6"/></svg></div>
               <div class="stat-num" id="statInativos">—</div>
               <div class="stat-label">Inativos</div>
               <div class="stat-sub">sem acesso</div>
