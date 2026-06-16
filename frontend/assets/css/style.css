@@ -347,6 +347,20 @@ body {
 /* Tema: herda tudo do nav-item, sem overrides visuais */
 .sb-tema-item { padding: 0; }
 
+/* ── Touch: sem mouse, itens abrem completos mantendo a animação ── */
+@media (hover: none) and (pointer: coarse) {
+  .header-nav-menu.open .header-nav-item,
+  .header-tema-menu.open .sb-tema-item {
+    width: 210px;
+  }
+  .header-nav-menu.open .header-nav-item .nav-item-label,
+  .header-tema-menu.open .sb-tema-item .nav-item-label {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.22s ease 0.18s, transform 0.22s ease 0.18s;
+  }
+}
+
 .header .usuario-nome {
   font-size: 0.82rem;
   color: var(--header-text-sub);
