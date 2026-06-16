@@ -58,7 +58,7 @@
   <!-- Modal flutuante único — usado para o login e para todos os formulários do menu -->
   <div class="pg-overlay" id="pg-overlay">
     <div class="pg-modal" id="pg-modal">
-      <div class="pg-modal-head">
+      <div class="pg-modal-head" id="pg-modal-head">
         <span class="pg-modal-title" id="pg-modal-title"></span>
         <button class="pg-modal-close" id="pg-modal-close" title="Fechar" onclick="closePageModal()">&times;</button>
       </div>
@@ -76,8 +76,17 @@
           ⏱️ Sua sessão foi encerrada por inatividade. Faça login novamente.
         </div>
         <form onsubmit="login(); return false;">
-          <input type="text" id="usuario" placeholder="Usuário" required>
-          <input type="password" id="senha" placeholder="Senha" required>
+          <div class="input-icon-group">
+            <span class="input-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg></span>
+            <input type="text" id="usuario" placeholder="Usuário" required>
+          </div>
+          <div class="input-icon-group">
+            <span class="input-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="9" width="10" height="8" rx="1.5"/><path d="M7 9V6a3 3 0 016 0v3"/></svg></span>
+            <input type="password" id="senha" placeholder="Senha" required>
+            <button type="button" class="input-pass-toggle" id="btnTogglePass" title="Mostrar senha" onclick="togglePassVisibility()">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10s2.7-5 8-5 8 5 8 5-2.7 5-8 5-8-5-8-5z"/><circle cx="10" cy="10" r="2.2"/></svg>
+            </button>
+          </div>
           <button type="submit" class="btn-gerar-bo">ENTRAR</button>
         </form>
         <p style="font-size:0.82rem;color:#888;text-align:center;margin-top:8px;">
@@ -126,6 +135,7 @@
       const modal = document.getElementById('pg-modal');
       const body  = document.getElementById('pg-modal-body');
       document.getElementById('pg-modal-title').textContent = title || '';
+      document.getElementById('pg-modal-head').classList.remove('pg-modal-head--accent');
       modal.classList.toggle('pg-modal--wide', !(opts && opts.narrow));
       document.getElementById('pg-modal-close').style.display = '';
       body.innerHTML = '';
@@ -140,12 +150,26 @@
       const modal = document.getElementById('pg-modal');
       modal.classList.remove('pg-modal--wide');
       document.getElementById('pg-modal-title').textContent = 'Acessar o Sistema';
+      document.getElementById('pg-modal-head').classList.add('pg-modal-head--accent');
       document.getElementById('pg-modal-close').style.display = 'none';
       document.getElementById('pg-modal-body').innerHTML = LOGIN_FORM_HTML;
       document.getElementById('pg-overlay').classList.add('aberto');
       if (new URLSearchParams(window.location.search).get('motivo') === 'inatividade') {
         document.getElementById('avisoInatividade').style.display = 'block';
       }
+    }
+
+    const ICON_EYE = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10s2.7-5 8-5 8 5 8 5-2.7 5-8 5-8-5-8-5z"/><circle cx="10" cy="10" r="2.2"/></svg>`;
+    const ICON_EYE_OFF = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10s2.7-5 8-5 8 5 8 5-2.7 5-8 5-8-5-8-5z"/><circle cx="10" cy="10" r="2.2"/><path d="M3 3l14 14"/></svg>`;
+
+    function togglePassVisibility() {
+      const input = document.getElementById('senha');
+      const btn = document.getElementById('btnTogglePass');
+      if (!input || !btn) return;
+      const mostrando = input.type === 'text';
+      input.type = mostrando ? 'password' : 'text';
+      btn.innerHTML = mostrando ? ICON_EYE : ICON_EYE_OFF;
+      btn.title = mostrando ? 'Mostrar senha' : 'Ocultar senha';
     }
 
     function closePageModal() {
