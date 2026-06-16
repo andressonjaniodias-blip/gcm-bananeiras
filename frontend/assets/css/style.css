@@ -2586,8 +2586,56 @@ table th {
 }
 .pg-modal-close:hover { color: var(--color-danger); }
 
+/* Cabeçalho em destaque — usado no modal de login para contraste com o título */
+.pg-modal-head--accent {
+  background: linear-gradient(135deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%);
+  border-bottom: 3px solid var(--header-accent);
+}
+.pg-modal-head--accent .pg-modal-title {
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.pg-modal-head--accent .pg-modal-close { color: #fff; }
+
 .pg-modal-body { flex: 1; overflow-y: auto; }
 .pg-modal-frame { flex: 1; width: 100%; height: 100%; min-height: 60vh; border: none; background: var(--bg-page); }
+
+/* ── Campos de login com ícone e botão de mostrar/ocultar senha ─────────── */
+.input-icon-group { position: relative; margin: 10px 0; }
+.input-icon-group input {
+  margin: 0 !important;
+  padding-left: 40px !important;
+}
+.input-icon-group input#senha { padding-right: 40px !important; }
+
+.input-icon-group .input-icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  color: var(--color-hint);
+  pointer-events: none;
+}
+.input-icon-group .input-icon svg { width: 17px; height: 17px; }
+
+.input-pass-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--color-hint);
+  transition: color 0.15s;
+}
+.input-pass-toggle:hover { color: var(--color-primary); }
+.input-pass-toggle svg { width: 17px; height: 17px; }
 
 /* Páginas carregadas dentro do modal flutuante (iframe) não repetem o
    cabeçalho institucional — só o conteúdo do formulário é exibido. */
