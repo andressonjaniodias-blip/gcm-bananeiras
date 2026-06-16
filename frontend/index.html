@@ -43,7 +43,10 @@
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><circle cx="7.2" cy="8" r="1.1" fill="currentColor"/><circle cx="10" cy="6.2" r="1.1" fill="currentColor"/><circle cx="12.8" cy="8" r="1.1" fill="currentColor"/><circle cx="8" cy="12.5" r="1.1" fill="currentColor"/></svg>
         </button>
         <div class="header-tema-menu" id="hdr-tema-menu">
-          <button class="sb-tema-item" data-theme="gov-modern" onclick="aplicarTema('gov-modern')"><span class="sb-tema-dot" style="background:#2171B5"></span>Gov Modern</button>
+          <button class="sb-tema-item" data-theme="gov-modern" onclick="aplicarTema('gov-modern')">
+            <span class="sb-tema-dot" style="background:#2171B5"></span>
+            <span class="nav-item-label">Gov Modern</span>
+          </button>
         </div>
       </div>
     </div>
@@ -187,12 +190,23 @@
       document.getElementById('hdr-tema-menu').classList.remove('open');
     }
 
+    function navAbbr(label) {
+      return label.split(/\s+/).filter(w => w.length > 2).slice(0, 2).map(w => w[0]).join('').toUpperCase() || label.slice(0,2).toUpperCase();
+    }
+
     function buildNavMenu(role) {
       const nav = document.getElementById('hdr-nav-menu');
       const itens = MENU.filter(i => i.roles.includes(role)).map(i =>
-        `<a href="#" class="header-nav-item" onclick="openPageModal('${i.href}','${i.label}');return false;">${i.label}</a>`
+        `<a href="#" class="header-nav-item" onclick="openPageModal('${i.href}','${i.label}');return false;">
+          <span class="nav-item-abbr">${navAbbr(i.label)}</span>
+          <span class="nav-item-label">${i.label}</span>
+        </a>`
       ).join('');
-      nav.innerHTML = itens + `<a href="#" class="header-nav-item nav-item-sair" onclick="logout();return false;">Sair do Sistema</a>`;
+      nav.innerHTML = itens +
+        `<a href="#" class="header-nav-item nav-item-sair" onclick="logout();return false;">
+          <span class="nav-item-abbr">SA</span>
+          <span class="nav-item-label">Sair do Sistema</span>
+        </a>`;
     }
 
     // Hook chamado por login() (assets/js/main.js) após autenticação bem-sucedida
