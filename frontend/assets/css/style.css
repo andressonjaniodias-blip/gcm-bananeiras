@@ -62,6 +62,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
@@ -210,7 +211,7 @@ body {
   transform: translateY(-2px) scale(1.06);
   box-shadow: 0 10px 28px rgba(0,0,0,0.50);
 }
-.stage-fab svg { width: 22px; height: 22px; flex-shrink: 0; }
+.stage-fab svg { width: 28px; height: 28px; flex-shrink: 0; }
 
 .stage-fab--menu {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
@@ -241,12 +242,8 @@ body {
   position: absolute;
   top: calc(100% + 10px);
   left: 0;
-  z-index: 500;
+  z-index: 9999;
   padding: 4px 0;
-  /* Limita altura em telas pequenas e permite rolar dentro do menu */
-  max-height: calc(100dvh - 120px);
-  overflow-y: auto;
-  overflow-x: visible;
   scrollbar-width: thin;
   scrollbar-color: var(--color-primary) transparent;
 }
@@ -257,8 +254,18 @@ body {
   background: var(--color-primary);
   border-radius: 4px;
 }
+/* Quando aberto: escapa do overflow:clip do app-shell via position:fixed.
+   top/left são definidos por JS com getBoundingClientRect() do botão. */
 .header-nav-menu.open,
-.header-tema-menu.open { display: flex; }
+.header-tema-menu.open {
+  display: flex;
+  position: fixed;
+  max-height: calc(100dvh - 100px);
+  overflow-y: auto;
+  overflow-x: visible;
+  /* Padding para as sombras dos itens filhos não serem cortadas pelo overflow */
+  padding: 10px 14px;
+}
 
 /* ── Animação cascata: itens caem em sequência ───────────── */
 @keyframes navItemDrop {
@@ -2405,8 +2412,8 @@ table th {
   box-shadow: 0 12px 32px rgba(0,0,0,0.45);
 }
 .app-stage-btn svg {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   stroke: #fff;
   flex-shrink: 0;
 }
@@ -2422,7 +2429,7 @@ table th {
 
 @media (max-width: 480px) {
   .app-stage-btn { right: 14px; bottom: 14px; width: 54px; height: 54px; }
-  .app-stage-btn svg { width: 22px; height: 22px; }
+  .app-stage-btn svg { width: 26px; height: 26px; }
 }
 
 /* ============================================================
