@@ -263,8 +263,8 @@ body {
   max-height: calc(100dvh - 100px);
   overflow-y: auto;
   overflow-x: visible;
-  /* Padding para as sombras dos itens filhos não serem cortadas pelo overflow */
-  padding: 10px 14px;
+  /* Padding lateral/vertical para sombras dos filhos não serem cortadas pelo overflow */
+  padding: 8px 6px;
 }
 
 /* ── Animação cascata: itens caem em sequência ───────────── */
@@ -313,7 +313,7 @@ body {
   font-size: 0.84rem;
   font-weight: 600;
   white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.30);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
   /* animação suave com spring leve */
   transition:
     width 0.38s cubic-bezier(0.34, 1.10, 0.64, 1),
@@ -323,7 +323,7 @@ body {
 .header-nav-item:hover,
 .sb-tema-item:hover {
   width: 210px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.42);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.28);
 }
 
 /* Item "Sair" — vermelho */
