@@ -242,6 +242,34 @@ body {
 .header-nav-menu.open,
 .header-tema-menu.open { display: flex; }
 
+/* ── Animação cascata: itens caem em sequência ───────────── */
+@keyframes navItemDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.header-nav-menu.open .header-nav-item,
+.header-tema-menu.open .sb-tema-item {
+  animation: navItemDrop 0.36s cubic-bezier(0.34, 1.25, 0.64, 1) both;
+}
+
+.header-nav-menu.open .header-nav-item:nth-child(1)  { animation-delay:  0ms; }
+.header-nav-menu.open .header-nav-item:nth-child(2)  { animation-delay: 55ms; }
+.header-nav-menu.open .header-nav-item:nth-child(3)  { animation-delay: 110ms; }
+.header-nav-menu.open .header-nav-item:nth-child(4)  { animation-delay: 165ms; }
+.header-nav-menu.open .header-nav-item:nth-child(5)  { animation-delay: 220ms; }
+.header-nav-menu.open .header-nav-item:nth-child(6)  { animation-delay: 275ms; }
+.header-nav-menu.open .header-nav-item:nth-child(7)  { animation-delay: 330ms; }
+.header-nav-menu.open .header-nav-item:nth-child(8)  { animation-delay: 385ms; }
+.header-nav-menu.open .header-nav-item:nth-child(9)  { animation-delay: 440ms; }
+.header-tema-menu.open .sb-tema-item:nth-child(1)    { animation-delay:  0ms; }
+
 /* Cada item: começa como círculo, expande ao hover */
 .header-nav-item,
 .sb-tema-item {
