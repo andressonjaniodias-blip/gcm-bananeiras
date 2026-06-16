@@ -8,16 +8,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   const isSetupPage = window.location.pathname.includes('setup');
 
   if (isLoginPage || isSetupPage) {
-    // Verifica se já está autenticado (cookie válido)
-    if (isLoginPage) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
-        if (res.ok) {
-          window.location.href = '/pages/dashboard.html';
-          return;
-        }
-      } catch {}
-    }
+    // A própria index.html cuida da verificação de sessão e da exibição
+    // do formulário de login flutuante ou da ação principal pós-login.
     return;
   }
 
@@ -677,10 +669,13 @@ async function login() {
     });
     const result = await response.json();
     if (response.ok) {
-      sessionStorage.setItem('perfil', JSON.stringify({ usuario: result.usuario, role: result.role }));
+      const perfil = { usuario: result.usuario, role: result.role };
+      sessionStorage.setItem('perfil', JSON.stringify(perfil));
       if (!result.lgpd_aceito) {
-        sessionStorage.setItem('redirecionarApos', 'pages/home.html');
+        sessionStorage.setItem('redirecionarApos', '');
         window.location.href = 'pages/aviso-lgpd.html';
+      } else if (typeof window.aposLoginSucesso === 'function') {
+        window.aposLoginSucesso(perfil);
       } else {
         window.location.href = 'pages/home.html';
       }
