@@ -64,14 +64,19 @@
   box-sizing: border-box;
 }
 
-html { transition: background 0.3s, color 0.3s; }
+html {
+  transition: background 0.3s, color 0.3s;
+  overflow: hidden;
+  height: 100%;
+}
 
 body {
   font-family: 'Inter', Arial, sans-serif;
   background: linear-gradient(150deg, var(--bg-body-from) 0%, var(--bg-body-mid) 50%, var(--bg-body-to) 100%);
   background-attachment: fixed;
   color: var(--color-text);
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
   padding: clamp(8px, 1.5vw, 20px);
   transition: background 0.3s, color 0.3s;
 }
