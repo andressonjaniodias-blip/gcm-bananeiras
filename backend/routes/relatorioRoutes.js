@@ -85,6 +85,7 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     const fs   = require('fs');
     const brasaoGCM        = path.join(__dirname, '../../public/brasao-gcm.png');
     const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.png');
+    const NAVY = '#0e2a52';
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="relatorio_${r.numero.replace(/\//g, '-')}.pdf"`);
@@ -108,19 +109,19 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     if (temGCM)        doc.image(brasaoGCM,        margem, 30, { width: imgSize });
     if (temPrefeitura) doc.image(brasaoPrefeitura, pageW - margem - imgSize, 30, { width: imgSize });
 
-    doc.fontSize(17).font('Helvetica-Bold')
+    doc.fontSize(17).font('Helvetica-Bold').fillColor(NAVY)
        .text('PREFEITURA MUNICIPAL DE BANANEIRAS', margem, 33, { width: conteudoW, align: 'center' });
     doc.fontSize(14).font('Helvetica-Bold')
        .text('GUARDA CIVIL MUNICIPAL', { width: conteudoW, align: 'center' });
-    doc.fontSize(11).font('Helvetica')
+    doc.fontSize(11).font('Helvetica').fillColor('#444')
        .text('Secretaria de Administração Pública Municipal', { width: conteudoW, align: 'center' });
 
     const posLinha = Math.max(doc.y + 4, 96);
-    doc.moveTo(margem, posLinha).lineTo(pageW - margem, posLinha).lineWidth(2).stroke('#000');
+    doc.moveTo(margem, posLinha).lineTo(pageW - margem, posLinha).lineWidth(2).stroke(NAVY);
 
     // Título do relatório
     doc.y = posLinha + 8;
-    doc.fontSize(16).font('Helvetica-Bold')
+    doc.fontSize(16).font('Helvetica-Bold').fillColor(NAVY)
        .text(`RELATÓRIO INTERNO  Nº ${r.numero}`, { width: conteudoW, align: 'center' });
     doc.fontSize(12).font('Helvetica-Bold')
        .text(r.titulo.toUpperCase(), { width: conteudoW, align: 'center' });
@@ -149,18 +150,18 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     doc.moveDown(0.7);
 
     // ── Conteúdo ──────────────────────────────────────────────────────────────
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#000')
+    doc.fontSize(12).font('Helvetica-Bold').fillColor(NAVY)
        .text('CONTEÚDO DO RELATÓRIO');
-    doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(0.8).stroke('#222');
+    doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(0.8).stroke(NAVY);
     doc.moveDown(0.5);
     doc.fontSize(12).font('Helvetica').fillColor('#000')
        .text(r.conteudo || '(sem conteúdo)', { align: 'justify', lineGap: 3 });
 
     if (r.obs) {
       doc.moveDown(0.8);
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#000')
+      doc.fontSize(12).font('Helvetica-Bold').fillColor(NAVY)
          .text('OBSERVAÇÕES');
-      doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(0.8).stroke('#222');
+      doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(0.8).stroke(NAVY);
       doc.moveDown(0.5);
       doc.fontSize(12).font('Helvetica').fillColor('#000')
          .text(r.obs, { align: 'justify', lineGap: 3 });
@@ -177,8 +178,8 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
 
     if (anexos.length) {
       const tituloSec = (txt) => {
-        doc.fontSize(12).font('Helvetica-Bold').fillColor('#000').text(txt.toUpperCase());
-        doc.moveTo(margem, doc.y+1).lineTo(pageW-margem, doc.y+1).lineWidth(0.8).stroke('#222');
+        doc.fontSize(12).font('Helvetica-Bold').fillColor(NAVY).text(txt.toUpperCase());
+        doc.moveTo(margem, doc.y+1).lineTo(pageW-margem, doc.y+1).lineWidth(0.8).stroke(NAVY);
         doc.moveDown(0.5);
       };
 
