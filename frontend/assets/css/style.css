@@ -2413,6 +2413,126 @@ table th {
 }
 
 /* ============================================================
+   LANDING / HERO — página de login (estilo institucional GCM)
+   ============================================================ */
+.landing-body {
+  padding: 0;
+  background: #0a1a2e;
+}
+
+.hero {
+  position: relative;
+  min-height: 560px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  overflow: hidden;
+  /* Substitua a imagem por uma foto real em /frontend/assets/img/hero-bg.jpg */
+  background:
+    linear-gradient(180deg, rgba(10,26,46,0.55) 0%, rgba(10,26,46,0.82) 100%),
+    url('../img/hero-bg.jpg') center/cover no-repeat,
+    radial-gradient(circle at 30% 20%, #1a3560 0%, #0a1a2e 70%);
+  background-blend-mode: normal;
+}
+
+.hero-overlay { display: none; }
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  width: 100%;
+  text-align: center;
+  color: #fff;
+}
+
+.hero-content h1 {
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-weight: 800;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  margin-bottom: 10px;
+}
+
+.hero-subtitulo {
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-weight: 500;
+  color: #BDD7E7;
+  margin-bottom: 18px;
+}
+
+.hero-divisor {
+  width: 160px;
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.35);
+  margin: 0 auto 18px;
+}
+
+.hero-descricao {
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.88);
+  max-width: 520px;
+  margin: 0 auto 28px;
+  line-height: 1.5;
+}
+
+.login-container--hero {
+  margin: 0 auto;
+  text-align: left;
+  background: var(--bg-card);
+}
+
+.btn-gerar-bo {
+  width: 100%;
+  padding: clamp(11px, 1.5vw, 13px);
+  margin-top: 14px;
+  background: var(--color-success);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-gerar-bo:hover {
+  background: var(--color-success-hover);
+  transform: translateY(-1px);
+}
+
+.hero-features {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(20px, 5vw, 64px);
+  background: var(--bg-card);
+  padding: 26px 20px;
+}
+
+.hero-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.hero-feature svg {
+  width: 24px;
+  height: 24px;
+  stroke: var(--color-primary);
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .hero { min-height: 460px; padding: 40px 16px; }
+  .hero-features { gap: 20px; padding: 20px 16px; }
+}
+
+/* ============================================================
    MODAL DE PÁGINA — telas/forms abrem flutuando sobre o fundo desfocado
    ============================================================ */
 .pg-overlay {
