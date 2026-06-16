@@ -98,7 +98,7 @@
         </button>
         <div class="header-tema-wrapper" id="hdr-tema-wrapper">
           <button class="header-icon-btn" id="hdr-btn-tema" title="Tema" onclick="window.toggleTemaMenu()">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><circle cx="7.2" cy="8" r="1.1" fill="currentColor"/><circle cx="10" cy="6.2" r="1.1" fill="currentColor"/><circle cx="12.8" cy="8" r="1.1" fill="currentColor"/><circle cx="8" cy="12.5" r="1.1" fill="currentColor"/></svg>
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5a7.5 7.5 0 1 0 7.5 7.5c0-1.38-1.12-2.5-2.5-2.5h-1.25c-.69 0-1.25-.56-1.25-1.25V5c0-1.38-1.12-2.5-2.5-2.5z"/><circle cx="6.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="11.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="8.5" r="1" fill="currentColor" stroke="none"/></svg>
           </button>
           <div class="header-tema-menu" id="hdr-tema-menu">
             <button class="sb-tema-item" data-theme="gov-modern"      onclick="window.aplicarTema('gov-modern')"><span class="sb-tema-dot" style="background:#2171B5"></span>Gov Modern</button>
@@ -166,6 +166,12 @@
 
   window.toggleTemaMenu = function () {
     const menu = document.getElementById('hdr-tema-menu');
+    const btn  = document.getElementById('hdr-btn-tema');
+    if (menu && btn && !menu.classList.contains('open')) {
+      const r = btn.getBoundingClientRect();
+      menu.style.top  = (r.bottom + 10) + 'px';
+      menu.style.left = r.left + 'px';
+    }
     if (menu) menu.classList.toggle('open');
   };
 
