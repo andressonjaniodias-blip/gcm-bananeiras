@@ -510,7 +510,15 @@
   // ─────────────────────────────────────────────────────────────────────────
 
   if (inIframe) {
-    document.body.classList.add('in-page-modal');
+    // Injeta estilo imediatamente (antes do body estar disponível) para ocultar o header e liberar scroll
+    const _s = document.createElement('style');
+    _s.textContent = '.header { display: none !important; } html, body { overflow: auto !important; height: auto !important; }';
+    (document.head || document.documentElement).appendChild(_s);
+    if (document.body) {
+      document.body.classList.add('in-page-modal');
+    } else {
+      document.addEventListener('DOMContentLoaded', () => document.body.classList.add('in-page-modal'));
+    }
   } else if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', buildSidebar);
   } else {
