@@ -2450,14 +2450,6 @@ table th {
   .hist-item-right { display: none; }
 }
 
-/* ============================================================
-   LANDING / HERO — página de login (estilo institucional GCM)
-   ============================================================ */
-.landing-body {
-  padding: 0;
-  background: #0a1a2e;
-}
-
 .btn-gerar-bo {
   width: 100%;
   padding: clamp(11px, 1.5vw, 13px);
@@ -2487,7 +2479,8 @@ table th {
    ============================================================ */
 .app-stage {
   position: relative;
-  min-height: calc(100vh - var(--header-h, 110px));
+  flex: 1;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
