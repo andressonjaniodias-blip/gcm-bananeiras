@@ -4,6 +4,11 @@
   const skipPages = ['index.html', 'setup.html', 'aviso-lgpd.html'];
   if (path === '/' || skipPages.some(p => path.endsWith(p))) return;
 
+  // Carregada dentro do modal flutuante (iframe): mostra só o conteúdo da
+  // página, sem duplicar cabeçalho/sidebar/timers — quem cuida disso é a
+  // janela de cima (top).
+  const inIframe = window.self !== window.top;
+
   const ICONS = {
     home:      `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L10 3l7 6.5V17a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M7 18v-6h6v6"/></svg>`,
     novobo:    `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M8 10h4M10 8v4"/><path d="M7 6h3"/></svg>`,
@@ -57,16 +62,6 @@
       </div>
       <nav class="sb-nav">${navHTML}</nav>
       <div class="sb-footer">
-        <div class="sb-tema-wrapper" id="sb-tema-wrapper">
-          <button class="sb-btn-tema" id="sb-btn-tema" onclick="window.toggleTemaMenu()" title="Selecionar tema">
-            Temas
-          </button>
-          <div class="sb-tema-menu" id="sb-tema-menu">
-            <button class="sb-tema-item" data-theme="gov-modern"      onclick="window.aplicarTema('gov-modern')"><span class="sb-tema-dot" style="background:#2171B5"></span>Gov Modern</button>
-            <button class="sb-tema-item" data-theme="dark-command"    onclick="window.aplicarTema('dark-command')"><span class="sb-tema-dot" style="background:#1E3A5F"></span>Dark Command</button>
-            <button class="sb-tema-item" data-theme="google-material" onclick="window.aplicarTema('google-material')"><span class="sb-tema-dot" style="background:#1A73E8"></span>Claro Operacional</button>
-          </div>
-        </div>
         <button class="sb-btn-sair" onclick="logout()">Sair do Sistema</button>
       </div>
     `;
@@ -75,13 +70,6 @@
     const overlay = document.createElement('div');
     overlay.id = 'sb-overlay';
     overlay.onclick = closeSidebar;
-
-    // Botão flutuante para abrir o menu (permanece no body)
-    const fab = document.createElement('button');
-    fab.id = 'sb-fab';
-    fab.title = 'Menu';
-    fab.innerHTML = '☰';
-    fab.onclick = toggleSidebar;
 
     // app-content recebe todo o conteúdo atual do body
     const wrapper = document.createElement('div');
@@ -102,13 +90,29 @@
     appShell.id = 'app-shell';
     if (headerEl) {
       wrapper.removeChild(headerEl);
+      const actionsRow = document.createElement('div');
+      actionsRow.className = 'header-actions-row';
+      actionsRow.innerHTML = `
+        <button class="header-icon-btn" id="hdr-btn-menu" title="Menu" onclick="window.toggleSidebar()">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
+        </button>
+        <div class="header-tema-wrapper" id="hdr-tema-wrapper">
+          <button class="header-icon-btn" id="hdr-btn-tema" title="Tema" onclick="window.toggleTemaMenu()">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><circle cx="7.2" cy="8" r="1.1" fill="currentColor"/><circle cx="10" cy="6.2" r="1.1" fill="currentColor"/><circle cx="12.8" cy="8" r="1.1" fill="currentColor"/><circle cx="8" cy="12.5" r="1.1" fill="currentColor"/></svg>
+          </button>
+          <div class="header-tema-menu" id="hdr-tema-menu">
+            <button class="sb-tema-item" data-theme="gov-modern"      onclick="window.aplicarTema('gov-modern')"><span class="sb-tema-dot" style="background:#2171B5"></span>Gov Modern</button>
+            <button class="sb-tema-item" data-theme="dark-command"    onclick="window.aplicarTema('dark-command')"><span class="sb-tema-dot" style="background:#1E3A5F"></span>Dark Command</button>
+            <button class="sb-tema-item" data-theme="google-material" onclick="window.aplicarTema('google-material')"><span class="sb-tema-dot" style="background:#1A73E8"></span>Claro Operacional</button>
+          </div>
+        </div>`;
+      headerEl.appendChild(actionsRow);
       appShell.appendChild(headerEl);
     }
     appShell.appendChild(shellBody);
 
     document.body.appendChild(appShell);
     document.body.appendChild(overlay);
-    document.body.appendChild(fab);
     document.body.classList.add('has-sidebar');
 
     // Marca o tema ativo no menu
@@ -126,7 +130,7 @@
     window.addEventListener('resize', syncHeaderHeight);
 
     // Remove elementos duplicados do cabeçalho que agora ficam no sidebar
-    const headerActionDiv = document.querySelector('.header > div:not(.header-titulo)');
+    const headerActionDiv = document.querySelector('.header > div:not(.header-titulo):not(.header-actions-row)');
     if (headerActionDiv) headerActionDiv.remove();
     const legacyUserSpan = document.getElementById('usuarioLogado');
     if (legacyUserSpan) legacyUserSpan.closest('div')?.remove();
@@ -145,6 +149,10 @@
   }
 
   window.toggleSidebar = function () {
+    if (window.matchMedia('(min-width:1025px)').matches) {
+      document.body.classList.toggle('sb-collapsed');
+      return;
+    }
     const open = document.body.classList.toggle('sb-open');
     document.getElementById('sb-overlay').style.display = open ? 'block' : 'none';
   };
@@ -157,7 +165,7 @@
   }
 
   window.toggleTemaMenu = function () {
-    const menu = document.getElementById('sb-tema-menu');
+    const menu = document.getElementById('hdr-tema-menu');
     if (menu) menu.classList.toggle('open');
   };
 
@@ -165,15 +173,15 @@
     document.documentElement.setAttribute('data-theme', tema);
     localStorage.setItem('gcm-tema', tema);
     _marcarTemaAtivo();
-    const menu = document.getElementById('sb-tema-menu');
+    const menu = document.getElementById('hdr-tema-menu');
     if (menu) menu.classList.remove('open');
   };
 
   // Fecha o menu ao clicar fora
   document.addEventListener('click', function (e) {
-    const wrapper = document.getElementById('sb-tema-wrapper');
+    const wrapper = document.getElementById('hdr-tema-wrapper');
     if (wrapper && !wrapper.contains(e.target)) {
-      const menu = document.getElementById('sb-tema-menu');
+      const menu = document.getElementById('hdr-tema-menu');
       if (menu) menu.classList.remove('open');
     }
   });
@@ -183,6 +191,48 @@
     const ov = document.getElementById('sb-overlay');
     if (ov) ov.style.display = 'none';
   };
+
+  // ── Navegação em modal flutuante (telas e forms abrem sobre a página atual) ─
+  window.openPageModal = function (href, title) {
+    closeSidebar();
+    let overlay = document.getElementById('pg-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'pg-overlay';
+      overlay.className = 'pg-overlay';
+      overlay.innerHTML = `
+        <div class="pg-modal">
+          <div class="pg-modal-head">
+            <span class="pg-modal-title"></span>
+            <button class="pg-modal-close" title="Fechar" onclick="window.closePageModal()">&times;</button>
+          </div>
+          <iframe class="pg-modal-frame"></iframe>
+        </div>`;
+      overlay.addEventListener('click', e => { if (e.target === overlay) window.closePageModal(); });
+      document.body.appendChild(overlay);
+    }
+    overlay.querySelector('.pg-modal-title').textContent = title || '';
+    overlay.querySelector('.pg-modal-frame').src = href;
+    overlay.classList.add('aberto');
+    document.querySelectorAll('.sb-link').forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === href);
+    });
+  };
+
+  window.closePageModal = function () {
+    const overlay = document.getElementById('pg-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('aberto');
+    overlay.querySelector('.pg-modal-frame').src = 'about:blank';
+  };
+
+  // Intercepta links internos para abrir como modal flutuante (exceto Início)
+  document.addEventListener('click', function (e) {
+    const a = e.target.closest('a[href^="/pages/"]');
+    if (!a || a.target === '_blank' || a.href.endsWith('home.html')) return;
+    e.preventDefault();
+    window.openPageModal(a.getAttribute('href'), a.textContent.trim());
+  });
 
   // Atualiza dados do usuário no sidebar (chamado por main.js após autenticar)
   window.updateSidebarUser = function (perfil) {
@@ -453,7 +503,9 @@
   }
   // ─────────────────────────────────────────────────────────────────────────
 
-  if (document.readyState === 'loading') {
+  if (inIframe) {
+    document.body.classList.add('in-page-modal');
+  } else if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', buildSidebar);
   } else {
     buildSidebar();
@@ -477,5 +529,5 @@
       setTimeout(() => aguardarPerfilEVerificar(tentativas - 1), 600);
     }
   }
-  setTimeout(() => aguardarPerfilEVerificar(5), 800);
+  if (!inIframe) setTimeout(() => aguardarPerfilEVerificar(5), 800);
 })();
