@@ -301,7 +301,44 @@ body {
 .header-icon-btn:hover { background: rgba(255,255,255,0.24); }
 .header-icon-btn svg { width: 18px; height: 18px; }
 
-.header-tema-wrapper { position: relative; }
+.header-tema-wrapper,
+.header-nav-wrapper { position: relative; }
+
+.header-nav-menu {
+  display: none;
+  flex-direction: column;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #1e2d42;
+  border: 1px solid rgba(255,255,255,0.12);
+  min-width: 220px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  z-index: 500;
+}
+.header-nav-menu.open { display: flex; }
+
+.header-nav-item {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.15s, color 0.15s;
+}
+.header-nav-item:last-child { border-bottom: none; }
+.header-nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.header-nav-item.nav-item-sair { color: #FCA5A5; }
+.header-nav-item.nav-item-sair:hover { background: rgba(198,40,40,0.18); color: #fff; }
 
 .header-tema-menu {
   display: none;
@@ -2421,35 +2458,6 @@ table th {
   background: #0a1a2e;
 }
 
-/* Box única da tela de login — mesma moldura/sombra do #app-shell usado
-   nas demais telas, para manter a identidade visual consistente. */
-.login-shell {
-  position: relative;
-  max-width: 1520px;
-  width: 100%;
-  margin: 0 auto;
-  min-height: calc(100vh - var(--header-h, 110px));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  overflow: hidden;
-  box-shadow: 0 24px 72px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05);
-  /* Substitua a imagem por uma foto real em /frontend/assets/img/hero-bg.jpg */
-  background:
-    linear-gradient(180deg, rgba(10,26,46,0.55) 0%, rgba(10,26,46,0.82) 100%),
-    url('../img/hero-bg.jpg') center/cover no-repeat,
-    radial-gradient(circle at 30% 20%, #1a3560 0%, #0a1a2e 70%);
-}
-
-.login-container--hero {
-  position: relative;
-  z-index: 1;
-  margin: 0 auto;
-  text-align: left;
-  background: var(--bg-card);
-}
-
 .btn-gerar-bo {
   width: 100%;
   padding: clamp(11px, 1.5vw, 13px);
@@ -2471,11 +2479,79 @@ table th {
 }
 
 @media (max-width: 480px) {
-  .login-shell { padding: 24px 16px; }
+  .app-stage { padding: 24px 16px; }
 }
 
 /* ============================================================
-   MODAL DE PÁGINA — telas/forms abrem flutuando sobre o fundo desfocado
+   APP STAGE — box fixa exibida sob o cabeçalho, com a ação central
+   ============================================================ */
+.app-stage {
+  position: relative;
+  min-height: calc(100vh - var(--header-h, 110px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  overflow: hidden;
+  background: radial-gradient(circle at 30% 20%, #1a3560 0%, #0a1a2e 70%);
+}
+
+/* Fundo dinâmico — camadas que alternam em crossfade (controlado via JS) */
+.app-stage-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.app-stage-bg-layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 1.6s ease;
+}
+.app-stage-bg-layer.active { opacity: 1; }
+
+.app-stage-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(10,26,46,0.55) 0%, rgba(10,26,46,0.82) 100%);
+}
+
+.app-stage-btn {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: clamp(32px, 5vw, 48px) clamp(48px, 8vw, 72px);
+  background: var(--bg-card);
+  border: none;
+  border-top: 4px solid var(--header-accent);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 72px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.05);
+  cursor: pointer;
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-text);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.app-stage-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 28px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05);
+}
+.app-stage-btn svg {
+  width: 44px;
+  height: 44px;
+  stroke: var(--color-primary);
+}
+
+/* ============================================================
+   MODAL FLUTUANTE PADRÃO — login e todos os forms do sistema
+   abrem como uma única box flutuante (mesmo padrão visual)
    ============================================================ */
 .pg-overlay {
   display: none;
@@ -2489,26 +2565,37 @@ table th {
 .pg-overlay.aberto { display: flex; animation: dmFadeIn 0.18s ease; }
 
 .pg-modal {
-  background: var(--bg-page);
-  width: 100%; height: 100%; max-width: 1300px;
+  background: var(--bg-card);
+  width: 92%;
+  max-width: 480px;
+  max-height: 90vh;
   display: flex; flex-direction: column;
-  box-shadow: 0 24px 72px rgba(0,0,0,0.55);
+  border-radius: var(--radius);
+  border-top: 4px solid var(--header-accent);
+  box-shadow: 0 24px 72px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05);
   animation: dmSlideUp 0.22s ease;
   overflow: hidden;
+  transition: max-width 0.2s ease;
 }
+.pg-modal.pg-modal--wide { max-width: 1100px; }
 
 .pg-modal-head {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 18px;
-  background: linear-gradient(135deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%);
-  color: var(--header-text);
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
   flex-shrink: 0;
 }
-.pg-modal-title { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.03em; }
+.pg-modal-title { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.02em; color: var(--color-text); }
 .pg-modal-close {
-  background: none; border: none; color: var(--header-text);
+  background: none; border: none; color: var(--color-text-muted);
   font-size: 1.6rem; line-height: 1; cursor: pointer; padding: 0 4px;
 }
-.pg-modal-close:hover { opacity: 0.7; }
+.pg-modal-close:hover { color: var(--color-danger); }
 
-.pg-modal-frame { flex: 1; width: 100%; border: none; background: var(--bg-page); }
+.pg-modal-body { flex: 1; overflow-y: auto; }
+.pg-modal-frame { flex: 1; width: 100%; height: 100%; min-height: 60vh; border: none; background: var(--bg-page); }
+
+/* Páginas carregadas dentro do modal flutuante (iframe) não repetem o
+   cabeçalho institucional — só o conteúdo do formulário é exibido. */
+body.in-page-modal .header { display: none; }
