@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="assets/css/style.css">
   <script src="assets/js/theme-switcher.js"></script>
 </head>
-<body>
+<body class="landing-body">
   <header class="header">
     <img src="/brasao-gcm.png" alt="Brasão GCM" class="logo">
     <div class="header-titulo">
@@ -21,21 +21,46 @@
     <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
   </header>
 
-  <main class="login-container">
-    <h2>Login</h2>
-    <div id="avisoInatividade" style="display:none;background:#FEF3C7;border-left:4px solid #F59E0B;
-      color:#92400E;padding:10px 14px;border-radius:6px;font-size:0.84rem;font-weight:600;margin-bottom:14px;">
-      ⏱️ Sua sessão foi encerrada por inatividade. Faça login novamente.
+  <section class="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <h1>Sistema de Registro de Ocorrências</h1>
+      <p class="hero-subtitulo">Guarda Civil Municipal de Bananeiras - PB</p>
+      <hr class="hero-divisor">
+      <p class="hero-descricao">Registre ocorrências de forma rápida e segura. Faça login para preencher o BO e gerar o documento em PDF.</p>
+
+      <main class="login-container login-container--hero">
+        <div id="avisoInatividade" style="display:none;background:#FEF3C7;border-left:4px solid #F59E0B;
+          color:#92400E;padding:10px 14px;border-radius:6px;font-size:0.84rem;font-weight:600;margin-bottom:14px;">
+          ⏱️ Sua sessão foi encerrada por inatividade. Faça login novamente.
+        </div>
+        <form onsubmit="login(); return false;">
+          <input type="text" id="usuario" placeholder="Usuário" required>
+          <input type="password" id="senha" placeholder="Senha" required>
+          <button type="submit" class="btn-gerar-bo">ENTRAR</button>
+        </form>
+        <p style="font-size:0.82rem;color:#888;text-align:center;margin-top:8px;">
+          <a href="/pages/recuperar-senha.html" style="color:#1d4ed8;">Esqueceu sua senha?</a>
+        </p>
+      </main>
     </div>
-    <form onsubmit="login(); return false;">
-      <input type="text" id="usuario" placeholder="Usuário" required>
-      <input type="password" id="senha" placeholder="Senha" required>
-      <button type="submit">Entrar</button>
-    </form>
-    <p style="font-size:0.82rem;color:#888;text-align:center;margin-top:8px;">
-      <a href="/pages/recuperar-senha.html" style="color:#1d4ed8;">Esqueceu sua senha?</a>
-    </p>
-  </main>
+  </section>
+
+  <section class="hero-features">
+    <div class="hero-feature">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg>
+      <span>Preenchimento Rápido</span>
+    </div>
+    <div class="hero-feature">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2l6 3v4c0 4.5-3 7.5-6 8.5-3-1-6-4-6-8.5V5l6-3z"/><path d="M10 6v4M10 13h.01"/></svg>
+      <span>Dados Seguros</span>
+    </div>
+    <div class="hero-feature">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/></svg>
+      <span>Download em PDF</span>
+    </div>
+  </section>
+
   <script>
     if (new URLSearchParams(window.location.search).get('motivo') === 'inatividade') {
       document.getElementById('avisoInatividade').style.display = 'block';
