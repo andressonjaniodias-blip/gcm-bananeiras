@@ -214,7 +214,7 @@
           </div>
           <iframe class="pg-modal-frame"></iframe>
         </div>`;
-      overlay.addEventListener('click', e => { if (e.target === overlay) window.closePageModal(); });
+      overlay.addEventListener('click', e => { if (!e.target.closest('.pg-modal')) window.closePageModal(); });
       document.body.appendChild(overlay);
     }
     overlay.querySelector('.pg-modal-title').textContent = title || '';
