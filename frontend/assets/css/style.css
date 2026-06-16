@@ -176,34 +176,36 @@ body {
   gap: 10px;
 }
 
-/* Grupo de botões flutuantes: menu e tema — canto superior esquerdo da stage */
+/* ── Botões flutuantes: menu e tema lado a lado ───────────── */
 .stage-float-btns {
   position: absolute;
   z-index: 2;
   top: clamp(20px, 4vw, 40px);
   left: clamp(20px, 4vw, 40px);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 12px;
+  align-items: flex-start;
 }
 
 .stage-fab {
-  width: 60px;
-  height: 60px;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   border-radius: 50%;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.40);
   cursor: pointer;
   transition: transform 0.18s, box-shadow 0.18s;
+  flex-shrink: 0;
 }
 .stage-fab:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.50);
 }
-.stage-fab svg { width: 26px; height: 26px; flex-shrink: 0; }
+.stage-fab svg { width: 22px; height: 22px; flex-shrink: 0; }
 
 .stage-fab--menu {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
@@ -215,64 +217,109 @@ body {
 }
 .stage-fab--tema svg { stroke: #1a1a1a; fill: none; }
 
-@media (max-width: 480px) {
-  .stage-fab { width: 52px; height: 52px; }
-  .stage-fab svg { width: 22px; height: 22px; }
-}
-
+/* ── Wrapper dos dropdowns ───────────────────────────────── */
 .header-tema-wrapper,
-.header-nav-wrapper { position: relative; }
-
-.header-nav-menu {
-  display: none;
-  flex-direction: column;
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  background: #1e2d42;
-  border: 1px solid rgba(255,255,255,0.12);
-  min-width: 220px;
-  overflow: hidden;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
-  z-index: 500;
-}
-.header-nav-menu.open { display: flex; }
-
-.header-nav-item {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-  padding: 10px 16px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #cbd5e1;
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
+.header-nav-wrapper {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  transition: background 0.15s, color 0.15s;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
 }
-.header-nav-item:last-child { border-bottom: none; }
-.header-nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
-.header-nav-item.nav-item-sair { color: #FCA5A5; }
-.header-nav-item.nav-item-sair:hover { background: rgba(198,40,40,0.18); color: #fff; }
 
+/* ── Lista do menu — pills expansíveis ───────────────────── */
+.header-nav-menu,
 .header-tema-menu {
   display: none;
   flex-direction: column;
+  gap: 8px;
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 10px);
   left: 0;
-  background: #1e2d42;
-  border: 1px solid rgba(255,255,255,0.12);
-  min-width: 190px;
-  overflow: hidden;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
   z-index: 500;
+  padding: 4px 0;
 }
+.header-nav-menu.open,
 .header-tema-menu.open { display: flex; }
+
+/* Cada item: começa como círculo, expande ao hover */
+.header-nav-item,
+.sb-tema-item {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 26px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  color: #fff;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  transition: width 0.28s cubic-bezier(.4,0,.2,1), box-shadow 0.18s;
+}
+.header-nav-item:hover,
+.sb-tema-item:hover {
+  width: 220px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+}
+
+/* Item "Sair" — vermelho */
+.header-nav-item.nav-item-sair {
+  background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-hover) 100%);
+}
+
+/* Abreviação — sempre visível (círculo) */
+.nav-item-abbr {
+  min-width: 52px;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+/* Label — aparece ao expandir */
+.nav-item-label {
+  padding-right: 18px;
+  opacity: 0;
+  transition: opacity 0.18s 0.08s;
+  pointer-events: none;
+}
+.header-nav-item:hover .nav-item-label { opacity: 1; }
+
+/* Itens de tema — mesma estrutura, cor dourada */
+.sb-tema-item {
+  background: linear-gradient(135deg, #1a2840 0%, #243554 100%);
+  padding: 0;
+}
+.sb-tema-dot {
+  min-width: 52px;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.sb-tema-dot::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: inherit;
+}
+.sb-tema-item:hover { color: #fff; }
 
 .header .usuario-nome {
   font-size: 0.82rem;
@@ -1472,13 +1519,6 @@ table button:hover { background: var(--color-primary-hover); }
   font-weight: 700;
 }
 
-.sb-tema-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  opacity: 0.9;
-}
 
 .sb-btn-sair {
   width: 100%;
