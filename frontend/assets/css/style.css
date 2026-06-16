@@ -2021,7 +2021,7 @@ body.has-sidebar .header {
     var(--bg-header-from) 30%,
     #162d52 65%,
     var(--bg-header-to) 100%);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 -1px 0 rgba(245,158,11,0.3);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
 }
 
 /* Linha "GUARDA CIVIL MUNICIPAL" em dourado */
