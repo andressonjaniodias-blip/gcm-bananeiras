@@ -31,6 +31,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     adicionarSuspeito();
     adicionarObjeto();
     iniciarAutosave();
+    _updateNavBtns();
     // Move modais para o body para evitar clipping pelo overflow:hidden do #app-shell
     ['modal-bo-concluido', 'modal-pdf-opts'].forEach(id => {
       const el = document.getElementById(id);
@@ -131,6 +132,22 @@ function confirmar(mensagem, titulo = 'Confirmar') {
   });
 }
 
+function navTab(dir) {
+  const current = document.querySelector('.tab-content:not(.hidden)');
+  const idx = TAB_ORDER.indexOf(current?.id);
+  const next = TAB_ORDER[idx + dir];
+  if (next) showTab(next);
+}
+
+function _updateNavBtns() {
+  const current = document.querySelector('.tab-content:not(.hidden)');
+  const idx = TAB_ORDER.indexOf(current?.id);
+  const prev = document.getElementById('tabBtnPrev');
+  const next = document.getElementById('tabBtnNext');
+  if (prev) prev.disabled = idx <= 0;
+  if (next) next.disabled = idx >= TAB_ORDER.length - 1;
+}
+
 function showTab(tabId, scroll) {
   const current = document.querySelector('.tab-content:not(.hidden)');
   const currentId = current?.id;
@@ -149,6 +166,7 @@ function showTab(tabId, scroll) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   _renderMobileNav();
+  _updateNavBtns();
 }
 
 function _renderMobileNav() {
