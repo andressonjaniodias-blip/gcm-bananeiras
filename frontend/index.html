@@ -135,7 +135,7 @@
       const modal = document.getElementById('pg-modal');
       const body  = document.getElementById('pg-modal-body');
       document.getElementById('pg-modal-title').textContent = title || '';
-      document.getElementById('pg-modal-head').classList.remove('pg-modal-head--accent');
+      document.getElementById('pg-modal-head').classList.add('pg-modal-head--accent');
       modal.classList.toggle('pg-modal--wide', !(opts && opts.narrow));
       document.getElementById('pg-modal-close').style.display = '';
       body.innerHTML = '';
