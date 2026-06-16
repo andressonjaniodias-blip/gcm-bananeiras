@@ -49,9 +49,9 @@
 
   --shadow-card:  0 4px 18px rgba(33,113,181,0.10);
   --shadow-input: 0 0 0 3px rgba(107,174,214,0.30);
-  --radius:       12px;
-  --radius-sm:    7px;
-  --radius-pill:  20px;
+  --radius:       0;
+  --radius-sm:    0;
+  --radius-pill:  0;
 }
 
 /* Dark Command — operacional escuro */
@@ -99,9 +99,9 @@
 
   --shadow-card:  0 4px 24px rgba(0,0,0,0.45);
   --shadow-input: 0 0 0 3px rgba(59,130,246,0.25);
-  --radius:       12px;
-  --radius-sm:    7px;
-  --radius-pill:  20px;
+  --radius:       0;
+  --radius-sm:    0;
+  --radius-pill:  0;
 }
 
 /* Google Material — paleta Google limpa */
@@ -149,9 +149,9 @@
 
   --shadow-card:  0 1px 2px rgba(60,64,67,0.10), 0 2px 6px rgba(60,64,67,0.08);
   --shadow-input: 0 0 0 2px rgba(26,115,232,0.30);
-  --radius:       8px;
-  --radius-sm:    4px;
-  --radius-pill:  20px;
+  --radius:       0;
+  --radius-sm:    0;
+  --radius-pill:  0;
 }
 
 /* ============================================================
@@ -182,7 +182,7 @@ body {
   max-width: 1520px;
   width: 100%;
   margin: 0 auto;
-  border-radius: clamp(10px, 1.5vw, 18px);
+  border-radius: 0;
   /* overflow: clip preserva o recorte visual das bordas arredondadas
      sem criar um scroll container — o que quebraria position: sticky */
   overflow: clip;
@@ -272,6 +272,50 @@ body {
   align-items: center;
   gap: 10px;
 }
+
+/* Linha de botões (menu / tema) — sempre centralizada, abaixo do título */
+.header-actions-row {
+  flex: 1 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.header-icon-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: var(--header-text);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.header-icon-btn:hover { background: rgba(255,255,255,0.24); }
+.header-icon-btn svg { width: 18px; height: 18px; }
+
+.header-tema-wrapper { position: relative; }
+
+.header-tema-menu {
+  display: none;
+  flex-direction: column;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e2d42;
+  border: 1px solid rgba(255,255,255,0.12);
+  min-width: 190px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  z-index: 500;
+}
+.header-tema-menu.open { display: flex; }
 
 .header .usuario-nome {
   font-size: 0.82rem;
@@ -1232,7 +1276,12 @@ table button:hover { background: var(--color-primary-hover); }
     flex-shrink: 0;
     box-shadow: 2px 0 16px rgba(0,0,0,0.2);
     transform: none !important;
+    transition: width 0.22s ease, opacity 0.18s ease;
+    overflow: hidden;
   }
+
+  /* Botão de menu do cabeçalho recolhe a sidebar também no desktop */
+  body.sb-collapsed #sidebar { width: 0; opacity: 0; box-shadow: none; }
 
   /* Só o conteúdo rola, internamente */
   #app-content {
@@ -1246,7 +1295,6 @@ table button:hover { background: var(--color-primary-hover); }
     padding-top: 16px;
   }
 
-  #sb-fab       { display: none !important; }
   .sb-close-btn { display: none !important; }
 }
 
@@ -1264,29 +1312,6 @@ table button:hover { background: var(--color-primary-hover); }
   z-index: 299;
   backdrop-filter: blur(2px);
 }
-
-/* Botão flutuante — oculto no desktop, visível no mobile */
-#sb-fab {
-  display: none;
-  position: fixed;
-  bottom: 16px;
-  right: 16px;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--color-primary, #1E3A5F);
-  color: #fff;
-  border: none;
-  font-size: 1.4rem;
-  line-height: 1;
-  cursor: pointer;
-  z-index: 400;
-  box-shadow: 0 4px 16px rgba(30,58,95,0.45);
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s, box-shadow 0.2s;
-}
-#sb-fab:hover { background: #162d4a; box-shadow: 0 6px 20px rgba(30,58,95,0.55); }
 
 /* Botão fechar — oculto no desktop */
 .sb-close-btn {
@@ -1808,9 +1833,6 @@ body.has-sidebar .header {
     padding-top: calc(var(--header-h) + 24px);
   }
 
-  /* Mostra botão flutuante e botão de fechar */
-  #sb-fab { display: flex; }
-  body.sb-open #sb-fab { display: none !important; }
   .sb-close-btn { display: none !important; }
 }
 
@@ -2389,3 +2411,42 @@ table th {
   .detail-grid-2 { grid-template-columns: 1fr; }
   .hist-item-right { display: none; }
 }
+
+/* ============================================================
+   MODAL DE PÁGINA — telas/forms abrem flutuando sobre o fundo desfocado
+   ============================================================ */
+.pg-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 1200;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  align-items: center; justify-content: center;
+  padding: clamp(8px, 2vw, 32px);
+}
+.pg-overlay.aberto { display: flex; animation: dmFadeIn 0.18s ease; }
+
+.pg-modal {
+  background: var(--bg-page);
+  width: 100%; height: 100%; max-width: 1300px;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 72px rgba(0,0,0,0.55);
+  animation: dmSlideUp 0.22s ease;
+  overflow: hidden;
+}
+
+.pg-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%);
+  color: var(--header-text);
+  flex-shrink: 0;
+}
+.pg-modal-title { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.03em; }
+.pg-modal-close {
+  background: none; border: none; color: var(--header-text);
+  font-size: 1.6rem; line-height: 1; cursor: pointer; padding: 0 4px;
+}
+.pg-modal-close:hover { opacity: 0.7; }
+
+.pg-modal-frame { flex: 1; width: 100%; border: none; background: var(--bg-page); }
