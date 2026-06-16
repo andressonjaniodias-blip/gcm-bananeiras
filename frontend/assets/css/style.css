@@ -275,31 +275,46 @@ body {
   gap: 10px;
 }
 
-/* Linha de botões (menu / tema) — canto inferior direito do cabeçalho */
+/* Coluna esquerda: logo GCM + botões abaixo */
+.header-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Linha de botões (menu / tema) — abaixo do logo GCM */
 .header-actions-row {
-  position: absolute;
-  right: clamp(14px, 3vw, 30px);
-  bottom: clamp(10px, 1.6vw, 16px);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .header-icon-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.25);
-  color: var(--header-text);
+  gap: 6px;
+  padding: 6px 12px;
+  height: 32px;
+  background: var(--color-primary);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.2s;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
 }
-.header-icon-btn:hover { background: rgba(255,255,255,0.24); }
-.header-icon-btn svg { width: 18px; height: 18px; }
+.header-icon-btn--tema {
+  background: var(--color-accent);
+  color: #1a1a1a;
+}
+.header-icon-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.header-icon-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
 
 .header-tema-wrapper,
 .header-nav-wrapper { position: relative; }
