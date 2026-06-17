@@ -35,7 +35,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Move modais para o body para evitar clipping pelo overflow:hidden do #app-shell
     ['modal-bo-concluido', 'modal-pdf-opts'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) document.body.appendChild(el);
+      if (el) {
+        document.body.appendChild(el);
+        el.addEventListener('click', e => { if (e.target === el) el.style.display = 'none'; });
+      }
     });
   }
 
@@ -154,9 +157,6 @@ function showTab(tabId, scroll) {
   const currentIdx = TAB_ORDER.indexOf(currentId);
   const targetIdx  = TAB_ORDER.indexOf(tabId);
 
-  // Bloqueia avanço se aba atual tem campos obrigatórios vazios
-  if (targetIdx > currentIdx && !_validarAbaAtual()) return;
-
   document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   const section = document.getElementById(tabId);
@@ -181,7 +181,8 @@ function _renderMobileNav() {
     const prev = document.createElement('button');
     prev.type = 'button';
     prev.className = 'mobile-nav-btn mobile-nav-prev';
-    prev.textContent = '← Anterior';
+    prev.setAttribute('aria-label', 'Aba anterior');
+    prev.innerHTML = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M13 4l-6 6 6 6"/></svg>`;
     prev.onclick = () => showTab(TAB_ORDER[idx - 1]);
     nav.appendChild(prev);
   } else {
@@ -195,7 +196,8 @@ function _renderMobileNav() {
     const next = document.createElement('button');
     next.type = 'button';
     next.className = 'mobile-nav-btn mobile-nav-next';
-    next.textContent = 'Próximo →';
+    next.setAttribute('aria-label', 'Próxima aba');
+    next.innerHTML = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M7 4l6 6-6 6"/></svg>`;
     next.onclick = () => showTab(TAB_ORDER[idx + 1]);
     nav.appendChild(next);
   } else {
@@ -269,7 +271,7 @@ function htmlPessoa(tipo, idx) {
     <div class="campo-group"><label>Alcunha</label>
       <input type="text" name="alcunha" placeholder="Apelido" maxlength="100"></div>
     <div class="campo-group"><label>CPF</label>
-      <input type="text" name="cpf" placeholder="000.000.000-00" maxlength="14" oninput="mascararCPF(this)" onblur="validarCPFInput(this)"></div>
+      <input type="text" name="cpf" placeholder="000.000.000-00" maxlength="14" oninput="mascararCPF(this)"></div>
     <div class="campo-group"><label>RG</label>
       <input type="text" name="rg" placeholder="00.000.000-0" maxlength="12" oninput="mascararRG(this)"></div>
     <div class="campo-group"><label>Nascimento</label>
@@ -467,15 +469,6 @@ async function finalizarBO() {
     return;
   }
 
-  // Valida todos os CPFs preenchidos
-  const cpfsInvalidos = [...document.querySelectorAll('[name="cpf"]')]
-    .filter(el => el.value && !cpfValido(el.value));
-  if (cpfsInvalidos.length) {
-    cpfsInvalidos.forEach(el => el.classList.add('campo-invalido'));
-    showToast(`${cpfsInvalidos.length} CPF(s) inválido(s). Corrija antes de finalizar.`, 'danger');
-    cpfsInvalidos[0].focus();
-    return;
-  }
 
   const ok = await confirmar('Esta ação não poderá ser desfeita.', 'Finalizar Boletim de Ocorrência?');
   if (!ok) return;
