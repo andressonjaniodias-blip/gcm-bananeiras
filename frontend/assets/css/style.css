@@ -1953,7 +1953,7 @@ body.has-sidebar .header {
 
 /* ── Navegação mobile entre abas ─────────────────────────────────────────── */
 .mobile-tab-nav {
-  display: none;
+  display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 24px;
@@ -1985,7 +1985,6 @@ body.has-sidebar .header {
 
 @media (max-width: 768px) {
   .tabs { display: none; }
-  .mobile-tab-nav { display: flex; }
 }
 
 @media (max-width: 768px) {
