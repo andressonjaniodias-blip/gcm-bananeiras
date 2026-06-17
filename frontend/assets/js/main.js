@@ -171,7 +171,6 @@ function showTab(tabId, scroll) {
 
 function _renderMobileNav() {
   document.querySelectorAll('.mobile-tab-nav').forEach(el => el.remove());
-  if (window.innerWidth > 768) return;
   const visible = document.querySelector('.tab-content:not(.hidden)');
   if (!visible) return;
   const idx = TAB_ORDER.indexOf(visible.id);
