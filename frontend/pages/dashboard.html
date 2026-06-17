@@ -252,9 +252,10 @@
   <!-- Modal de conclusão / compartilhar BO -->
   <div id="modal-bo-concluido" style="
     display:none; position:fixed; inset:0; z-index:10000;
-    background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
+    background:rgba(0,0,0,0.6); align-items:center; justify-content:center;"
+    onclick="if(event.target===this){this.style.display='none';}">
     <div style="
-      background:#fff; border-radius:14px; padding:32px 28px;
+      background:#fff; border-radius:14px; padding:32px 28px; border:none;
       max-width:420px; width:92%; box-shadow:0 20px 60px rgba(0,0,0,0.35);
       text-align:center;">
       <div style="font-size:2.8rem; margin-bottom:10px;">✅</div>
