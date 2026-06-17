@@ -49,9 +49,6 @@
   <main class="dashboard">
 
     <div class="tabs-nav-wrap">
-      <button class="tab-nav-btn" id="tabBtnPrev" onclick="navTab(-1)" title="Aba anterior">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4l-6 6 6 6"/></svg>
-      </button>
       <div class="tabs-scroll-wrap">
         <nav class="tabs">
           <button onclick="showTab('solicitacao')" class="tab-btn active" data-tab="solicitacao">Dados da Solicitação</button>
@@ -64,9 +61,6 @@
           <button onclick="showTab('autoridade')" class="tab-btn" data-tab="autoridade">Autoridade</button>
         </nav>
       </div>
-      <button class="tab-nav-btn" id="tabBtnNext" onclick="navTab(1)" title="Próxima aba">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l6 6-6 6"/></svg>
-      </button>
     </div>
 
     <!-- Solicitação -->
@@ -255,9 +249,9 @@
     background:rgba(0,0,0,0.6); align-items:center; justify-content:center;"
     onclick="if(event.target===this){this.style.display='none';}">
     <div style="
-      background:#fff; border-radius:14px; padding:32px 28px; border:none;
+      background:#fff; border-radius:14px; padding:32px 28px; border:none; outline:none;
       max-width:420px; width:92%; box-shadow:0 20px 60px rgba(0,0,0,0.35);
-      text-align:center;">
+      text-align:center; overflow:hidden;">
       <div style="font-size:2.8rem; margin-bottom:10px;">✅</div>
       <div style="font-size:1.1rem; font-weight:800; color:#1E3A5F; margin-bottom:6px;">BO Finalizado com Sucesso!</div>
       <div style="font-size:0.88rem; color:#6B7280; margin-bottom:4px;">Número registrado:</div>
