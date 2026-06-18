@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 // Rotas que não exigem CSRF token (usuário ainda não autenticado)
-const SKIP_EXACT = new Set(['/api/auth/login', '/api/auth/setup']);
+const SKIP_EXACT = new Set(['/api/auth/login', '/api/auth/setup', '/api/auth/esqueci-senha', '/api/auth/redefinir-senha']);
 
 function csrfMiddleware(req, res, next) {
   if (SAFE_METHODS.has(req.method)) return next();
