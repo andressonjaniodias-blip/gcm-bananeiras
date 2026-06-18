@@ -2519,7 +2519,8 @@ table th {
   overflow: hidden;
   transition: max-width 0.2s ease;
 }
-.pg-modal.pg-modal--wide { max-width: min(1100px, 96vw); }
+.pg-modal.pg-modal--wide   { max-width: min(1100px, 96vw); }
+.pg-modal.pg-modal--narrow { max-width: 420px; }
 
 .pg-modal-head {
   display: flex; align-items: center; justify-content: space-between;
