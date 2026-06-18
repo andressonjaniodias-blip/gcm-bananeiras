@@ -43,6 +43,9 @@ const uploadLimiter = rateLimit({
 
 const app = express();
 
+// Necessário para rate limiting funcionar corretamente atrás do proxy do Render
+app.set('trust proxy', 1);
+
 // ✅ CORS Configurado Corretamente
 const allowedOrigins = process.env.CORS_ORIGIN 
   ? process.env.CORS_ORIGIN.split(',')
