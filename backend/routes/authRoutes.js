@@ -355,15 +355,15 @@ router.get('/auditoria', verificarToken, async (req, res) => {
 // Solicitar recuperação de senha por e-mail
 router.post('/esqueci-senha', async (req, res) => {
   try {
-    const { usuario } = req.body;
-    if (!usuario) return res.status(400).json({ error: 'Informe o nome de usuário.' });
+    const { matricula } = req.body;
+    if (!matricula) return res.status(400).json({ error: 'Informe o número de matrícula.' });
 
     const { rows } = await db.query(
       `SELECT u.id, u.usuario, COALESCE(u.email, a.email) AS email
        FROM usuarios u
-       LEFT JOIN agentes a ON a.usuario = u.usuario
-       WHERE u.usuario = $1`,
-      [usuario]
+       JOIN agentes a ON a.usuario = u.usuario
+       WHERE a.matricula = $1`,
+      [matricula.trim()]
     );
     // Resposta genérica para evitar enumeração de usuários
     if (!rows[0] || !rows[0].email) {
