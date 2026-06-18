@@ -399,12 +399,87 @@ router.post('/esqueci-senha', async (req, res) => {
       to: rows[0].email,
       toName: rows[0].usuario,
       subject: 'Recuperação de Senha — GCM Bananeiras',
-      html: `
-        <p>Olá, <strong>${rows[0].usuario}</strong>.</p>
-        <p>Recebemos uma solicitação para redefinir sua senha no sistema da GCM Bananeiras.</p>
-        <p><a href="${link}" style="background:#1d4ed8;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;">Redefinir minha senha</a></p>
-        <p>Este link expira em <strong>1 hora</strong>. Se você não solicitou a redefinição, ignore este e-mail.</p>
-      `,
+      html: `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recuperação de Senha</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+
+          <!-- Cabeçalho -->
+          <tr>
+            <td align="center" style="background:linear-gradient(135deg,#0e1f3d 0%,#2171B5 100%);border-radius:10px 10px 0 0;padding:32px 24px;">
+              <p style="margin:0 0 4px 0;color:#a8c8f0;font-size:12px;letter-spacing:2px;text-transform:uppercase;">Prefeitura Municipal de Bananeiras</p>
+              <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:0.5px;">Guarda Civil Municipal</h1>
+              <p style="margin:8px 0 0 0;color:#a8c8f0;font-size:13px;">Sistema de Registro de BO</p>
+            </td>
+          </tr>
+
+          <!-- Corpo -->
+          <tr>
+            <td style="background:#ffffff;padding:36px 32px;">
+              <h2 style="margin:0 0 8px 0;color:#0e1f3d;font-size:20px;">Redefinição de Senha</h2>
+              <p style="margin:0 0 20px 0;color:#555;font-size:15px;line-height:1.6;">
+                Olá, <strong style="color:#0e1f3d;">${rows[0].usuario}</strong>.
+              </p>
+              <p style="margin:0 0 28px 0;color:#555;font-size:15px;line-height:1.6;">
+                Recebemos uma solicitação para redefinir a senha da sua conta. Clique no botão abaixo para criar uma nova senha:
+              </p>
+
+              <!-- Botão -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:8px 0 32px 0;">
+                    <a href="${link}" style="display:inline-block;background:#1d4ed8;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 36px;border-radius:6px;letter-spacing:0.5px;">
+                      Redefinir minha senha
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Aviso de expiração -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff8e1;border-left:4px solid #f59e0b;border-radius:4px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:12px 16px;color:#92400e;font-size:13px;line-height:1.5;">
+                    ⏱️ <strong>Este link expira em 1 hora.</strong> Após esse prazo será necessário solicitar um novo link.
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0;color:#888;font-size:13px;line-height:1.6;">
+                Se você não solicitou a redefinição de senha, ignore este e-mail. Sua senha permanecerá a mesma.
+              </p>
+
+              <!-- Link alternativo -->
+              <p style="margin:20px 0 0 0;color:#aaa;font-size:11px;line-height:1.6;word-break:break-all;">
+                Se o botão não funcionar, copie e cole este link no navegador:<br>
+                <a href="${link}" style="color:#1d4ed8;">${link}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Rodapé -->
+          <tr>
+            <td align="center" style="background:#e8edf2;border-radius:0 0 10px 10px;padding:20px 24px;">
+              <p style="margin:0;color:#888;font-size:12px;line-height:1.6;">
+                Este é um e-mail automático. Por favor, não responda.<br>
+                © ${new Date().getFullYear()} Guarda Civil Municipal de Bananeiras — PB
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
     });
 
     res.json({ message: 'Se o usuário existir e tiver e-mail cadastrado, um link de recuperação será enviado.' });
