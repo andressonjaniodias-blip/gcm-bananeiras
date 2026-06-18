@@ -661,7 +661,6 @@
       const priv = perfilRole === 'admin' || perfilRole === 'supervisor';
       document.getElementById('bdAcoesList').innerHTML = `
         <button class="detail-btn-pdf" style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#EEF2FF;color:#4F46E5;" onclick="baixarPDF(${bo.id},'${bo.numero}')">⬇️ Baixar PDF</button>
-        ${priv ? `<button class="detail-btn-edit" style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#FEF9C3;color:#854D0E;" onclick="editarBO(${bo.id},'${bo.numero}')">✏️ Editar BO</button>` : ''}
         ${priv ? `<button class="detail-btn-del"  style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#FEE2E2;color:#991B1B;" onclick="fecharBODetail();abrirModalExcluir(${bo.id},'${bo.numero}')">🗑️ Excluir BO</button>` : ''}`;
 
       boDetailTab('ocorrencia', document.querySelector('#boDetailTabs .tab-btn'));
