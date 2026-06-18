@@ -151,6 +151,7 @@
     function openLoginModal() {
       const modal = document.getElementById('pg-modal');
       modal.classList.remove('pg-modal--wide');
+      modal.classList.add('pg-modal--narrow');
       document.getElementById('pg-modal-title').textContent = 'Acessar o Sistema';
       document.getElementById('pg-modal-head').classList.add('pg-modal-head--accent');
       document.getElementById('pg-modal-close').style.display = 'none';
