@@ -226,7 +226,6 @@
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
   <script>
-    let relatorioIdAtual = null;
     let todosRelatorios = [];
 
     // Inicializa campos automáticos
@@ -311,10 +310,8 @@
       };
 
       try {
-        const method = relatorioIdAtual ? 'PUT' : 'POST';
-        const url    = relatorioIdAtual
-          ? `${API_BASE_URL}/api/relatorio/${relatorioIdAtual}`
-          : `${API_BASE_URL}/api/relatorio`;
+        const method = 'POST';
+        const url    = `${API_BASE_URL}/api/relatorio`;
 
         const res = await fetch(url, {
           method,
@@ -327,7 +324,6 @@
         if (!res.ok) { const e = await res.json(); mostrarMsg(e.error || 'Erro ao salvar.', 'danger'); return; }
 
         const result = await res.json();
-        relatorioIdAtual = result.id;
         document.getElementById('numRelatorio').textContent = result.numero;
         mostrarMsg(status === 'finalizado' ? 'Relatório finalizado com sucesso!' : 'Rascunho salvo!', 'success');
         carregarRelatorios();
