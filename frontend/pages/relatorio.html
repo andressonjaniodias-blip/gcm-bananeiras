@@ -561,7 +561,8 @@
         await navigator.share({ files: [file], title: titulo, text: texto });
       } catch (err) {
         if (err && err.name === 'AbortError') return;
-        showToast('Erro ao compartilhar PDF.', 'danger');
+        console.error('compartilharPDFRel:', err);
+        showToast(`Erro ao compartilhar: ${err?.name || ''} ${err?.message || err}`, 'danger');
       }
     }
 
