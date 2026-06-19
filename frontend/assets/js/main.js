@@ -630,16 +630,43 @@ function modalBOBaixarPDF() {
 
 async function modalBOCompartilhar() {
   const numero = document.getElementById('modal-bo-numero')?.textContent || '';
+  const titulo = `BO GCM - ${numero}`;
   const texto  = `Boletim de Ocorrência registrado pela GCM Bananeiras\nNúmero: ${numero}`;
 
-  if (navigator.share) {
+  // 1) Tenta compartilhar o PDF como arquivo (folha de compartilhamento nativa)
+  if (_pdfBOId && navigator.canShare) {
     try {
-      await navigator.share({ title: `BO GCM - ${numero}`, text: texto });
-      return;
-    } catch {}
+      const res = await fetch(`${API_BASE_URL}/api/bo/${_pdfBOId}/pdf`, { credentials: 'include' });
+      if (res.ok) {
+        const blob = await res.blob();
+        const file = new File([blob], `bo_${numero || _pdfBOId}.pdf`, { type: 'application/pdf' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: titulo, text: texto });
+          return;
+        }
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return; // usuário cancelou a folha de compartilhamento
+      // demais erros: segue para os fallbacks
+    }
   }
 
-  // Fallback: WhatsApp
+  // 2) Sem suporte a arquivos: tenta compartilhar apenas o texto
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: titulo, text: texto });
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+  }
+
+  // 3) Fallback final (navegadores sem Web Share, ex.: desktop/HTTP):
+  //    baixa o PDF e abre o WhatsApp Web com o texto.
+  if (_pdfBOId) {
+    showToast('Compartilhamento nativo indisponível neste dispositivo. Baixando o PDF...', 'info');
+    confirmarPdfBO();
+  }
   const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
   window.open(url, '_blank', 'noopener');
 }
