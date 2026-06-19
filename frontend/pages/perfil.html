@@ -325,7 +325,7 @@
           <label>Senha atual</label>
           <div class="input-senha-wrap">
             <input type="password" id="senhaAtual" placeholder="Digite sua senha atual" required>
-            <button type="button" class="btn-toggle-senha" onclick="toggleSenha('senhaAtual', this)" title="Mostrar/ocultar senha">👁️</button>
+            <button type="button" class="btn-toggle-senha" onclick="toggleSenha('senhaAtual', this)" title="Mostrar/ocultar senha"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><ellipse cx="10" cy="10" rx="7" ry="4.5"/><circle cx="10" cy="10" r="2"/></svg></button>
           </div>
         </div>
         <div class="field">
@@ -333,7 +333,7 @@
           <div class="input-senha-wrap">
             <input type="password" id="senhaNova" placeholder="Mínimo 6 caracteres" required minlength="6"
                    oninput="avaliarSenha(this.value)">
-            <button type="button" class="btn-toggle-senha" onclick="toggleSenha('senhaNova', this)" title="Mostrar/ocultar senha">👁️</button>
+            <button type="button" class="btn-toggle-senha" onclick="toggleSenha('senhaNova', this)" title="Mostrar/ocultar senha"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><ellipse cx="10" cy="10" rx="7" ry="4.5"/><circle cx="10" cy="10" r="2"/></svg></button>
           </div>
           <div class="senha-strength"><div class="senha-strength-bar" id="strengthBar"></div></div>
           <div class="senha-hint" id="strengthHint">Digite a nova senha</div>
@@ -342,7 +342,7 @@
           <label>Confirmar nova senha</label>
           <div class="input-senha-wrap">
             <input type="password" id="senhaConfirmar" placeholder="Repita a nova senha" required>
-            <button type="button" class="btn-toggle-senha" onclick="toggleSenha('senhaConfirmar', this)" title="Mostrar/ocultar senha">👁️</button>
+            <button type="button" class="btn-toggle-senha" onclick="toggleSenha('senhaConfirmar', this)" title="Mostrar/ocultar senha"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><ellipse cx="10" cy="10" rx="7" ry="4.5"/><circle cx="10" cy="10" r="2"/></svg></button>
           </div>
         </div>
         <button type="submit" class="btn-primary">Alterar Senha</button>
@@ -661,11 +661,13 @@
       reader.readAsDataURL(file);
     }
 
+    const SVG_OLHO_ABERTO  = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><ellipse cx="10" cy="10" rx="7" ry="4.5"/><circle cx="10" cy="10" r="2"/></svg>`;
+    const SVG_OLHO_FECHADO = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 3l14 14"/><path d="M6.5 6.8C4.9 7.7 3.7 8.9 3 10c1.7 2.7 4.1 4.5 7 4.5 1.3 0 2.5-.4 3.5-1"/><path d="M9 5.6c.3 0 .7-.1 1-.1 2.9 0 5.3 1.8 7 4.5-.5.8-1.1 1.5-1.8 2.1"/></svg>`;
     function toggleSenha(inputId, btn) {
       const input = document.getElementById(inputId);
       const mostrar = input.type === 'password';
       input.type = mostrar ? 'text' : 'password';
-      btn.textContent = mostrar ? '🙈' : '👁️';
+      btn.innerHTML = mostrar ? SVG_OLHO_FECHADO : SVG_OLHO_ABERTO;
     }
 
     function toast(texto, tipo) {
