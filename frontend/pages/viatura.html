@@ -206,10 +206,6 @@
         </div>
         <button class="detail-modal-close" onclick="fecharViatDetail()">×</button>
       </div>
-      <nav class="tabs detail-tabs" id="viatDetailTabs">
-        <button class="tab-btn active" onclick="viatDetailTab('info',this)">Detalhes</button>
-        <button class="tab-btn" onclick="viatDetailTab('obs',this)">Observações</button>
-      </nav>
       <div class="detail-modal-body">
         <div id="viatDetailInfo">
           <div class="detail-grid-2">
@@ -236,7 +232,7 @@
           </div>
           <div id="vdDadosExtra"></div>
         </div>
-        <div id="viatDetailObs" class="hidden">
+        <div id="viatDetailObs">
           <div class="detail-field">
             <div class="detail-field-label">Observações</div>
             <div class="detail-field-value pre" id="vdObs">—</div>
@@ -450,7 +446,6 @@
           <div class="detail-field"><div class="detail-field-label">Descrição</div><div class="detail-field-value pre">${dados.descricao || '—'}</div></div>`;
       }
       document.getElementById('vdDadosExtra').innerHTML = extra;
-      viatDetailTab('info', document.querySelector('#viatDetailTabs .tab-btn'));
       document.getElementById('viatDetailOverlay').classList.add('aberto');
     }
 
@@ -459,12 +454,6 @@
       document.getElementById('viatDetailOverlay').classList.remove('aberto');
     }
 
-    function viatDetailTab(tab, btn) {
-      document.getElementById('viatDetailInfo').classList.toggle('hidden', tab !== 'info');
-      document.getElementById('viatDetailObs').classList.toggle('hidden', tab !== 'obs');
-      document.querySelectorAll('#viatDetailTabs .tab-btn').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-    }
 
     function filtrarViatura() {
       const cod  = document.getElementById('buscarViat').value.toLowerCase();
