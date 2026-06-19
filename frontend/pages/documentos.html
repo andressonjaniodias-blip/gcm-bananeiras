@@ -202,10 +202,6 @@
         </div>
         <button class="detail-modal-close" onclick="fecharDocDetail()">×</button>
       </div>
-      <nav class="tabs detail-tabs" id="docDetailTabs">
-        <button class="tab-btn active" onclick="docDetailTab('info',this)">Informações</button>
-        <button class="tab-btn" onclick="docDetailTab('acoes',this)">Ações</button>
-      </nav>
       <div class="detail-modal-body">
         <div id="docDetailInfo">
           <div class="detail-grid-2">
@@ -231,7 +227,7 @@
             <div class="detail-field-value pre" id="ddDescricao">—</div>
           </div>
         </div>
-        <div id="docDetailAcoes" class="hidden">
+        <div id="docDetailAcoes">
           <p style="color:var(--color-text-muted);font-size:0.88rem;margin-bottom:16px;">Selecione uma ação para este documento.</p>
           <div style="display:flex;flex-direction:column;gap:10px;">
             <button id="ddBtnDl" class="detail-btn-dl" style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:var(--color-primary);color:#fff;">⬇️ Baixar Arquivo</button>
@@ -459,7 +455,6 @@
         btnDest.style.display = 'none';
       }
 
-      docDetailTab('info', document.querySelector('#docDetailTabs .tab-btn'));
       document.getElementById('docDetailOverlay').classList.add('aberto');
     }
 
@@ -468,12 +463,6 @@
       document.getElementById('docDetailOverlay').classList.remove('aberto');
     }
 
-    function docDetailTab(tab, btn) {
-      document.getElementById('docDetailInfo').classList.toggle('hidden', tab !== 'info');
-      document.getElementById('docDetailAcoes').classList.toggle('hidden', tab !== 'acoes');
-      document.querySelectorAll('#docDetailTabs .tab-btn').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-    }
 
     async function toggleDestaque(id, novoValor, btn) {
       btn.disabled = true;
