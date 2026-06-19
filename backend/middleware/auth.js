@@ -42,13 +42,25 @@ function parseUserAgent(ua = '') {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-function verificarToken(req, res, next) {
+async function verificarToken(req, res, next) {
   try {
     const token = req.cookies?.authToken || req.headers.authorization?.split(' ')[1];
     if (!token) {
       return res.status(401).json({ error: 'Token ausente. Faça login primeiro.' });
     }
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Admin pode ter múltiplas sessões simultâneas; demais roles: apenas uma
+    if (decoded.role !== 'admin') {
+      const { rows } = await db.query(
+        'SELECT sessao_ativa FROM usuarios WHERE usuario = $1',
+        [decoded.usuario]
+      );
+      if (!rows[0] || rows[0].sessao_ativa !== decoded.sessao_id) {
+        return res.status(401).json({ error: 'Sessão encerrada. Sua conta foi acessada em outro dispositivo.', codigo: 'SESSAO_SUBSTITUIDA' });
+      }
+    }
+
     req.usuario = decoded;
     next();
   } catch (err) {
