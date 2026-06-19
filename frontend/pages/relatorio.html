@@ -209,7 +209,7 @@
         <!-- Aba Ações -->
         <div id="relDetailAcoes">
           <p style="color:var(--color-text-muted);font-size:0.88rem;margin-bottom:16px;">Selecione uma ação para o relatório <strong id="rdAcoesNum">—</strong>.</p>
-          <div style="display:flex;flex-direction:column;gap:10px;" id="rdAcoesList"></div>
+          <div style="display:flex;flex-direction:row;gap:10px;align-items:center;" id="rdAcoesList"></div>
         </div>
       </div>
       <div class="detail-footer">
@@ -499,7 +499,7 @@
       obsWrap.style.display = r.obs ? '' : 'none';
       document.getElementById('rdAcoesNum').textContent = r.numero;
       const acoesList = document.getElementById('rdAcoesList');
-      acoesList.innerHTML = `<button class="detail-btn-pdf" style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#EEF2FF;color:#4F46E5;" onclick="baixarPDFRel(${r.id},'${r.numero}')">⬇️ Baixar PDF</button>`;
+      acoesList.innerHTML = `<button class="detail-icon-btn detail-icon-btn--pdf" title="Baixar PDF" onclick="baixarPDFRel(${r.id},'${r.numero}')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10 3v10M6 9l4 4 4-4"/><path d="M4 17h12"/></svg></button>`;
       document.getElementById('relDetailOverlay').classList.add('aberto');
     }
 
