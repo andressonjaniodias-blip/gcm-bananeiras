@@ -92,6 +92,10 @@
       wrapper.removeChild(headerEl);
       const actionsRow = document.createElement('div');
       actionsRow.className = 'header-actions-row';
+      const hdrInitial = (perfil.usuario || '?')[0].toUpperCase();
+      const hdrAvatarContent = perfil.foto
+        ? `<img src="${perfil.foto}" alt="Foto de perfil">`
+        : hdrInitial;
       actionsRow.innerHTML = `
         <button class="header-icon-btn" id="hdr-btn-menu" title="Menu" onclick="window.toggleSidebar()">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
@@ -105,7 +109,8 @@
             <button class="sb-tema-item" data-theme="dark-command"    onclick="window.aplicarTema('dark-command')"><span class="sb-tema-dot" style="background:#1E3A5F"></span>Dark Command</button>
             <button class="sb-tema-item" data-theme="google-material" onclick="window.aplicarTema('google-material')"><span class="sb-tema-dot" style="background:#1A73E8"></span>Claro Operacional</button>
           </div>
-        </div>`;
+        </div>
+        <a class="hdr-avatar" id="hdrAvatar" href="/pages/perfil.html" title="Meu Perfil">${hdrAvatarContent}</a>`;
       headerEl.appendChild(actionsRow);
       appShell.appendChild(headerEl);
     }
@@ -251,6 +256,14 @@
         sbAvatar.innerHTML = `<img src="${perfil.foto}" alt="Foto de perfil">`;
       } else if (perfil.usuario) {
         sbAvatar.textContent = perfil.usuario[0].toUpperCase();
+      }
+    }
+    const hdrAvatar = document.getElementById('hdrAvatar');
+    if (hdrAvatar) {
+      if (perfil.foto) {
+        hdrAvatar.innerHTML = `<img src="${perfil.foto}" alt="Foto de perfil">`;
+      } else if (perfil.usuario) {
+        hdrAvatar.textContent = perfil.usuario[0].toUpperCase();
       }
     }
     if (sbRole && perfil.role) {
