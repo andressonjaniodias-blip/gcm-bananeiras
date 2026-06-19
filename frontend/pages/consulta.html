@@ -660,6 +660,23 @@
         ${priv ? `<button class="detail-icon-btn detail-icon-btn--del" title="Excluir BO" onclick="fecharBODetail();abrirModalExcluir(${bo.id},'${bo.numero}')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/></svg></button>` : ''}`;
 
       document.getElementById('boDetailOverlay').classList.add('aberto');
+
+      // Pré-carrega o PDF em segundo plano para o compartilhamento nativo poder
+      // ser disparado imediatamente no clique (sem perder o gesto do usuário).
+      _prepararShareBO(bo.id, bo.numero);
+    }
+
+    // Cache do arquivo PDF pronto para compartilhar (evita await após o clique).
+    let _shareFileBO = null, _shareFileBOId = null;
+    async function _prepararShareBO(id, numero) {
+      _shareFileBO = null; _shareFileBOId = null;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/bo/${id}/pdf`, { credentials: 'include' });
+        if (!res.ok) return;
+        const blob = await res.blob();
+        _shareFileBO   = new File([blob], `bo_${numero}.pdf`, { type: 'application/pdf' });
+        _shareFileBOId = id;
+      } catch {}
     }
 
     function fecharBODetail(e) {
@@ -821,36 +838,36 @@
     }
 
     // Compartilha o PDF via folha de compartilhamento nativa (sem baixar/abrir).
-    async function compartilharPDF(id, numero) {
+    // Síncrona: chama navigator.share() direto no gesto do clique, usando o PDF
+    // já pré-carregado em _shareFileBO — assim não há await antes do share, o que
+    // evita o erro "Must be handling a user gesture".
+    function compartilharPDF(id, numero) {
       const titulo = `BO GCM - ${numero}`;
       const texto  = `Boletim de Ocorrência da GCM Bananeiras\nNúmero: ${numero}`;
-      const dbg = [];
-      dbg.push(`secureContext: ${window.isSecureContext}`);
-      dbg.push(`navigator.share: ${typeof navigator.share}`);
-      dbg.push(`navigator.canShare: ${typeof navigator.canShare}`);
-      try {
-        dbg.push('→ buscando PDF...');
-        const res = await fetch(`${API_BASE_URL}/api/bo/${id}/pdf`, { credentials: 'include' });
-        dbg.push(`fetch status: ${res.status}`);
-        if (!res.ok) { alert('[DEBUG BO]\n' + dbg.join('\n')); return; }
-        const blob = await res.blob();
-        dbg.push(`blob: ${blob.size} bytes, type=${blob.type}`);
-        const file = new File([blob], `bo_${numero}.pdf`, { type: 'application/pdf' });
-        const podeArquivo = navigator.canShare && navigator.canShare({ files: [file] });
-        dbg.push(`canShare(files): ${podeArquivo}`);
-        if (!navigator.share) { alert('[DEBUG BO] navigator.share indisponível\n' + dbg.join('\n')); return; }
-        dbg.push('→ chamando navigator.share...');
-        if (podeArquivo) {
-          await navigator.share({ files: [file], title: titulo, text: texto });
-        } else {
-          await navigator.share({ title: titulo, text: texto });
-        }
-        dbg.push('✓ share concluído');
-      } catch (err) {
-        if (err && err.name === 'AbortError') return; // usuário cancelou
-        console.error('compartilharPDF:', err, dbg);
-        alert(`[DEBUG compartilhar BO]\nname: ${err?.name}\nmessage: ${err?.message}\n\n${dbg.join('\n')}`);
+
+      if (!navigator.share) {
+        showToast('Compartilhamento não suportado neste navegador. Use "Baixar PDF".', 'info');
+        return;
       }
+
+      // PDF ainda pré-carregando: compartilha só o texto agora (mantém o gesto).
+      if (!_shareFileBO || _shareFileBOId !== id) {
+        navigator.share({ title: titulo, text: texto })
+          .catch(err => { if (err?.name !== 'AbortError') showToast('Erro ao compartilhar.', 'danger'); });
+        return;
+      }
+
+      const arquivo = _shareFileBO;
+      const dados = (navigator.canShare && navigator.canShare({ files: [arquivo] }))
+        ? { files: [arquivo], title: titulo, text: texto }
+        : { title: titulo, text: texto };
+
+      navigator.share(dados)
+        .catch(err => {
+          if (err?.name === 'AbortError') return; // usuário cancelou
+          console.error('compartilharPDF:', err);
+          showToast('Erro ao compartilhar PDF.', 'danger');
+        });
     }
   </script>
 </body>
