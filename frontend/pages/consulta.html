@@ -824,24 +824,32 @@
     async function compartilharPDF(id, numero) {
       const titulo = `BO GCM - ${numero}`;
       const texto  = `Boletim de Ocorrência da GCM Bananeiras\nNúmero: ${numero}`;
-      if (!navigator.canShare) {
-        showToast('Compartilhamento nativo indisponível neste dispositivo.', 'info');
-        return;
-      }
+      const dbg = [];
+      dbg.push(`secureContext: ${window.isSecureContext}`);
+      dbg.push(`navigator.share: ${typeof navigator.share}`);
+      dbg.push(`navigator.canShare: ${typeof navigator.canShare}`);
       try {
+        dbg.push('→ buscando PDF...');
         const res = await fetch(`${API_BASE_URL}/api/bo/${id}/pdf`, { credentials: 'include' });
-        if (!res.ok) { showToast('Erro ao gerar PDF.', 'danger'); return; }
+        dbg.push(`fetch status: ${res.status}`);
+        if (!res.ok) { alert('[DEBUG BO]\n' + dbg.join('\n')); return; }
         const blob = await res.blob();
+        dbg.push(`blob: ${blob.size} bytes, type=${blob.type}`);
         const file = new File([blob], `bo_${numero}.pdf`, { type: 'application/pdf' });
-        if (!navigator.canShare({ files: [file] })) {
-          showToast('Este dispositivo não permite compartilhar arquivos.', 'info');
-          return;
+        const podeArquivo = navigator.canShare && navigator.canShare({ files: [file] });
+        dbg.push(`canShare(files): ${podeArquivo}`);
+        if (!navigator.share) { alert('[DEBUG BO] navigator.share indisponível\n' + dbg.join('\n')); return; }
+        dbg.push('→ chamando navigator.share...');
+        if (podeArquivo) {
+          await navigator.share({ files: [file], title: titulo, text: texto });
+        } else {
+          await navigator.share({ title: titulo, text: texto });
         }
-        await navigator.share({ files: [file], title: titulo, text: texto });
+        dbg.push('✓ share concluído');
       } catch (err) {
         if (err && err.name === 'AbortError') return; // usuário cancelou
-        console.error('compartilharPDF:', err);
-        showToast(`Erro ao compartilhar: ${err?.name || ''} ${err?.message || err}`, 'danger');
+        console.error('compartilharPDF:', err, dbg);
+        alert(`[DEBUG compartilhar BO]\nname: ${err?.name}\nmessage: ${err?.message}\n\n${dbg.join('\n')}`);
       }
     }
   </script>
