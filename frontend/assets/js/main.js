@@ -43,7 +43,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Restaurar rascunho
-  const rascunho = sessionStorage.getItem('boTemp');
+  const rascunho = localStorage.getItem('boTemp');
   if (rascunho) {
     try {
       const dados = JSON.parse(rascunho);
@@ -431,21 +431,20 @@ let _autosaveTimer = null;
 function _autosave() {
   clearTimeout(_autosaveTimer);
   _autosaveTimer = setTimeout(() => {
-    sessionStorage.setItem('boTemp', JSON.stringify(coletarDadosBO()));
+    localStorage.setItem('boTemp', JSON.stringify(coletarDadosBO()));
   }, 800);
 }
 
 let _boEnviado = false;
 
 function iniciarAutosave() {
-  const form = document.getElementById('bo-form');
-  if (!form) return;
-  form.addEventListener('input', _autosave);
+  // Escuta em document.body pois o formulário de BO não tem um <form> wrapper
+  document.body.addEventListener('input', _autosave);
 
   // Avisa ao tentar fechar/navegar com rascunho preenchido
   window.addEventListener('beforeunload', e => {
     if (_boEnviado) return;
-    const rascunho = sessionStorage.getItem('boTemp');
+    const rascunho = localStorage.getItem('boTemp');
     if (!rascunho) return;
     try {
       const dados = JSON.parse(rascunho);
@@ -489,7 +488,7 @@ async function finalizarBO() {
     if (response.ok) {
       const result = await response.json();
       _boEnviado = true;
-      sessionStorage.removeItem('boTemp');
+      localStorage.removeItem('boTemp');
       if (_anexosBO.length) {
         await enviarAnexosBO(result.id);
       }
@@ -659,10 +658,34 @@ async function logout() {
     await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' });
   } catch {}
   sessionStorage.removeItem('perfil');
-  // limpa token legado caso ainda exista
   localStorage.removeItem('authToken');
   window.location.href = '/';
 }
+
+function logoutForced(mensagem) {
+  sessionStorage.removeItem('perfil');
+  localStorage.removeItem('authToken');
+  if (mensagem) sessionStorage.setItem('gcm_aviso_login', mensagem);
+  window.location.href = '/';
+}
+
+// Interceptor global: detecta sessão substituída em qualquer resposta 401
+(function () {
+  const _fetch = window.fetch;
+  window.fetch = async function (...args) {
+    const res = await _fetch(...args);
+    if (res.status === 401) {
+      try {
+        const clone = res.clone();
+        const data = await clone.json();
+        if (data.codigo === 'SESSAO_SUBSTITUIDA') {
+          logoutForced('Sua sessão foi encerrada porque a conta foi acessada em outro dispositivo.');
+        }
+      } catch {}
+    }
+    return res;
+  };
+}());
 
 // Login (usado na index)
 async function login() {
