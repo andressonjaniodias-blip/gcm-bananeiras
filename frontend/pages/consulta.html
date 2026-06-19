@@ -330,11 +330,6 @@
         </div>
         <button class="detail-modal-close" onclick="fecharBODetail()">×</button>
       </div>
-      <nav class="tabs detail-tabs" id="boDetailTabs">
-        <button class="tab-btn active" onclick="boDetailTab('ocorrencia',this)">Ocorrência</button>
-        <button class="tab-btn" onclick="boDetailTab('envolvidos',this)">Envolvidos</button>
-        <button class="tab-btn" onclick="boDetailTab('acoes',this)">Ações</button>
-      </nav>
       <div class="detail-modal-body">
         <!-- Ocorrência -->
         <div id="boDetailOcorrencia">
@@ -378,14 +373,14 @@
           </div>
         </div>
         <!-- Envolvidos -->
-        <div id="boDetailEnvolvidos" class="hidden">
+        <div id="boDetailEnvolvidos">
           <div style="font-size:0.78rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-label);margin-bottom:8px;">Vítimas</div>
           <div id="bdVitimas" style="margin-bottom:16px;"></div>
           <div style="font-size:0.78rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-label);margin-bottom:8px;">Suspeitos</div>
           <div id="bdSuspeitos"></div>
         </div>
         <!-- Ações -->
-        <div id="boDetailAcoes" class="hidden">
+        <div id="boDetailAcoes">
           <p style="color:var(--color-text-muted);font-size:0.88rem;margin-bottom:16px;">Selecione uma ação para o boletim <strong id="bdAcoesNum">—</strong>.</p>
           <div style="display:flex;flex-direction:column;gap:10px;" id="bdAcoesList"></div>
         </div>
@@ -663,7 +658,6 @@
         <button class="detail-btn-pdf" style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#EEF2FF;color:#4F46E5;" onclick="baixarPDF(${bo.id},'${bo.numero}')">⬇️ Baixar PDF</button>
         ${priv ? `<button class="detail-btn-del"  style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#FEE2E2;color:#991B1B;" onclick="fecharBODetail();abrirModalExcluir(${bo.id},'${bo.numero}')">🗑️ Excluir BO</button>` : ''}`;
 
-      boDetailTab('ocorrencia', document.querySelector('#boDetailTabs .tab-btn'));
       document.getElementById('boDetailOverlay').classList.add('aberto');
     }
 
@@ -672,13 +666,6 @@
       document.getElementById('boDetailOverlay').classList.remove('aberto');
     }
 
-    function boDetailTab(tab, btn) {
-      document.getElementById('boDetailOcorrencia').classList.toggle('hidden', tab !== 'ocorrencia');
-      document.getElementById('boDetailEnvolvidos').classList.toggle('hidden', tab !== 'envolvidos');
-      document.getElementById('boDetailAcoes').classList.toggle('hidden', tab !== 'acoes');
-      document.querySelectorAll('#boDetailTabs .tab-btn').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-    }
 
     function hl(texto, termo) {
       if (!termo || !texto) return texto || '';
