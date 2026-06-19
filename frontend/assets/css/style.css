@@ -2428,6 +2428,7 @@ table th {
 }
 .detail-icon-btn:hover { opacity: 0.8; transform: scale(1.08); }
 .detail-icon-btn--pdf  { background: #EEF2FF; color: #4F46E5; }
+.detail-icon-btn--share { background: #DCFCE7; color: #15803D; }
 .detail-icon-btn--del  { background: #FEE2E2; color: #991B1B; }
 .detail-icon-btn--dl   { background: var(--color-primary); color: #fff; }
 .detail-icon-btn--star { background: #FEF9C3; color: #854D0E; }
