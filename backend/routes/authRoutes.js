@@ -70,6 +70,9 @@ router.post('/login', async (req, res) => {
       { expiresIn: '8h' }
     );
 
+    // Registra sessão ativa — invalida qualquer sessão anterior do mesmo usuário
+    await db.query('UPDATE usuarios SET sessao_ativa = $1 WHERE usuario = $2', [sessao_id, row.usuario]);
+
     const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
     const extra = extraFromReq({ headers: req.headers, usuario: { sessao_id } });
     await registrarAuditoria(row.usuario, 'LOGIN', null, ip, extra);
@@ -108,6 +111,7 @@ router.post('/login', async (req, res) => {
 router.post('/logout', verificarToken, async (req, res) => {
   const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
   await registrarAuditoria(req.usuario.usuario, 'LOGOUT', null, ip, extraFromReq(req));
+  await db.query('UPDATE usuarios SET sessao_ativa = NULL WHERE usuario = $1', [req.usuario.usuario]);
   res.clearCookie('authToken');
   res.clearCookie('csrfToken');
   res.json({ message: 'Logout realizado com sucesso' });
