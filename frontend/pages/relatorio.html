@@ -168,10 +168,6 @@
         </div>
         <button class="detail-modal-close" onclick="fecharRelDetail()">×</button>
       </div>
-      <nav class="tabs detail-tabs" id="relDetailTabs">
-        <button class="tab-btn active" onclick="relDetailTab('info',this)">Informações</button>
-        <button class="tab-btn" onclick="relDetailTab('acoes',this)">Ações</button>
-      </nav>
       <div class="detail-modal-body">
         <!-- Aba Informações -->
         <div id="relDetailInfo">
@@ -211,7 +207,7 @@
           </div>
         </div>
         <!-- Aba Ações -->
-        <div id="relDetailAcoes" class="hidden">
+        <div id="relDetailAcoes">
           <p style="color:var(--color-text-muted);font-size:0.88rem;margin-bottom:16px;">Selecione uma ação para o relatório <strong id="rdAcoesNum">—</strong>.</p>
           <div style="display:flex;flex-direction:column;gap:10px;" id="rdAcoesList"></div>
         </div>
@@ -504,7 +500,6 @@
       document.getElementById('rdAcoesNum').textContent = r.numero;
       const acoesList = document.getElementById('rdAcoesList');
       acoesList.innerHTML = `<button class="detail-btn-pdf" style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#EEF2FF;color:#4F46E5;" onclick="baixarPDFRel(${r.id},'${r.numero}')">⬇️ Baixar PDF</button>`;
-      relDetailTab('info', document.querySelector('#relDetailTabs .tab-btn'));
       document.getElementById('relDetailOverlay').classList.add('aberto');
     }
 
@@ -513,12 +508,6 @@
       document.getElementById('relDetailOverlay').classList.remove('aberto');
     }
 
-    function relDetailTab(tab, btn) {
-      document.getElementById('relDetailInfo').classList.toggle('hidden', tab !== 'info');
-      document.getElementById('relDetailAcoes').classList.toggle('hidden', tab !== 'acoes');
-      document.querySelectorAll('#relDetailTabs .tab-btn').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-    }
 
     function filtrarRelatorios() {
       const termo = document.getElementById('buscarRel').value.toLowerCase();
