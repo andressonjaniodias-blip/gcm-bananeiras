@@ -137,9 +137,9 @@
       </div>
 
       <div class="actions">
-        <button onclick="salvarRelatorio('rascunho')" style="background:var(--color-text-muted);">Salvar Rascunho</button>
-        <button onclick="salvarRelatorio('finalizado')" style="background:var(--color-success);">Finalizar Relatório</button>
+        <button onclick="salvarRelatorio()" style="background:var(--color-success);">Finalizar Relatório</button>
       </div>
+      <p id="autoSaveInfo" style="font-size:0.78rem;color:var(--color-hint);margin-top:6px;text-align:right;min-height:1em;"></p>
       <p id="msgRelatorio" class="msg" style="margin-top:12px;"></p>
     </section>
 
@@ -227,6 +227,50 @@
   <script src="../assets/js/main.js"></script>
   <script>
     let todosRelatorios = [];
+    const RASCUNHO_KEY = 'gcm_relatorio_rascunho';
+    let _autoSaveTimer = null;
+
+    const CAMPOS_RASCUNHO = [
+      'tipoRelatorio','tituloRelatorio','localRelatorio',
+      'equipeRelatorio','conteudoRelatorio','obsRelatorio','dataRelatorio'
+    ];
+
+    function salvarRascunhoLocal() {
+      const dados = {};
+      CAMPOS_RASCUNHO.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) dados[id] = el.value;
+      });
+      localStorage.setItem(RASCUNHO_KEY, JSON.stringify({ ...dados, ts: Date.now() }));
+      const info = document.getElementById('autoSaveInfo');
+      if (info) info.textContent = 'Rascunho salvo localmente às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function restaurarRascunhoLocal() {
+      const raw = localStorage.getItem(RASCUNHO_KEY);
+      if (!raw) return;
+      try {
+        const dados = JSON.parse(raw);
+        CAMPOS_RASCUNHO.forEach(id => {
+          const el = document.getElementById(id);
+          if (el && dados[id] !== undefined) el.value = dados[id];
+        });
+        const info = document.getElementById('autoSaveInfo');
+        const hora = new Date(dados.ts).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        if (info) info.textContent = `Rascunho restaurado de ${hora}`;
+      } catch {}
+    }
+
+    function agendarAutoSave() {
+      clearTimeout(_autoSaveTimer);
+      _autoSaveTimer = setTimeout(salvarRascunhoLocal, 2000);
+    }
+
+    function limparRascunhoLocal() {
+      localStorage.removeItem(RASCUNHO_KEY);
+      const info = document.getElementById('autoSaveInfo');
+      if (info) info.textContent = '';
+    }
 
     // Inicializa campos automáticos
     window.addEventListener('DOMContentLoaded', async () => {
@@ -242,6 +286,16 @@
         if (perfil.usuario) document.getElementById('relatorNome').value = perfil.usuario;
         if (typeof updateSidebarUser === 'function') updateSidebarUser(perfil);
       } catch { window.location.href = '/'; return; }
+
+      // Restaura rascunho local se existir
+      restaurarRascunhoLocal();
+
+      // Escuta alterações nos campos para autosave
+      CAMPOS_RASCUNHO.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', agendarAutoSave);
+        if (el && el.tagName === 'SELECT') el.addEventListener('change', agendarAutoSave);
+      });
 
       // Busca próximo número do servidor
       try {
@@ -289,32 +343,26 @@
       }
     }
 
-    async function salvarRelatorio(status) {
+    async function salvarRelatorio() {
       const tipo     = document.getElementById('tipoRelatorio').value.trim();
       const titulo   = document.getElementById('tituloRelatorio').value.trim();
       const conteudo = document.getElementById('conteudoRelatorio').value.trim();
       const data     = document.getElementById('dataRelatorio').value;
 
       if (!tipo || !titulo || !data) { mostrarMsg('Preencha os campos obrigatórios.', 'danger'); return; }
-      if (status === 'finalizado' && conteudo.length < 20) {
-        mostrarMsg('O conteúdo deve ter pelo menos 20 caracteres.', 'danger'); return;
-      }
+      if (conteudo.length < 20) { mostrarMsg('O conteúdo deve ter pelo menos 20 caracteres.', 'danger'); return; }
 
       const payload = {
-        tipo, titulo, conteudo,
-        data,
+        tipo, titulo, conteudo, data,
         local:  document.getElementById('localRelatorio').value.trim(),
         equipe: document.getElementById('equipeRelatorio').value.trim(),
         obs:    document.getElementById('obsRelatorio').value.trim(),
-        status,
+        status: 'finalizado',
       };
 
       try {
-        const method = 'POST';
-        const url    = `${API_BASE_URL}/api/relatorio`;
-
-        const res = await fetch(url, {
-          method,
+        const res = await fetch(`${API_BASE_URL}/api/relatorio`, {
+          method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -324,8 +372,11 @@
         if (!res.ok) { const e = await res.json(); mostrarMsg(e.error || 'Erro ao salvar.', 'danger'); return; }
 
         const result = await res.json();
+        limparRascunhoLocal();
         document.getElementById('numRelatorio').textContent = result.numero;
-        mostrarMsg(status === 'finalizado' ? 'Relatório finalizado com sucesso!' : 'Rascunho salvo!', 'success');
+        mostrarMsg('Relatório finalizado com sucesso!', 'success');
+        CAMPOS_RASCUNHO.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        document.getElementById('dataRelatorio').value = new Date().toISOString().slice(0, 10);
         carregarRelatorios();
       } catch { mostrarMsg('Erro de conexão.', 'danger'); }
     }
@@ -452,9 +503,7 @@
       obsWrap.style.display = r.obs ? '' : 'none';
       document.getElementById('rdAcoesNum').textContent = r.numero;
       const acoesList = document.getElementById('rdAcoesList');
-      acoesList.innerHTML = r.status === 'finalizado'
-        ? `<button class="detail-btn-pdf" style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#EEF2FF;color:#4F46E5;" onclick="baixarPDFRel(${r.id},'${r.numero}')">⬇️ Baixar PDF</button>`
-        : `<p style="color:var(--color-hint);font-size:0.85rem;">Apenas relatórios finalizados podem ser exportados em PDF.</p>`;
+      acoesList.innerHTML = `<button class="detail-btn-pdf" style="padding:12px 20px;font-size:0.9rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#EEF2FF;color:#4F46E5;" onclick="baixarPDFRel(${r.id},'${r.numero}')">⬇️ Baixar PDF</button>`;
       relDetailTab('info', document.querySelector('#relDetailTabs .tab-btn'));
       document.getElementById('relDetailOverlay').classList.add('aberto');
     }
