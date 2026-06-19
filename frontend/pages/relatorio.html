@@ -499,7 +499,8 @@
       obsWrap.style.display = r.obs ? '' : 'none';
       document.getElementById('rdAcoesNum').textContent = r.numero;
       const acoesList = document.getElementById('rdAcoesList');
-      acoesList.innerHTML = `<button class="detail-icon-btn detail-icon-btn--pdf" title="Baixar PDF" onclick="baixarPDFRel(${r.id},'${r.numero}')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10 3v10M6 9l4 4 4-4"/><path d="M4 17h12"/></svg></button>`;
+      acoesList.innerHTML = `<button class="detail-icon-btn detail-icon-btn--pdf" title="Baixar PDF" onclick="baixarPDFRel(${r.id},'${r.numero}')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10 3v10M6 9l4 4 4-4"/><path d="M4 17h12"/></svg></button>
+        <button class="detail-icon-btn detail-icon-btn--share" title="Compartilhar" onclick="compartilharPDFRel(${r.id},'${r.numero}')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="15" cy="4.5" r="2.2"/><circle cx="5" cy="10" r="2.2"/><circle cx="15" cy="15.5" r="2.2"/><path d="M6.9 8.9l6.2-3.3M6.9 11.1l6.2 3.3"/></svg></button>`;
       document.getElementById('relDetailOverlay').classList.add('aberto');
     }
 
@@ -537,6 +538,31 @@
         a.href = url; a.download = nomeDl; a.click();
         URL.revokeObjectURL(url);
       } catch { showToast('Erro ao baixar PDF.', 'danger'); }
+    }
+
+    // Compartilha o PDF do relatório via folha de compartilhamento nativa.
+    async function compartilharPDFRel(id, numero) {
+      const nomeArq = numero ? `relatorio_${numero.replace(/\//g, '-')}.pdf` : `relatorio_${id}.pdf`;
+      const titulo  = `Relatório GCM - ${numero || id}`;
+      const texto   = `Relatório da GCM Bananeiras${numero ? `\nNúmero: ${numero}` : ''}`;
+      if (!navigator.canShare) {
+        showToast('Compartilhamento nativo indisponível neste dispositivo.', 'info');
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/relatorio/${id}/pdf`, { credentials: 'include' });
+        if (!res.ok) { showToast('Erro ao gerar PDF.', 'danger'); return; }
+        const blob = await res.blob();
+        const file = new File([blob], nomeArq, { type: 'application/pdf' });
+        if (!navigator.canShare({ files: [file] })) {
+          showToast('Este dispositivo não permite compartilhar arquivos.', 'info');
+          return;
+        }
+        await navigator.share({ files: [file], title: titulo, text: texto });
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        showToast('Erro ao compartilhar PDF.', 'danger');
+      }
     }
 
     function mostrarMsg(texto, tipo) {
