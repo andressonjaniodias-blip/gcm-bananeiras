@@ -152,6 +152,9 @@ pool.connect()
       ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS reset_token TEXT;
       ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS reset_token_expira TIMESTAMPTZ;
     `);
+    await client.query(`
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS sessao_ativa TEXT;
+    `);
     client.release();
   })
   .catch(err => console.error('Erro ao conectar ao banco:', err.message));
