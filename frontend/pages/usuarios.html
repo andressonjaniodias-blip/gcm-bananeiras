@@ -321,25 +321,8 @@
         <button class="btn-primary" id="btnNovoUsuario" onclick="abrirFormNovoUsuario()"
                 style="padding:6px 16px;font-size:0.85rem;margin:0;">➕ Novo Usuário</button>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Usuário</th>
-              <th>Nome</th>
-              <th>Matrícula</th>
-              <th>Cargo / Lotação</th>
-              <th>E-mail (reset)</th>
-              <th>Perfil</th>
-              <th>Alterar Perfil</th>
-              <th>Ação</th>
-            </tr>
-          </thead>
-          <tbody id="tabelaUsuarios">
-            <tr class="empty-row"><td colspan="8">Carregando...</td></tr>
-          </tbody>
-        </table>
+      <div id="listaUsuarios" class="hist-list">
+        <p style="text-align:center;color:var(--color-hint);padding:20px 0;">Carregando...</p>
       </div>
     </div>
 
@@ -367,14 +350,22 @@
       <input type="hidden" id="editAgenteId">
 
       <p class="modal-secao">🔐 Acesso ao Sistema</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
         <div class="modal-field">
           <label>Usuário</label>
           <input type="text" id="editUsuario" disabled style="opacity:0.6;cursor:not-allowed;">
         </div>
         <div class="modal-field">
-          <label>Nova Senha <span style="font-weight:400;color:var(--color-hint)">(deixe em branco para manter)</span></label>
+          <label>Nova Senha <span style="font-weight:400;color:var(--color-hint)">(em branco = manter)</span></label>
           <input type="password" id="editSenha" placeholder="Nova senha (mín. 8 caracteres)" autocomplete="new-password">
+        </div>
+        <div class="modal-field">
+          <label>Perfil de Acesso</label>
+          <select id="editRole">
+            <option value="agente">Agente</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="admin">Administrador</option>
+          </select>
         </div>
         <div class="modal-field" style="grid-column:1/-1;">
           <label>E-mail para recuperação de senha</label>
@@ -522,49 +513,44 @@
         const agentes = resA.ok ? await resA.json() : [];
         const agentePorUsuario = Object.fromEntries(agentes.map(a => [a.usuario, a]));
 
+        const el = document.getElementById('listaUsuarios');
         if (!lista.length) {
-          tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Nenhum usuário encontrado</td></tr>';
+          el.innerHTML = '<p style="text-align:center;color:var(--color-hint);padding:20px 0;">Nenhum usuário encontrado.</p>';
           return;
         }
         const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente' };
-        tbody.innerHTML = lista.map(u => {
-          const sou    = u.usuario === meUsuario;
-          const ag     = agentePorUsuario[u.usuario];
-          const lotStr = ag?.lotacao ? `<br><span style="font-size:0.75rem;color:var(--color-hint);">${ag.lotacao}</span>` : '';
-          const ativoTag = ag && !ag.ativo ? ' <span class="badge badge-inativo" style="font-size:0.7rem;padding:2px 7px;">Inativo</span>' : '';
-          const emailExibir = u.email
-            ? `<span style="font-size:0.78rem;color:var(--color-text-muted);">${u.email}</span>`
-            : `<span style="color:var(--color-hint);font-size:0.78rem;">—</span>`;
+        const SVG_EDIT  = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 3l3 3L6 17H3v-3L14 3z"/></svg>`;
+        const SVG_TRASH = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/></svg>`;
+        const SVG_USER  = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg>`;
+        el.innerHTML = '<div class="hist-list">' + lista.map(u => {
+          const sou      = u.usuario === meUsuario;
+          const ag       = agentePorUsuario[u.usuario];
           const emailEsc = (u.email || '').replace(/'/g, "\\'");
-          return `
-            <tr>
-              <td style="color:var(--color-hint);font-size:0.8rem;">${u.id}</td>
-              <td>${u.usuario}${sou ? '<span class="tag-voce">(você)</span>' : ''}</td>
-              <td class="td-sec">${ag ? ag.nome + ativoTag : '<span style="color:var(--color-hint)">—</span>'}</td>
-              <td class="td-sec">${ag?.matricula || '<span style="color:var(--color-hint)">—</span>'}</td>
-              <td class="td-sec">${ag ? (ag.cargo || '—') + lotStr : '<span style="color:var(--color-hint)">—</span>'}</td>
-              <td>${emailExibir}</td>
-              <td><span class="badge badge-${u.role}">${roleLabel[u.role] || u.role}</span></td>
-              <td>
-                ${sou ? '<span style="color:var(--color-hint);font-size:0.82rem;">—</span>' : `
-                  <select class="select-role" id="role-${u.id}">
-                    <option value="agente"     ${u.role==='agente'     ?'selected':''}>Agente</option>
-                    <option value="supervisor" ${u.role==='supervisor' ?'selected':''}>Supervisor</option>
-                    <option value="admin"      ${u.role==='admin'      ?'selected':''}>Administrador</option>
-                  </select>
-                `}
-              </td>
-              <td>
-                <div class="acoes-cell">
-                  ${sou ? '<span style="color:var(--color-hint);font-size:0.82rem;">—</span>' : `
-                    <button class="btn-acao btn-salvar" onclick="alterarRole(${u.id})">Salvar</button>
-                    <button class="btn-icon btn-icon-editar" title="Editar servidor" onclick="abrirModalEditar(${u.id}, '${u.usuario}', '${emailEsc}')">✏️</button>
-                    <button class="btn-icon btn-icon-excluir" title="Remover usuário" onclick="abrirModalExcluir(${u.id}, '${u.usuario}')">🗑️</button>
-                  `}
-                </div>
-              </td>
-            </tr>`;
-        }).join('');
+          const ativoTag = ag && !ag.ativo ? ` <span class="badge badge-inativo">Inativo</span>` : '';
+          const metaParts = [
+            ag?.nome       || '',
+            ag?.matricula  ? `Mat. ${ag.matricula}` : '',
+            ag?.cargo      || '',
+            ag?.lotacao    || '',
+          ].filter(Boolean).join(' · ') || '—';
+          const editCall = `abrirModalEditar(${u.id},'${u.usuario}','${emailEsc}','${u.role}')`;
+          return `<div class="hist-item" ${sou ? '' : `onclick="${editCall}"`} style="${sou ? 'cursor:default;' : ''}">
+            <div class="hist-item-icon">${SVG_USER}</div>
+            <div class="hist-item-body">
+              <div class="hist-item-title">
+                ${u.usuario}${sou ? ' <span class="tag-voce">(você)</span>' : ''}
+                <span class="badge badge-${u.role}" style="margin-left:6px;font-size:0.72rem;vertical-align:middle;">${roleLabel[u.role] || u.role}</span>${ativoTag}
+              </div>
+              <div class="hist-item-meta"><span>${metaParts}</span></div>
+            </div>
+            <div class="hist-item-right" style="flex-direction:row;gap:6px;">
+              ${!sou ? `
+                <button class="btn-icon btn-icon-editar" title="Editar" onclick="event.stopPropagation();${editCall}">${SVG_EDIT}</button>
+                <button class="btn-icon btn-icon-excluir" title="Remover" onclick="event.stopPropagation();abrirModalExcluir(${u.id},'${u.usuario}')">${SVG_TRASH}</button>
+              ` : ''}
+            </div>
+          </div>`;
+        }).join('') + '</div>';
       } catch { toast('Erro ao carregar usuários.', 'erro'); }
     }
 
@@ -627,11 +613,12 @@
 
     let _excluirId = null;
 
-    async function abrirModalEditar(userId, usuario, emailUsuario = '') {
+    async function abrirModalEditar(userId, usuario, emailUsuario = '', role = 'agente') {
       document.getElementById('editId').value      = userId;
       document.getElementById('editUsuario').value = usuario;
       document.getElementById('editSenha').value   = '';
       document.getElementById('editEmailUsuario').value = emailUsuario;
+      document.getElementById('editRole').value    = role;
 
       // Limpa campos do agente
       ['editNome','editCpf','editRg','editNascimento','editMatricula',
@@ -728,6 +715,16 @@
           if (!res.ok) { const d = await res.json(); toast(d.error || 'Erro ao salvar dados.', 'erro'); return; }
         } catch { toast('Erro de conexão.', 'erro'); return; }
       }
+
+      // Atualiza perfil de acesso
+      const novoRole = document.getElementById('editRole').value;
+      try {
+        await fetch(`${API_BASE_URL}/api/auth/usuarios/${userId}`, {
+          method: 'PUT', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: novoRole })
+        });
+      } catch {}
 
       toast('Servidor atualizado com sucesso!', 'ok');
       fecharModalEditar();
