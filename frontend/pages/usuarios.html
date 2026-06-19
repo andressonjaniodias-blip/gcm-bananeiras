@@ -83,13 +83,14 @@
     /* Modal */
     .modal-overlay {
       display: none; position: fixed; inset: 0; z-index: 1000;
-      background: rgba(0,0,0,0.45); align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.45); align-items: flex-start; justify-content: center;
+      overflow-y: auto; padding: 5vh 0;
     }
     .modal-overlay.aberto { display: flex; }
     .modal-box {
       background: var(--bg-card); border-radius: var(--radius);
       box-shadow: 0 8px 32px rgba(0,0,0,0.25); padding: 28px 28px 22px;
-      max-width: 480px; width: 94%;
+      max-width: 480px; width: 94%; margin: auto;
     }
     .modal-box h3 { margin: 0 0 16px; font-size: 1.05rem; color: var(--color-text); }
     .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
@@ -486,6 +487,21 @@
     function fecharFormNovoUsuario() {
       document.getElementById('cardNovoUsuario').style.display = 'none';
       document.getElementById('btnNovoUsuario').style.display  = '';
+    }
+
+    // Realoca os modais para o <body>, fora do #app-shell (que tem overflow:clip
+    // e altura travada), garantindo que o position:fixed cubra a viewport e role.
+    // Roda após o sidebar.js mover o conteúdo para #app-content (DOMContentLoaded).
+    function _realocarModais() {
+      ['modalEditar', 'modalExcluir'].forEach(id => {
+        const m = document.getElementById(id);
+        if (m && m.parentElement !== document.body) document.body.appendChild(m);
+      });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', _realocarModais);
+    } else {
+      _realocarModais();
     }
 
     (async () => {
