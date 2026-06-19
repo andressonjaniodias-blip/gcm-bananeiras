@@ -503,7 +503,6 @@
     })();
 
     async function carregarUsuarios() {
-      const tbody = document.getElementById('tabelaUsuarios');
       try {
         const [resU, resA] = await Promise.all([
           fetch(`${API_BASE_URL}/api/auth/usuarios`, { credentials: 'include' }),
@@ -522,10 +521,10 @@
         const SVG_EDIT  = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 3l3 3L6 17H3v-3L14 3z"/></svg>`;
         const SVG_TRASH = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/></svg>`;
         const SVG_USER  = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg>`;
-        el.innerHTML = '<div class="hist-list">' + lista.map(u => {
+
+        el.innerHTML = lista.map(u => {
           const sou      = u.usuario === meUsuario;
           const ag       = agentePorUsuario[u.usuario];
-          const emailEsc = (u.email || '').replace(/'/g, "\\'");
           const ativoTag = ag && !ag.ativo ? ` <span class="badge badge-inativo">Inativo</span>` : '';
           const metaParts = [
             ag?.nome       || '',
@@ -533,8 +532,7 @@
             ag?.cargo      || '',
             ag?.lotacao    || '',
           ].filter(Boolean).join(' · ') || '—';
-          const editCall = `abrirModalEditar(${u.id},'${u.usuario}','${emailEsc}','${u.role}')`;
-          return `<div class="hist-item" ${sou ? '' : `onclick="${editCall}"`} style="${sou ? 'cursor:default;' : ''}">
+          return `<div class="hist-item" data-uid="${u.id}" data-usuario="${encodeURIComponent(u.usuario)}" data-email="${encodeURIComponent(u.email || '')}" data-role="${u.role || 'agente'}"${sou ? ' data-sou="1"' : ''} style="${sou ? 'cursor:default;' : ''}">
             <div class="hist-item-icon">${SVG_USER}</div>
             <div class="hist-item-body">
               <div class="hist-item-title">
@@ -545,12 +543,31 @@
             </div>
             <div class="hist-item-right" style="flex-direction:row;gap:6px;">
               ${!sou ? `
-                <button class="btn-icon btn-icon-editar" title="Editar" onclick="event.stopPropagation();${editCall}">${SVG_EDIT}</button>
-                <button class="btn-icon btn-icon-excluir" title="Remover" onclick="event.stopPropagation();abrirModalExcluir(${u.id},'${u.usuario}')">${SVG_TRASH}</button>
+                <button class="btn-icon btn-icon-editar" data-action="editar" title="Editar">${SVG_EDIT}</button>
+                <button class="btn-icon btn-icon-excluir" data-action="excluir" title="Remover">${SVG_TRASH}</button>
               ` : ''}
             </div>
           </div>`;
-        }).join('') + '</div>';
+        }).join('');
+
+        el.querySelectorAll('.hist-item:not([data-sou])').forEach(item => {
+          const id      = +item.dataset.uid;
+          const usuario = decodeURIComponent(item.dataset.usuario);
+          const email   = decodeURIComponent(item.dataset.email);
+          const role    = item.dataset.role;
+
+          item.addEventListener('click', e => {
+            if (!e.target.closest('[data-action]')) abrirModalEditar(id, usuario, email, role);
+          });
+          item.querySelector('[data-action="editar"]')?.addEventListener('click', e => {
+            e.stopPropagation();
+            abrirModalEditar(id, usuario, email, role);
+          });
+          item.querySelector('[data-action="excluir"]')?.addEventListener('click', e => {
+            e.stopPropagation();
+            abrirModalExcluir(id, usuario);
+          });
+        });
       } catch { toast('Erro ao carregar usuários.', 'erro'); }
     }
 
