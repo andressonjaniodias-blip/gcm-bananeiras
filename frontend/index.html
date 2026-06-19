@@ -77,6 +77,10 @@
           color:#92400E;padding:10px 14px;border-radius:6px;font-size:0.84rem;font-weight:600;margin-bottom:14px;">
           ⏱️ Sua sessão foi encerrada por inatividade. Faça login novamente.
         </div>
+        <div id="avisoSessaoSubstituida" style="display:none;background:#FEE2E2;border-left:4px solid #EF4444;
+          color:#991B1B;padding:10px 14px;border-radius:6px;font-size:0.84rem;font-weight:600;margin-bottom:14px;">
+          🔒 Sua sessão foi encerrada porque a conta foi acessada em outro dispositivo.
+        </div>
         <form onsubmit="login(); return false;">
           <div class="input-icon-group">
             <span class="input-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg></span>
@@ -159,6 +163,12 @@
       document.getElementById('pg-overlay').classList.add('aberto');
       if (new URLSearchParams(window.location.search).get('motivo') === 'inatividade') {
         document.getElementById('avisoInatividade').style.display = 'block';
+      }
+      const avisoLogin = sessionStorage.getItem('gcm_aviso_login');
+      if (avisoLogin) {
+        const el = document.getElementById('avisoSessaoSubstituida');
+        if (el) { el.style.display = 'block'; el.textContent = '🔒 ' + avisoLogin; }
+        sessionStorage.removeItem('gcm_aviso_login');
       }
     }
 
@@ -245,6 +255,9 @@
       if (navWrap && !navWrap.contains(e.target)) closeNavMenu();
       const temaWrap = document.getElementById('hdr-tema-wrapper');
       if (temaWrap && !temaWrap.contains(e.target)) document.getElementById('hdr-tema-menu').classList.remove('open');
+      const overlay = document.getElementById('pg-overlay');
+      const closeBtn = document.getElementById('pg-modal-close');
+      if (overlay && e.target === overlay && closeBtn && closeBtn.style.display !== 'none') closePageModal();
     });
 
     (async function start() {
