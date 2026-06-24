@@ -61,7 +61,7 @@ const upload = multer({
 // POST /api/anexos/:tipo/:id   — fazer upload de um ou mais arquivos
 router.post('/:tipo/:id', verificarToken, (req, res) => {
   const { tipo, id } = req.params;
-  if (!['bo', 'relatorio'].includes(tipo)) {
+  if (!['bo', 'relatorio', 'viatura'].includes(tipo)) {
     return res.status(400).json({ error: 'tipo_ref inválido.' });
   }
 
@@ -97,7 +97,7 @@ router.get('/:tipo/:id', verificarToken, async (req, res) => {
   try {
     // Agentes só podem ver anexos de registros que eles criaram
     if (req.usuario?.role === 'agente') {
-      const tabela = tipo === 'bo' ? 'boletins' : 'relatorios';
+      const tabela = tipo === 'bo' ? 'boletins' : tipo === 'viatura' ? 'controle_viatura' : 'relatorios';
       const { rows: dono } = await db.query(
         `SELECT criado_por FROM ${tabela} WHERE id = $1`,
         [id]
@@ -123,7 +123,7 @@ router.delete('/:tipo/:id/:anexoId', verificarToken, async (req, res) => {
   try {
     // Agentes só podem deletar anexos de registros que eles criaram
     if (req.usuario?.role === 'agente') {
-      const tabela = tipo === 'bo' ? 'boletins' : 'relatorios';
+      const tabela = tipo === 'bo' ? 'boletins' : tipo === 'viatura' ? 'controle_viatura' : 'relatorios';
       const { rows: dono } = await db.query(
         `SELECT criado_por FROM ${tabela} WHERE id = $1`,
         [id]
