@@ -2016,6 +2016,13 @@ body.has-sidebar .header {
 @media (max-width: 768px) {
   .tabs { display: none; }
   .mobile-tab-nav { display: flex; }
+
+  /* Relatório, Viatura e Documentos têm as abas e a navegação mobile como filhas
+     diretas de <main>. Nessas telas mantemos as ABAS no celular e escondemos a
+     navegação por setas. O formulário de novo BO (dashboard) envolve as abas em
+     .tabs-nav-wrap e injeta as setas dentro de .tab-content, então não é afetado. */
+  main > .tabs-scroll-wrap > .tabs { display: flex; }
+  main > .mobile-tab-nav { display: none; }
 }
 
 @media (max-width: 768px) {
