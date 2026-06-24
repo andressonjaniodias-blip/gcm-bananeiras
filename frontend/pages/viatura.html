@@ -12,6 +12,22 @@
   <script src="../assets/js/sidebar.js"></script>
   <style>
     .obrigatorio::after { content: ' *'; color: var(--color-danger); }
+    .anexo-item {
+      display:flex; align-items:center; gap:10px; padding:9px 12px;
+      background:var(--color-row-alt); border:1px solid var(--color-border);
+      border-radius:var(--radius-sm); font-size:0.86rem;
+    }
+    .anexo-item .anexo-thumb {
+      width:42px; height:42px; object-fit:cover; border-radius:4px; flex-shrink:0;
+    }
+    .anexo-item .anexo-info { flex:1; min-width:0; }
+    .anexo-item .anexo-nome { font-weight:600; color:var(--color-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .anexo-item .anexo-meta { font-size:0.75rem; color:var(--color-hint); }
+    .anexo-item .btn-rm-anexo {
+      background:var(--color-danger); color:#fff; border:none;
+      border-radius:4px; padding:4px 10px; cursor:pointer; font-size:0.8rem; flex-shrink:0;
+    }
+    .dz-viat-over { border-color:var(--color-primary) !important; background:var(--color-primary-light) !important; }
   </style>
 </head>
 <body>
@@ -168,6 +184,25 @@
       <div class="campo-group">
         <label>Observações</label>
         <textarea id="viatObs" rows="2" placeholder="Observações adicionais..."></textarea>
+      </div>
+
+      <div class="campo-group" style="margin-top:4px;">
+        <label>Comprovante / Foto</label>
+        <label for="inputAnexosViat" id="dropzone-viat" style="
+          display:block; border:2px dashed var(--color-border); border-radius:var(--radius);
+          padding:22px 16px; text-align:center; cursor:pointer; font-size:inherit; font-weight:normal; color:inherit;
+          background:var(--color-row-alt); transition:border-color 0.2s, background 0.2s;
+          margin-bottom:12px;"
+          ondragover="dzOverV(event)" ondragleave="dzOutV()" ondrop="dzDropV(event)">
+          <div style="font-size:1.8rem;margin-bottom:6px;">📎</div>
+          <div style="font-weight:600;color:var(--color-text);font-size:0.9rem;">Clique ou arraste arquivos aqui</div>
+          <div style="font-size:0.78rem;color:var(--color-hint);margin-top:4px;">
+            Imagens (JPG, PNG), PDF, DOC — máx. 15 MB por arquivo
+          </div>
+          <input type="file" id="inputAnexosViat" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display:none"
+                 onchange="adicionarAnexosViat(this.files)">
+        </label>
+        <div id="listaAnexosViat" style="display:flex;flex-direction:column;gap:8px;"></div>
       </div>
 
       <div class="actions">
@@ -355,6 +390,8 @@
         });
         if (res.status === 401) { logout(); return; }
         if (!res.ok) { const e = await res.json(); mostrarMsgViat(e.error || 'Erro ao salvar.', 'danger'); return; }
+        const { id } = await res.json();
+        await enviarAnexosViat(id);
         mostrarMsgViat('Registro salvo com sucesso!', 'success');
         limparFormViatura();
         carregarViatura();
@@ -470,12 +507,68 @@
       renderizarViatura(todosRegistros);
     }
 
+    // ── Anexos de viatura ────────────────────────────────────────────────────
+    let _anexosViat = [];
+
+    function adicionarAnexosViat(files) {
+      for (const f of files) {
+        if (_anexosViat.some(x => x.name === f.name && x.size === f.size)) continue;
+        _anexosViat.push(f);
+      }
+      renderizarAnexosViat();
+    }
+
+    function removerAnexoViat(idx) {
+      _anexosViat.splice(idx, 1);
+      renderizarAnexosViat();
+    }
+
+    function renderizarAnexosViat() {
+      const lista = document.getElementById('listaAnexosViat');
+      if (!_anexosViat.length) { lista.innerHTML = ''; return; }
+      lista.innerHTML = _anexosViat.map((f, i) => {
+        const kb = (f.size / 1024).toFixed(1);
+        const thumb = f.type.startsWith('image/')
+          ? `<img class="anexo-thumb" src="${URL.createObjectURL(f)}" alt="">`
+          : `<div class="anexo-thumb" style="background:var(--color-row-alt);display:flex;align-items:center;justify-content:center;font-size:1.3rem;border:1px solid var(--color-border);border-radius:4px;">📄</div>`;
+        return `<div class="anexo-item">
+          ${thumb}
+          <div class="anexo-info">
+            <div class="anexo-nome">${f.name}</div>
+            <div class="anexo-meta">${f.type || 'arquivo'} — ${kb} KB</div>
+          </div>
+          <button class="btn-rm-anexo" onclick="removerAnexoViat(${i})">Remover</button>
+        </div>`;
+      }).join('');
+    }
+
+    async function enviarAnexosViat(viatId) {
+      if (!_anexosViat.length) return;
+      const fd = new FormData();
+      _anexosViat.forEach(f => fd.append('arquivos', f));
+      await fetch(`${API_BASE_URL}/api/anexos/viatura/${viatId}`, {
+        method: 'POST', credentials: 'include', body: fd
+      });
+    }
+
+    function dzOverV(e)  { e.preventDefault(); document.getElementById('dropzone-viat')?.classList.add('dz-viat-over'); }
+    function dzOutV()    { document.getElementById('dropzone-viat')?.classList.remove('dz-viat-over'); }
+    function dzDropV(e)  {
+      e.preventDefault(); dzOutV();
+      const files = e.dataTransfer?.files;
+      if (files?.length) adicionarAnexosViat(files);
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     function limparFormViatura() {
       ['viatCodigo','viatKm','viatLitros','viatValorLitro','viatPosto',
        'viatOficinaRev','viatProximaRev','viatValorRev','viatItensRev',
        'viatProblema','viatOficinaMan','viatPecas','viatValorMan','viatDescricaoMan','viatObs']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
       document.getElementById('viatDataHora').value = new Date().toISOString().slice(0, 16);
+      _anexosViat = [];
+      renderizarAnexosViat();
+      document.getElementById('inputAnexosViat').value = '';
     }
 
     function mostrarMsgViat(texto, tipo) {
