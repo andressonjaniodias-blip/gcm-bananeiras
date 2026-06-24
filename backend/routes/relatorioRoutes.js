@@ -156,9 +156,11 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
       `SELECT * FROM anexos WHERE tipo_ref='relatorio' AND ref_id=$1 ORDER BY criado_em ASC`,
       [req.params.id]
     );
-    const imageMimes = new Set(['image/jpeg','image/png','image/gif','image/webp','image/bmp','image/tiff']);
-    const imgs   = anexos.filter(a => imageMimes.has(a.mime_type));
-    const outros = anexos.filter(a => !imageMimes.has(a.mime_type));
+    // PDFKit suporta apenas JPEG e PNG nativamente; outros formatos vão para seção de listagem
+    const PDF_IMG_MIMES = new Set(['image/jpeg', 'image/png']);
+    const ALL_IMG_MIMES = new Set(['image/jpeg','image/png','image/gif','image/webp','image/bmp','image/tiff']);
+    const imgs   = anexos.filter(a => PDF_IMG_MIMES.has(a.mime_type));
+    const outros = anexos.filter(a => !PDF_IMG_MIMES.has(a.mime_type));
 
     if (anexos.length) {
       const tituloSec = (txt) => {
@@ -181,19 +183,28 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
         doc.moveDown(0.4);
         const maxW = conteudoW;
         const maxH = doc.page.height - doc.y - 80;
-        try { doc.image(filePath, margem, doc.y, { fit: [maxW, maxH], align: 'center' }); } catch {}
+        try {
+          doc.image(filePath, margem, doc.y, { fit: [maxW, maxH], align: 'center' });
+        } catch (imgErr) {
+          console.error(`[PDF-Rel] Erro ao incorporar ${img.nome_original}:`, imgErr.message);
+          doc.fontSize(10).font('Helvetica-Oblique').fillColor('#888')
+             .text('(Falha ao renderizar imagem — arquivo pode estar corrompido)', { align: 'center' });
+        }
       }
 
       if (outros.length) {
         if (imgs.length) doc.addPage();
         tituloSec('Outros Anexos (não incorporados ao PDF)');
         outros.forEach((a, i) => {
+          const tipoInfo = ALL_IMG_MIMES.has(a.mime_type)
+            ? `${a.mime_type} — formato de imagem não suportado (use JPG ou PNG)`
+            : (a.mime_type || 'desconhecido');
           doc.fontSize(11).font('Helvetica').fillColor('#444')
-             .text(`${imgs.length + i + 1}. ${a.nome_original} — ${a.mime_type || 'desconhecido'}`);
+             .text(`${imgs.length + i + 1}. ${a.nome_original} — ${tipoInfo}`);
         });
         doc.moveDown(0.3);
         doc.fontSize(10).font('Helvetica-Oblique').fillColor('#888')
-           .text('Arquivos não-imagem não podem ser incorporados ao PDF. Consulte o sistema para acessá-los.');
+           .text('Consulte o sistema para acessar os arquivos não incorporados ao PDF.');
       }
     }
 
