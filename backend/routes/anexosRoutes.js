@@ -16,7 +16,7 @@ function sanitizarNome(nome) {
 }
 
 const TIPOS_ACEITOS = new Set([
-  'image/jpeg','image/png','image/gif','image/webp','image/bmp','image/tiff',
+  'image/jpeg','image/png',
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -24,7 +24,7 @@ const TIPOS_ACEITOS = new Set([
 ]);
 
 const EXTENSOES_ACEITAS = new Set([
-  '.jpg','.jpeg','.png','.gif','.webp','.bmp','.tiff',
+  '.jpg','.jpeg','.png',
   '.pdf','.doc','.docx','.txt',
 ]);
 
@@ -48,11 +48,11 @@ const upload = multer({
   limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB
   fileFilter(req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (!EXTENSOES_ACEITAS.has(ext)) {
-      return cb(new Error(`Extensão não permitida: ${ext}`));
-    }
-    if (!TIPOS_ACEITOS.has(file.mimetype)) {
-      return cb(new Error(`Tipo de arquivo não suportado: ${file.mimetype}`));
+    if (!EXTENSOES_ACEITAS.has(ext) || !TIPOS_ACEITOS.has(file.mimetype)) {
+      return cb(new Error(
+        `"${file.originalname}" não é permitido. ` +
+        `Envie imagens em JPG ou PNG, ou documentos em PDF, DOC, DOCX ou TXT.`
+      ));
     }
     cb(null, true);
   },
