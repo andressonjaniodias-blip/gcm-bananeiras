@@ -127,9 +127,9 @@
           <div style="font-size:1.8rem;margin-bottom:6px;">📎</div>
           <div style="font-weight:600;color:var(--color-text);font-size:0.9rem;">Clique ou arraste arquivos aqui</div>
           <div style="font-size:0.78rem;color:var(--color-hint);margin-top:4px;">
-            Imagens (JPG, PNG, GIF, WebP), PDF, DOC, TXT — máx. 15 MB por arquivo
+            Imagens (JPG, PNG), PDF, DOC, TXT — máx. 15 MB por arquivo
           </div>
-          <input type="file" id="inputAnexosRel" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display:none"
+          <input type="file" id="inputAnexosRel" multiple accept="image/jpeg,image/png,.jpg,.jpeg,.png,.pdf,.doc,.docx,.txt" style="display:none"
                  onchange="adicionarAnexosRel(this.files)">
         </label>
         <div id="listaAnexosRel" style="display:flex;flex-direction:column;gap:8px;"></div>
