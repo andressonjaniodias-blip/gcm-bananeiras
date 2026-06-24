@@ -656,7 +656,7 @@
       const priv = perfilRole === 'admin' || perfilRole === 'supervisor';
       document.getElementById('bdAcoesList').innerHTML = `
         <button class="detail-icon-btn detail-icon-btn--pdf" title="Baixar PDF" onclick="baixarPDF(${bo.id},'${bo.numero}')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10 3v10M6 9l4 4 4-4"/><path d="M4 17h12"/></svg></button>
-        <button class="detail-icon-btn detail-icon-btn--share" title="Compartilhar" onclick="compartilharPDF(${bo.id},'${bo.numero}')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="15" cy="4.5" r="2.2"/><circle cx="5" cy="10" r="2.2"/><circle cx="15" cy="15.5" r="2.2"/><path d="M6.9 8.9l6.2-3.3M6.9 11.1l6.2 3.3"/></svg></button>
+        <button id="btn-share-bo" class="detail-icon-btn detail-icon-btn--share detail-icon-btn--loading" title="Compartilhar" onclick="compartilharPDF(${bo.id},'${bo.numero}')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="15" cy="4.5" r="2.2"/><circle cx="5" cy="10" r="2.2"/><circle cx="15" cy="15.5" r="2.2"/><path d="M6.9 8.9l6.2-3.3M6.9 11.1l6.2 3.3"/></svg></button>
         ${priv ? `<button class="detail-icon-btn detail-icon-btn--del" title="Excluir BO" onclick="fecharBODetail();abrirModalExcluir(${bo.id},'${bo.numero}')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/></svg></button>` : ''}`;
 
       document.getElementById('boDetailOverlay').classList.add('aberto');
@@ -670,13 +670,15 @@
     let _shareFileBO = null, _shareFileBOId = null;
     async function _prepararShareBO(id, numero) {
       _shareFileBO = null; _shareFileBOId = null;
+      const btn = document.getElementById('btn-share-bo');
       try {
         const res = await fetch(`${API_BASE_URL}/api/bo/${id}/pdf`, { credentials: 'include' });
-        if (!res.ok) return;
+        if (!res.ok) { if (btn) btn.classList.remove('detail-icon-btn--loading'); return; }
         const blob = await res.blob();
         _shareFileBO   = new File([blob], `bo_${numero}.pdf`, { type: 'application/pdf' });
         _shareFileBOId = id;
       } catch {}
+      if (btn) btn.classList.remove('detail-icon-btn--loading');
     }
 
     function fecharBODetail(e) {
@@ -850,11 +852,7 @@
         return;
       }
 
-      // PDF ainda pré-carregando: avisa o usuário para tentar novamente.
-      if (!_shareFileBO || _shareFileBOId !== id) {
-        showToast('O PDF ainda está sendo preparado. Aguarde um instante e tente novamente.', 'info');
-        return;
-      }
+      if (!_shareFileBO || _shareFileBOId !== id) return;
 
       const arquivo = _shareFileBO;
       if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
@@ -865,7 +863,7 @@
             showToast('Erro ao compartilhar PDF.', 'danger');
           });
       } else {
-        showToast('Seu dispositivo não suporta envio de arquivo por este método. Use "Baixar PDF" e envie manualmente pelo WhatsApp ou e-mail.', 'info');
+        showToast('Seu dispositivo não suporta envio de arquivo por este método. Use "Baixar PDF" e envie manualmente.', 'info');
       }
     }
   </script>
