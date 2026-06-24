@@ -155,6 +155,9 @@ pool.connect()
     await client.query(`
       ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS sessao_ativa TEXT;
     `);
+    await client.query(`
+      ALTER TABLE controle_viatura ADD COLUMN IF NOT EXISTS criado_por TEXT;
+    `);
     client.release();
   })
   .catch(err => console.error('Erro ao conectar ao banco:', err.message));
