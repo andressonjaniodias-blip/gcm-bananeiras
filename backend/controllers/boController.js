@@ -443,9 +443,11 @@ exports.exportarPDF = async (req, res) => {
       `SELECT * FROM anexos WHERE tipo_ref='bo' AND ref_id=$1 ORDER BY criado_em ASC`,
       [id]
     );
-    const imageMimes = new Set(['image/jpeg','image/png','image/gif','image/webp','image/bmp','image/tiff']);
-    const imgs   = anexos.filter(a => imageMimes.has(a.mime_type));
-    const outros = anexos.filter(a => !imageMimes.has(a.mime_type));
+    // PDFKit suporta apenas JPEG e PNG nativamente; outros formatos vão para seção de listagem
+    const PDF_IMG_MIMES = new Set(['image/jpeg', 'image/png']);
+    const ALL_IMG_MIMES = new Set(['image/jpeg','image/png','image/gif','image/webp','image/bmp','image/tiff']);
+    const imgs   = anexos.filter(a => PDF_IMG_MIMES.has(a.mime_type));
+    const outros = anexos.filter(a => !PDF_IMG_MIMES.has(a.mime_type));
 
     if (anexos.length) {
       doc.addPage();
@@ -464,19 +466,26 @@ exports.exportarPDF = async (req, res) => {
         const maxH = doc.page.height - doc.y - 80;
         try {
           doc.image(filePath, margem, doc.y, { fit: [maxW, maxH], align: 'center' });
-        } catch {}
+        } catch (imgErr) {
+          console.error(`[PDF-BO] Erro ao incorporar ${img.nome_original}:`, imgErr.message);
+          doc.fontSize(10).font('Helvetica-Oblique').fillColor('#888')
+             .text('(Falha ao renderizar imagem — arquivo pode estar corrompido)', { align: 'center' });
+        }
       }
 
       if (outros.length) {
         if (imgs.length) doc.addPage();
         tituloSecao('Outros Anexos (não incorporados ao PDF)');
         outros.forEach((a, i) => {
+          const tipoInfo = ALL_IMG_MIMES.has(a.mime_type)
+            ? `${a.mime_type} — formato de imagem não suportado (use JPG ou PNG)`
+            : (a.mime_type || 'desconhecido');
           doc.fontSize(11).font('Helvetica').fillColor('#444')
-             .text(`${imgs.length + i + 1}. ${a.nome_original} — ${a.mime_type || 'desconhecido'}`);
+             .text(`${imgs.length + i + 1}. ${a.nome_original} — ${tipoInfo}`);
         });
         doc.moveDown(0.5);
         doc.fontSize(10).font('Helvetica-Oblique').fillColor('#888')
-           .text('Arquivos não-imagem não podem ser incorporados ao PDF. Consulte o sistema para acessá-los.');
+           .text('Consulte o sistema para acessar os arquivos não incorporados ao PDF.');
       }
     }
 
