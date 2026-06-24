@@ -25,9 +25,9 @@ router.post('/', verificarToken, async (req, res) => {
       return res.status(400).json({ error: 'Campos obrigatórios ausentes.' });
     }
     const { rows } = await pool.query(
-      `INSERT INTO controle_viatura (tipo, codigo, data_hora, km, responsavel, dados, obs)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
-      [tipo, codigo, dataHora, km, responsavel || req.usuario, JSON.stringify(dados || {}), obs || null]
+      `INSERT INTO controle_viatura (tipo, codigo, data_hora, km, responsavel, dados, obs, criado_por)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+      [tipo, codigo, dataHora, km, responsavel || req.usuario?.usuario, JSON.stringify(dados || {}), obs || null, req.usuario?.usuario]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
