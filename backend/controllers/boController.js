@@ -28,11 +28,15 @@ const LABELS = {
   numero:          'Número',
   cidade:          'Cidade',
   complemento:     'Complemento / Bairro',
-  viatura:         'Código da Viatura',
-  comandante:      'Comandante',
-  motorista:       'Motorista',
-  patrulheiroI:    'Patrulheiro I',
-  patrulheiroII:   'Patrulheiro II',
+  viatura:               'Código da Viatura',
+  comandante:            'Comandante',
+  matriculaComandante:   'Matrícula do Comandante',
+  motorista:             'Motorista',
+  matriculaMotorista:    'Matrícula do Motorista',
+  patrulheiroI:          'Patrulheiro I',
+  matriculaPatrulheiroI: 'Matrícula do Patrulheiro I',
+  patrulheiroII:         'Patrulheiro II',
+  matriculaPatrulheiroII:'Matrícula do Patrulheiro II',
   // Pessoa (vítima / suspeito)
   nome:            'Nome',
   alcunha:         'Alcunha',
@@ -349,23 +353,27 @@ exports.exportarPDF = async (req, res) => {
 
     secao('Autoridade Policial', dados.autoridade);
 
-    // Nome do comandante vem sempre do form; matrícula buscada na tabela agentes
+    // Nome e matrícula do comandante vêm do form; cargo buscado na tabela agentes
     const nomeComandante = dados.dadosOcorrencia?.comandante || null;
-    let matricCmd = null;
+    let matricCmd = dados.dadosOcorrencia?.matriculaComandante || null;
+    let cargoCmd  = null;
     if (nomeComandante) {
       const { rows: agRows } = await db.query(
-        `SELECT matricula FROM agentes WHERE ativo = true AND LOWER(nome) = LOWER($1) LIMIT 1`,
+        `SELECT matricula, cargo FROM agentes WHERE ativo = true AND LOWER(nome) = LOWER($1) LIMIT 1`,
         [nomeComandante.trim()]
       );
-      if (agRows.length) matricCmd = agRows[0].matricula;
+      if (agRows.length) {
+        if (!matricCmd) matricCmd = agRows[0].matricula;
+        cargoCmd = agRows[0].cargo;
+      }
     }
 
     const nomeCmd  = nomeComandante ? String(nomeComandante).toUpperCase() : null;
 
     const autoridade = dados.autoridade || {};
     const nomeAut    = autoridade.nomeAutoridade ? String(autoridade.nomeAutoridade).toUpperCase() : null;
-    const matricAut  = autoridade.matricula       || null;
-    const localAut   = autoridade.localAutoridade || null;
+    const cargoAut   = autoridade.cargo           || null;
+    const matricAut  = autoridade.matricula        || null;
     const dataDoc    = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 
     // ── Recibo de Entrega de Ocorrência ───────────────────────────────────────
@@ -416,7 +424,7 @@ exports.exportarPDF = async (req, res) => {
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#000')
        .text(nomeCmd || '_________________________________', xEsq, yTexto, { width: largAssin, align: 'center', lineBreak: false });
     doc.fontSize(10).font('Helvetica').fillColor('#444')
-       .text('Comandante da Patrulha — GCM', xEsq, yTexto + 16, { width: largAssin, align: 'center', lineBreak: false });
+       .text(cargoCmd || 'Guarda Civil Municipal', xEsq, yTexto + 16, { width: largAssin, align: 'center', lineBreak: false });
     if (matricCmd) {
       doc.fontSize(10).font('Helvetica').fillColor('#555')
          .text(`Matrícula: ${matricCmd}`, xEsq, yTexto + 30, { width: largAssin, align: 'center', lineBreak: false });
@@ -428,14 +436,10 @@ exports.exportarPDF = async (req, res) => {
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#000')
        .text(nomeAut || '_________________________________', xDir, yTexto, { width: largAssin, align: 'center', lineBreak: false });
     doc.fontSize(10).font('Helvetica').fillColor('#444')
-       .text('Autoridade Policial', xDir, yTexto + 16, { width: largAssin, align: 'center', lineBreak: false });
+       .text(cargoAut || 'Autoridade Policial', xDir, yTexto + 16, { width: largAssin, align: 'center', lineBreak: false });
     if (matricAut) {
       doc.fontSize(10).font('Helvetica').fillColor('#555')
          .text(`Matrícula: ${matricAut}`, xDir, yTexto + 30, { width: largAssin, align: 'center', lineBreak: false });
-    }
-    if (localAut) {
-      doc.fontSize(10).font('Helvetica').fillColor('#555')
-         .text(localAut.toUpperCase(), xDir, yTexto + (matricAut ? 43 : 30), { width: largAssin, align: 'center', lineBreak: false });
     }
 
     // ── Anexos (imagens) no final do PDF — sempre incluídos ──────────────────
