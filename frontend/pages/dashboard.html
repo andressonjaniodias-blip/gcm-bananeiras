@@ -130,21 +130,53 @@
         <label class="obrigatorio">Código da Viatura</label>
         <input type="text" name="viatura" placeholder="Ex: GCM-01" required maxlength="20">
       </div>
-      <div class="campo-group">
-        <label class="obrigatorio">Comandante</label>
-        <input type="text" name="comandante" placeholder="Nome do comandante" required maxlength="150">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="campo-group">
+          <label class="obrigatorio">Comandante</label>
+          <input type="text" name="comandante" id="ag-cmd-nome" placeholder="Nome do comandante" required maxlength="150"
+            onblur="agAutoNome('ag-cmd-nome','ag-cmd-mat')">
+        </div>
+        <div class="campo-group">
+          <label>Matrícula</label>
+          <input type="text" name="matriculaComandante" id="ag-cmd-mat" placeholder="Ex: GCM-001" maxlength="30"
+            onblur="agAutoMat('ag-cmd-mat','ag-cmd-nome')">
+        </div>
       </div>
-      <div class="campo-group">
-        <label>Motorista</label>
-        <input type="text" name="motorista" placeholder="Nome do motorista" maxlength="150">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="campo-group">
+          <label>Motorista</label>
+          <input type="text" name="motorista" id="ag-mt-nome" placeholder="Nome do motorista" maxlength="150"
+            onblur="agAutoNome('ag-mt-nome','ag-mt-mat')">
+        </div>
+        <div class="campo-group">
+          <label>Matrícula</label>
+          <input type="text" name="matriculaMotorista" id="ag-mt-mat" placeholder="Ex: GCM-002" maxlength="30"
+            onblur="agAutoMat('ag-mt-mat','ag-mt-nome')">
+        </div>
       </div>
-      <div class="campo-group">
-        <label>Patrulheiro I</label>
-        <input type="text" name="patrulheiroI" placeholder="Nome" maxlength="150">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="campo-group">
+          <label>Patrulheiro I</label>
+          <input type="text" name="patrulheiroI" id="ag-p1-nome" placeholder="Nome" maxlength="150"
+            onblur="agAutoNome('ag-p1-nome','ag-p1-mat')">
+        </div>
+        <div class="campo-group">
+          <label>Matrícula</label>
+          <input type="text" name="matriculaPatrulheiroI" id="ag-p1-mat" placeholder="Ex: GCM-003" maxlength="30"
+            onblur="agAutoMat('ag-p1-mat','ag-p1-nome')">
+        </div>
       </div>
-      <div class="campo-group">
-        <label>Patrulheiro II</label>
-        <input type="text" name="patrulheiroII" placeholder="Nome" maxlength="150">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="campo-group">
+          <label>Patrulheiro II</label>
+          <input type="text" name="patrulheiroII" id="ag-p2-nome" placeholder="Nome" maxlength="150"
+            onblur="agAutoNome('ag-p2-nome','ag-p2-mat')">
+        </div>
+        <div class="campo-group">
+          <label>Matrícula</label>
+          <input type="text" name="matriculaPatrulheiroII" id="ag-p2-mat" placeholder="Ex: GCM-004" maxlength="30"
+            onblur="agAutoMat('ag-p2-mat','ag-p2-nome')">
+        </div>
       </div>
     </section>
 
@@ -315,6 +347,33 @@
     }
     function geoAutoridade(btn) {
       usarLocalizacaoAtual({ tipo: 'local', campo: '[name="localAutoridade"]', btn });
+    }
+
+    // ── Cache de agentes para auto-preenchimento dos campos de matrícula ──────
+    let _agentesCache = [];
+
+    (async function() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/agentes`, { credentials: 'include' });
+        if (res.ok) _agentesCache = await res.json();
+      } catch {}
+    })();
+
+    function agAutoNome(nomeId, matId) {
+      const nomeEl = document.getElementById(nomeId);
+      const matEl  = document.getElementById(matId);
+      if (!nomeEl || !matEl || !nomeEl.value.trim()) return;
+      const ag = _agentesCache.find(a => a.nome.toLowerCase() === nomeEl.value.trim().toLowerCase());
+      if (ag) matEl.value = ag.matricula || '';
+    }
+
+    function agAutoMat(matId, nomeId) {
+      const matEl  = document.getElementById(matId);
+      const nomeEl = document.getElementById(nomeId);
+      if (!matEl || !nomeEl || !matEl.value.trim()) return;
+      const mat = matEl.value.trim().toLowerCase();
+      const ag  = _agentesCache.find(a => (a.matricula || '').toLowerCase() === mat);
+      if (ag) nomeEl.value = ag.nome;
     }
   </script>
 </body>
