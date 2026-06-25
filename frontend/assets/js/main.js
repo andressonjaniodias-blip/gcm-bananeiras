@@ -304,6 +304,9 @@ function htmlPessoa(tipo, idx) {
       <input type="text" name="nomePai" placeholder="Nome do pai" maxlength="150"></div>
     <div class="campo-group"><label>Nome da Mãe</label>
       <input type="text" name="nomeMae" placeholder="Nome da mãe" maxlength="150"></div>
+    <div style="margin-bottom:4px;">
+      <button type="button" class="btn-geo" onclick="usarLocalizacaoPessoa(this)" title="Preencher endereço com a localização GPS atual">📍 Usar localização atual</button>
+    </div>
     <div class="campo-group"><label>Endereço</label>
       <input type="text" name="endereco" placeholder="Rua, Nº" maxlength="250"></div>
     <div class="campo-group"><label>Bairro</label>
