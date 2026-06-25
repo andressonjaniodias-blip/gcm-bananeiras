@@ -95,6 +95,9 @@
         <input type="text" id="tituloRelatorio" placeholder="Ex: Ronda noturna - Bairro Centro" required maxlength="200">
       </div>
 
+      <div style="margin-bottom:4px;">
+        <button type="button" class="btn-geo" onclick="geoRelatorio(this)" title="Preencher com a localização GPS atual">📍 Usar localização atual</button>
+      </div>
       <div class="campo-group">
         <label>Local / Área Coberta</label>
         <input type="text" id="localRelatorio" placeholder="Ex: Bairro Centro, Av. Principal" maxlength="200">
@@ -220,7 +223,12 @@
 
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
+  <script src="../assets/js/geolocalizacao.js"></script>
   <script>
+    function geoRelatorio(btn) {
+      usarLocalizacaoAtual({ tipo: 'local', campo: 'localRelatorio', btn });
+    }
+
     let todosRelatorios = [];
     const RASCUNHO_KEY = 'gcm_relatorio_rascunho';
     let _autoSaveTimer = null;
