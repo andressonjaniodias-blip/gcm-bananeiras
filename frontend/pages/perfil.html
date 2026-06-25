@@ -263,6 +263,9 @@
         <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-label);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px dashed var(--color-border);">
           Endereço Residencial
         </div>
+        <div style="margin-bottom:10px;">
+          <button type="button" class="btn-geo" onclick="geoContato(this)" title="Preencher endereço com a localização GPS atual">📍 Usar localização atual</button>
+        </div>
         <div class="fg-3" style="margin-bottom:14px;">
           <div class="field" style="margin-bottom:0;">
             <label>CEP</label>
@@ -359,7 +362,24 @@
   </div>
 
   <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/geolocalizacao.js"></script>
   <script>
+    function geoContato(btn) {
+      usarLocalizacaoAtual({
+        tipo: 'endereco',
+        campos: {
+          logradouro:  'contatoLogradouro',
+          numero:      'contatoNumeroEnd',
+          complemento: 'contatoComplemento',
+          bairro:      'contatoBairro',
+          cidade:      'contatoCidade',
+          uf:          'contatoUf',
+          cep:         'contatoCep'
+        },
+        btn
+      });
+    }
+
     const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' };
     const badgeClass = { admin: 'badge-admin', supervisor: 'badge-supervisor', agente: 'badge-agente' };
 
