@@ -107,6 +107,9 @@
         <label class="obrigatorio">Data e Hora da Ocorrência</label>
         <input type="datetime-local" name="dataHoraOcorrencia" required>
       </div>
+      <div style="margin-bottom:4px;">
+        <button type="button" class="btn-geo" onclick="geoOcorrencia(this)" title="Preencher endereço com a localização GPS atual">📍 Usar localização atual</button>
+      </div>
       <div class="campo-group">
         <label class="obrigatorio">Rua / Logradouro</label>
         <input type="text" name="rua" placeholder="Nome da rua" required maxlength="200">
@@ -229,6 +232,9 @@
         <label class="obrigatorio">Matrícula</label>
         <input type="text" name="matricula" placeholder="Número da matrícula" required maxlength="30">
       </div>
+      <div style="margin-bottom:4px;">
+        <button type="button" class="btn-geo" onclick="geoAutoridade(this)" title="Preencher com a localização GPS atual">📍 Usar localização atual</button>
+      </div>
       <div class="campo-group">
         <label>Local</label>
         <input type="text" name="localAutoridade" placeholder="Delegacia / Unidade" maxlength="150">
@@ -293,5 +299,23 @@
 
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
+  <script src="../assets/js/geolocalizacao.js"></script>
+  <script>
+    function geoOcorrencia(btn) {
+      usarLocalizacaoAtual({
+        tipo: 'endereco',
+        campos: {
+          logradouro: '#ocorrencia [name="rua"]',
+          numero:     '#ocorrencia [name="numero"]',
+          bairro:     '#ocorrencia [name="complemento"]',
+          cidade:     '#ocorrencia [name="cidade"]'
+        },
+        btn
+      });
+    }
+    function geoAutoridade(btn) {
+      usarLocalizacaoAtual({ tipo: 'local', campo: '[name="localAutoridade"]', btn });
+    }
+  </script>
 </body>
 </html>
