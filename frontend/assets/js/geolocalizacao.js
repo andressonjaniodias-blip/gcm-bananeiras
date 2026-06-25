@@ -1,11 +1,30 @@
-// Geolocalização reversa com Nominatim (OpenStreetMap) — sem chave de API
-// Rate limit: 1 req/s por IP — adequado para uso pontual por agente
+// Geolocalização reversa com Google Maps Geocoding API
+// Chave configurada em config.js → constante GOOGLE_MAPS_KEY
 
 async function _geoReverseGeocode(lat, lon) {
-  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1&accept-language=pt-BR`;
-  const res = await fetch(url, { headers: { 'User-Agent': 'GCM-Bananeiras/1.0' } });
+  if (!GOOGLE_MAPS_KEY) {
+    throw Object.assign(new Error('Chave do Google Maps não configurada em config.js.'), { _keyMissing: true });
+  }
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_MAPS_KEY}&language=pt-BR`;
+  const res = await fetch(url);
   if (!res.ok) throw new Error('Geocodificação falhou');
-  return res.json();
+  const data = await res.json();
+  if (data.status === 'REQUEST_DENIED') throw new Error('Chave do Google Maps inválida ou sem permissão para Geocoding API.');
+  if (data.status !== 'OK') throw new Error(`Geocodificação: ${data.status}`);
+
+  const comps = data.results[0]?.address_components || [];
+  const get      = (...types) => comps.find(c => types.some(t => c.types.includes(t)))?.long_name  || '';
+  const getShort = (...types) => comps.find(c => types.some(t => c.types.includes(t)))?.short_name || '';
+  const cepRaw = get('postal_code').replace(/\D/g, '');
+
+  return {
+    road:         get('route'),
+    house_number: get('street_number'),
+    suburb:       get('sublocality_level_1', 'sublocality', 'neighborhood'),
+    city:         get('administrative_area_level_2'),
+    state_code:   getShort('administrative_area_level_1'),
+    postcode:     cepRaw.length === 8 ? `${cepRaw.slice(0, 5)}-${cepRaw.slice(5)}` : cepRaw,
+  };
 }
 
 function _geoResolver(ref) {
@@ -68,10 +87,9 @@ async function usarLocalizacaoAtual({ tipo = 'local', campos = {}, campo, btn } 
         enableHighAccuracy: true, timeout: 10000, maximumAge: 30000
       })
     );
-    const data = await _geoReverseGeocode(pos.coords.latitude, pos.coords.longitude);
-    const addr = data.address || {};
+    const addr = await _geoReverseGeocode(pos.coords.latitude, pos.coords.longitude);
 
-    const rua    = addr.road || addr.pedestrian || addr.footway || addr.path || '';
+    const rua    = addr.road || '';
     const num    = addr.house_number || '';
     const bairro = addr.suburb || addr.neighbourhood || addr.quarter || '';
     const cidade = addr.city || addr.town || addr.village || addr.municipality || '';
@@ -109,10 +127,11 @@ async function usarLocalizacaoAtual({ tipo = 'local', campos = {}, campo, btn } 
     }
   } catch (err) {
     const msg =
-      err.code === 1 ? 'Permissão de localização negada. Habilite nas configurações do navegador.' :
-      err.code === 2 ? 'Localização indisponível no momento. Tente novamente.' :
-      err.code === 3 ? 'Tempo esgotado ao obter localização.' :
-                       'Erro ao obter localização.';
+      err._keyMissing    ? err.message :
+      err.code === 1     ? 'Permissão de localização negada. Habilite nas configurações do navegador.' :
+      err.code === 2     ? 'Localização indisponível no momento. Tente novamente.' :
+      err.code === 3     ? 'Tempo esgotado ao obter localização.' :
+                           (err.message || 'Erro ao obter localização.');
     _geoToast(msg, 'danger');
   } finally {
     _geoBtnLoading(btn, false);
