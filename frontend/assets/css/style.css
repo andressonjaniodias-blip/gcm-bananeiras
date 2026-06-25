@@ -2652,6 +2652,38 @@ table th {
 .input-pass-toggle:hover { color: var(--color-primary); }
 .input-pass-toggle svg { width: 17px; height: 17px; }
 
+/* ── Botão de geolocalização ─────────────────────────────────────────────── */
+@keyframes geo-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.btn-geo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-input-bg);
+  color: var(--color-text-muted);
+  font-size: 0.79rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  white-space: nowrap;
+  margin-bottom: 8px;
+}
+.btn-geo:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-row-alt);
+}
+.btn-geo:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* Páginas carregadas dentro do modal flutuante (iframe) não repetem o
    cabeçalho institucional — só o conteúdo do formulário é exibido. */
 body.in-page-modal .header { display: none; }
