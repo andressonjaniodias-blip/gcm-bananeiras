@@ -115,6 +115,9 @@
           </div>
           <div class="campo-group">
             <label>Posto / Local</label>
+            <div style="margin-bottom:4px;">
+              <button type="button" class="btn-geo" onclick="geoPosto(this)" title="Preencher com a localização GPS atual">📍 Usar localização atual</button>
+            </div>
             <input type="text" id="viatPosto" placeholder="Nome do posto" maxlength="150">
           </div>
         </div>
@@ -137,6 +140,9 @@
           </div>
           <div class="campo-group">
             <label>Oficina / Local</label>
+            <div style="margin-bottom:4px;">
+              <button type="button" class="btn-geo" onclick="geoOficinaRev(this)" title="Preencher com a localização GPS atual">📍 Usar localização atual</button>
+            </div>
             <input type="text" id="viatOficinaRev" placeholder="Nome da oficina" maxlength="150">
           </div>
           <div class="campo-group">
@@ -164,6 +170,9 @@
           </div>
           <div class="campo-group">
             <label>Oficina / Local do Serviço</label>
+            <div style="margin-bottom:4px;">
+              <button type="button" class="btn-geo" onclick="geoOficinaMan(this)" title="Preencher com a localização GPS atual">📍 Usar localização atual</button>
+            </div>
             <input type="text" id="viatOficinaMan" placeholder="Nome da oficina" maxlength="150">
           </div>
           <div class="campo-group">
@@ -286,7 +295,12 @@
 
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
+  <script src="../assets/js/geolocalizacao.js"></script>
   <script>
+    function geoPosto(btn)      { usarLocalizacaoAtual({ tipo: 'local', campo: 'viatPosto',      btn }); }
+    function geoOficinaRev(btn) { usarLocalizacaoAtual({ tipo: 'local', campo: 'viatOficinaRev', btn }); }
+    function geoOficinaMan(btn) { usarLocalizacaoAtual({ tipo: 'local', campo: 'viatOficinaMan', btn }); }
+
     let todosRegistros = [];
 
     window.addEventListener('DOMContentLoaded', async () => {
