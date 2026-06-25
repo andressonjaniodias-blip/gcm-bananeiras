@@ -267,6 +267,9 @@
             <input type="text" id="novoCep" placeholder="58000-000" maxlength="9" oninput="mascaraCep(this)" onblur="buscarCep(this.value)">
           </div>
         </div>
+        <div style="margin-bottom:8px;">
+          <button type="button" class="btn-geo" onclick="geoNovoServidor(this)" title="Preencher endereço com a localização GPS atual">📍 Usar localização atual</button>
+        </div>
         <div class="fg-3x1" style="margin-bottom:12px;">
           <div class="field">
             <label>Logradouro</label>
@@ -475,7 +478,24 @@
   </div>
 
   <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/geolocalizacao.js"></script>
   <script>
+    function geoNovoServidor(btn) {
+      usarLocalizacaoAtual({
+        tipo: 'endereco',
+        campos: {
+          logradouro:  'novoLogradouro',
+          numero:      'novoNumeroEnd',
+          complemento: 'novoComplemento',
+          bairro:      'novoBairro',
+          cidade:      'novoCidade',
+          uf:          'novoUf',
+          cep:         'novoCep'
+        },
+        btn
+      });
+    }
+
     let meUsuario = '';
 
     function abrirFormNovoUsuario() {
