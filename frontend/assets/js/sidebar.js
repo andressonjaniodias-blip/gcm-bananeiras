@@ -24,7 +24,7 @@
   const MENU = [
     { href: '/pages/home.html',       icon: ICONS.home,       label: 'Início',              roles: ['agente', 'supervisor', 'admin'] },
     { href: '/pages/dashboard.html',  icon: ICONS.novobo,     label: 'Novo BO',             roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/consulta.html',   icon: ICONS.historico,  label: 'Histórico de BOs',    roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/consulta.html',   icon: ICONS.historico,  label: 'Histórico de BOs',    roles: ['supervisor', 'admin'] },
     { href: '/pages/relatorio.html',  icon: ICONS.relatorio,  label: 'Relatório Interno',   roles: ['agente', 'supervisor', 'admin'] },
     { href: '/pages/viatura.html',    icon: ICONS.viatura,    label: 'Controle de Viatura', roles: ['agente', 'supervisor', 'admin'] },
     { href: '/pages/documentos.html', icon: ICONS.documentos, label: 'Documentos',          roles: ['agente', 'supervisor', 'admin'] },
