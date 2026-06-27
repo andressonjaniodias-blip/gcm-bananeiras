@@ -12,15 +12,6 @@ const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.pn
 const NAVY = '#0e2a52';
 const TIPO_LABEL = { abastecimento: 'Abastecimento', revisao: 'Revisão', manutencao: 'Manutenção' };
 
-const VTR_MAX_SQL = `
-  SELECT COALESCE(MAX(
-    CASE
-      WHEN numero ~ '^VTR-GCM-[0-9]+/[0-9]{4}$'
-      THEN CAST(REGEXP_REPLACE(numero, '^VTR-GCM-([0-9]+)/[0-9]{4}$', '\\1') AS INTEGER)
-      ELSE 0
-    END
-  ), 0) AS max_seq FROM controle_viatura
-`;
 
 // Listar registros
 router.get('/', verificarToken, async (req, res) => {
@@ -42,8 +33,7 @@ router.post('/', verificarToken, async (req, res) => {
     if (!tipo || !codigo || !dataHora || km === undefined) {
       return res.status(400).json({ error: 'Campos obrigatórios ausentes.' });
     }
-    const { rows: maxRows } = await pool.query(VTR_MAX_SQL);
-    const seq    = parseInt(maxRows[0].max_seq) + 1;
+    const { rows: [{ seq }] } = await pool.query(`SELECT nextval('vtr_seq') AS seq`);
     const ano    = new Date(dataHora).getFullYear();
     const numero = `VTR-GCM-${String(seq).padStart(4, '0')}/${ano}`;
     const { rows } = await pool.query(
