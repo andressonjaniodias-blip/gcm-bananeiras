@@ -10,5 +10,6 @@ router.get('/stats', verificarToken, boController.statsGlobais);
 router.get('/', verificarToken, boController.listarBOs);
 router.get('/:id', verificarToken, boController.consultarBO);
 router.get('/:id/pdf', verificarToken, boController.exportarPDF);
+router.delete('/:id', verificarToken, boController.excluirBO);
 
 module.exports = router;
