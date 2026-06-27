@@ -184,6 +184,42 @@ pool.connect()
         criado_em TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+
+    // ── Sequences para numeração atômica (elimina race condition) ────────────
+    await client.query(`CREATE SEQUENCE IF NOT EXISTS bo_seq  START 1`);
+    await client.query(`CREATE SEQUENCE IF NOT EXISTS rel_seq START 1`);
+    await client.query(`CREATE SEQUENCE IF NOT EXISTS vtr_seq START 1`);
+
+    // Avança cada sequence para o maior número já registrado (migração segura)
+    const { rows: [{ max_bo }] } = await client.query(`
+      SELECT COALESCE(MAX(
+        CASE WHEN numero ~ '^BO-GCM-[0-9]+'
+        THEN CAST(REGEXP_REPLACE(numero, '^BO-GCM-([0-9]+).*$', '\\1') AS INTEGER)
+        ELSE 0 END
+      ), 0) AS max_bo FROM boletins
+    `);
+    if (parseInt(max_bo) > 0) await client.query(`SELECT setval('bo_seq', $1)`, [max_bo]);
+
+    const { rows: [{ max_rel }] } = await client.query(`
+      SELECT COALESCE(MAX(
+        CASE WHEN numero ~ '^REL-GCM-[A-Z]+-[0-9]+'
+        THEN CAST(REGEXP_REPLACE(numero, '^REL-GCM-[A-Z]+-([0-9]+).*$', '\\1') AS INTEGER)
+        WHEN numero ~ '^REL-GCM-[0-9]+'
+        THEN CAST(REGEXP_REPLACE(numero, '^REL-GCM-([0-9]+).*$', '\\1') AS INTEGER)
+        ELSE 0 END
+      ), 0) AS max_rel FROM relatorios
+    `);
+    if (parseInt(max_rel) > 0) await client.query(`SELECT setval('rel_seq', $1)`, [max_rel]);
+
+    const { rows: [{ max_vtr }] } = await client.query(`
+      SELECT COALESCE(MAX(
+        CASE WHEN numero ~ '^VTR-GCM-[0-9]+'
+        THEN CAST(REGEXP_REPLACE(numero, '^VTR-GCM-([0-9]+).*$', '\\1') AS INTEGER)
+        ELSE 0 END
+      ), 0) AS max_vtr FROM controle_viatura
+    `);
+    if (parseInt(max_vtr) > 0) await client.query(`SELECT setval('vtr_seq', $1)`, [max_vtr]);
+
     client.release();
   })
   .catch(err => console.error('Erro ao conectar ao banco:', err.message));
