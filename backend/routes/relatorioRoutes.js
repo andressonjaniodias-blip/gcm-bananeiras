@@ -166,12 +166,30 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
          .text(r.obs, { align: 'justify', lineGap: 3 });
     }
 
-    // ── Anexos (imagens) no final do PDF — sempre incluídos ──────────────────
+    // ── Assinatura (ao final do conteúdo) ────────────────────────────────────
+    doc.moveDown(2.5);
+    const centroX = pageW / 2;
+    const linhaY  = doc.y;
+    doc.moveTo(centroX - 110, linhaY).lineTo(centroX + 110, linhaY).lineWidth(0.8).stroke('#000');
+    doc.moveDown(0.3);
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#000')
+       .text(String(r.criado_por).toUpperCase(), { align: 'center' });
+    doc.fontSize(11).font('Helvetica').fillColor('#333')
+       .text('Agente GCM — Guarda Civil Municipal de Bananeiras/PB', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(0.3).stroke('#aaa');
+    doc.moveDown(0.3);
+    doc.fontSize(10).font('Helvetica').fillColor('#666')
+       .text(
+         `Documento gerado em ${new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })} — ${r.numero}`,
+         { align: 'center' }
+       );
+
+    // ── Anexos em nova página após a assinatura ───────────────────────────────
     const { rows: anexos } = await pool.query(
       `SELECT * FROM anexos WHERE tipo_ref='relatorio' AND ref_id=$1 ORDER BY criado_em ASC`,
       [req.params.id]
     );
-    // PDFKit suporta apenas JPEG e PNG nativamente; outros formatos vão para seção de listagem
     const PDF_IMG_MIMES = new Set(['image/jpeg', 'image/png']);
     const ALL_IMG_MIMES = new Set(['image/jpeg','image/png','image/gif','image/webp','image/bmp','image/tiff']);
     const imgs   = anexos.filter(a => PDF_IMG_MIMES.has(a.mime_type));
@@ -207,9 +225,9 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
           const scale   = Math.min(maxW / imgObj.width, maxH / imgObj.height);
           const scaledW = imgObj.width  * scale;
           const scaledH = imgObj.height * scale;
-          const xCentro  = margem + (conteudoW - scaledW) / 2;
-          const espacoV  = doc.page.height - doc.y - 80;
-          const yCentro  = doc.y + Math.max(0, (espacoV - scaledH) / 2);
+          const xCentro = margem + (conteudoW - scaledW) / 2;
+          const espacoV = doc.page.height - doc.y - 80;
+          const yCentro = doc.y + Math.max(0, (espacoV - scaledH) / 2);
           doc.image(imgObj, xCentro, yCentro, { width: scaledW, height: scaledH });
         } catch (imgErr) {
           console.error(`[PDF-Rel] Erro ao incorporar ${img.nome_original}:`, imgErr.message);
@@ -233,25 +251,6 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
            .text('Consulte o sistema para acessar os arquivos não incorporados ao PDF.');
       }
     }
-
-    // ── Rodapé / Assinatura ───────────────────────────────────────────────────
-    doc.moveDown(2.5);
-    const centroX = pageW / 2;
-    const linhaY  = doc.y;
-    doc.moveTo(centroX - 110, linhaY).lineTo(centroX + 110, linhaY).lineWidth(0.8).stroke('#000');
-    doc.moveDown(0.3);
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#000')
-       .text(String(r.criado_por).toUpperCase(), { align: 'center' });
-    doc.fontSize(11).font('Helvetica').fillColor('#333')
-       .text('Agente GCM — Guarda Civil Municipal de Bananeiras/PB', { align: 'center' });
-    doc.moveDown(0.5);
-    doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(0.3).stroke('#aaa');
-    doc.moveDown(0.3);
-    doc.fontSize(10).font('Helvetica').fillColor('#666')
-       .text(
-         `Documento gerado em ${new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })} — ${r.numero}`,
-         { align: 'center' }
-       );
 
     // ── Rodapé em todas as páginas ────────────────────────────────────────────
     const range = doc.bufferedPageRange();
