@@ -19,7 +19,7 @@
     perfil:    `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg>`,
     logs:      `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg>`,
     usuarios:  `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="3"/><path d="M1 17c0-3.31 2.91-6 6.5-6"/><circle cx="14" cy="8" r="2.5"/><path d="M19 17c0-2.76-2.24-5-5-5"/></svg>`,
-    admin:     `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42"/></svg>`,
+    admin:     `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15.1 7.9L17.9 8.6L17.9 11.4L15.1 12.1L16.6 14.6L14.6 16.6L12.1 15.1L11.4 17.9L8.6 17.9L7.9 15.1L5.4 16.6L3.5 14.6L4.9 12.1L2.1 11.4L2.1 8.6L4.9 7.9L3.5 5.4L5.4 3.5L7.9 4.9L8.6 2.1L11.4 2.1L12.1 4.9L14.6 3.5L16.6 5.4Z"/><circle cx="10" cy="10" r="3.5"/></svg>`,
   };
 
   const MENU = [
@@ -31,7 +31,7 @@
     { href: '/pages/documentos.html', icon: ICONS.documentos, label: 'Documentos',          roles: ['agente', 'supervisor', 'admin'] },
     { href: '/pages/perfil.html',     icon: ICONS.perfil,     label: 'Meu Perfil',          roles: ['agente', 'supervisor', 'admin'] },
     { href: '/pages/logs.html',       icon: ICONS.logs,       label: 'Log de Auditoria',    roles: ['supervisor', 'admin'] },
-    { href: '/pages/usuarios.html',   icon: ICONS.admin,      label: 'Administração',       roles: ['admin'] },
+    { href: '/pages/usuarios.html',   icon: ICONS.admin,      label: 'Gerenciamento',       roles: ['admin'] },
   ];
 
   function buildSidebar() {
