@@ -459,20 +459,22 @@ exports.exportarPDF = async (req, res) => {
           ? Buffer.from(img.dados, 'base64')
           : (fs.existsSync(filePath) ? filePath : null);
         if (!fonteImg) continue;
-        doc.addPage();
+        if (numAnexo > 1) doc.addPage();
+        else doc.moveDown(0.8);
         doc.fontSize(11).font('Helvetica-Bold').fillColor('#333')
            .text(`Anexo ${numAnexo}: ${img.nome_original}`, { align: 'center' });
         doc.moveDown(0.4);
-        const maxW = Math.min(conteudoW, 380);
-        const maxH = Math.min(doc.page.height - doc.y - 100, 440);
+        const maxW = Math.min(conteudoW, 260);
+        const maxH = Math.min(doc.page.height - doc.y - 100, 300);
         try {
           const imgObj  = doc.openImage(fonteImg);
           const scale   = Math.min(maxW / imgObj.width, maxH / imgObj.height);
           const scaledW = imgObj.width  * scale;
           const scaledH = imgObj.height * scale;
-          const xCentro = margem + (maxW - scaledW) / 2;
-          const yAtual  = doc.y;
-          doc.image(imgObj, xCentro, yAtual, { width: scaledW, height: scaledH });
+          const xCentro  = margem + (conteudoW - scaledW) / 2;
+          const espacoV  = doc.page.height - doc.y - 80;
+          const yCentro  = doc.y + Math.max(0, (espacoV - scaledH) / 2);
+          doc.image(imgObj, xCentro, yCentro, { width: scaledW, height: scaledH });
         } catch (imgErr) {
           console.error(`[PDF-BO] Erro ao incorporar ${img.nome_original}:`, imgErr.message);
           doc.fontSize(10).font('Helvetica-Oblique').fillColor('#888')
