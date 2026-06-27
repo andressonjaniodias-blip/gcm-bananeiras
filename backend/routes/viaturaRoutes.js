@@ -189,8 +189,8 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
         doc.fontSize(11).font('Helvetica-Bold').fillColor('#333')
            .text(`Anexo ${numAnexo}: ${img.nome_original}`, { align: 'center' });
         doc.moveDown(0.4);
-        const maxW = conteudoW;
-        const maxH = doc.page.height - doc.y - 80;
+        const maxW = Math.min(conteudoW, 380);
+        const maxH = Math.min(doc.page.height - doc.y - 100, 440);
         try {
           const imgObj  = doc.openImage(fonteImg);
           const scale   = Math.min(maxW / imgObj.width, maxH / imgObj.height);
