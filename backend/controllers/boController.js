@@ -468,7 +468,8 @@ exports.exportarPDF = async (req, res) => {
           const scaledW = imgObj.width  * scale;
           const scaledH = imgObj.height * scale;
           const xCentro = margem + (maxW - scaledW) / 2;
-          doc.image(filePath, xCentro, doc.y, { width: scaledW, height: scaledH });
+          const yAtual  = doc.y;
+          doc.image(imgObj, xCentro, yAtual, { width: scaledW, height: scaledH });
         } catch (imgErr) {
           console.error(`[PDF-BO] Erro ao incorporar ${img.nome_original}:`, imgErr.message);
           doc.fontSize(10).font('Helvetica-Oblique').fillColor('#888')
