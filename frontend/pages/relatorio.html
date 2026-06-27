@@ -375,6 +375,7 @@
         if (!res.ok) { const e = await res.json(); mostrarMsg(e.error || 'Erro ao salvar.', 'danger'); return; }
 
         const result = await res.json();
+        await enviarAnexosRel(result.id);
         limparRascunhoLocal();
         document.getElementById('numRelatorio').textContent = result.numero;
         mostrarMsg('Relatório finalizado com sucesso!', 'success');
