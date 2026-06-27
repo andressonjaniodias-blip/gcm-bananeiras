@@ -169,29 +169,23 @@ exports.statsGlobais = async (req, res) => {
 };
 
 exports.listarBOs = async (req, res) => {
+  const { role } = req.usuario;
+  if (role === 'agente') {
+    return res.status(403).json({ error: 'Acesso negado.' });
+  }
+
   try {
-    const { usuario, role } = req.usuario;
     const page  = Math.max(1, parseInt(req.query.page)  || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 30));
     const offset = (page - 1) * limit;
 
     let rows, totalRows;
-    if (role === 'agente') {
-      ({ rows } = await db.query(
-        'SELECT * FROM boletins WHERE criado_por = $1 ORDER BY id DESC LIMIT $2 OFFSET $3',
-        [usuario, limit, offset]
-      ));
-      ({ rows: [{ count: totalRows }] } = await db.query(
-        'SELECT COUNT(*) AS count FROM boletins WHERE criado_por = $1', [usuario]
-      ));
-    } else {
-      ({ rows } = await db.query(
-        'SELECT * FROM boletins ORDER BY id DESC LIMIT $1 OFFSET $2', [limit, offset]
-      ));
-      ({ rows: [{ count: totalRows }] } = await db.query(
-        'SELECT COUNT(*) AS count FROM boletins'
-      ));
-    }
+    ({ rows } = await db.query(
+      'SELECT * FROM boletins ORDER BY id DESC LIMIT $1 OFFSET $2', [limit, offset]
+    ));
+    ({ rows: [{ count: totalRows }] } = await db.query(
+      'SELECT COUNT(*) AS count FROM boletins'
+    ));
 
     res.json({
       data: rows,
@@ -214,8 +208,8 @@ exports.consultarBO = async (req, res) => {
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
 
     const { usuario, role } = req.usuario;
-    if (role === 'agente' && rows[0].criado_por !== usuario) {
-      return res.status(403).json({ error: 'Acesso negado a este BO' });
+    if (role === 'agente') {
+      return res.status(403).json({ error: 'Acesso negado.' });
     }
 
     const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
@@ -236,8 +230,8 @@ exports.exportarPDF = async (req, res) => {
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
 
     const { usuario, role } = req.usuario;
-    if (role === 'agente' && rows[0].criado_por !== usuario) {
-      return res.status(403).json({ error: 'Acesso negado a este BO' });
+    if (role === 'agente') {
+      return res.status(403).json({ error: 'Acesso negado.' });
     }
 
     const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
