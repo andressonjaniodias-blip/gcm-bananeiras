@@ -1,7 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
-const { verificarToken } = require('../middleware/auth');
+const { verificarToken, verificarSupervisor } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument = require('pdfkit');
 
@@ -259,6 +259,20 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
 
     doc.flushPages();
     doc.end();
+  } catch (err) {
+    erroServidor(res, err);
+  }
+});
+
+// Excluir relatório (admin/supervisor apenas)
+router.delete('/:id', verificarToken, verificarSupervisor, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`SELECT id FROM relatorios WHERE id=$1`, [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Relatório não encontrado.' });
+
+    await pool.query(`DELETE FROM anexos WHERE tipo_ref='relatorio' AND ref_id=$1`, [req.params.id]);
+    await pool.query(`DELETE FROM relatorios WHERE id=$1`, [req.params.id]);
+    res.json({ ok: true });
   } catch (err) {
     erroServidor(res, err);
   }
