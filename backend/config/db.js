@@ -112,6 +112,10 @@ pool.connect()
       ALTER TABLE anexos ADD COLUMN IF NOT EXISTS dados TEXT;
     `);
 
+    // Título e legenda opcionais (formatação ABNT)
+    await client.query(`ALTER TABLE anexos ADD COLUMN IF NOT EXISTS titulo  TEXT;`);
+    await client.query(`ALTER TABLE anexos ADD COLUMN IF NOT EXISTS legenda TEXT;`);
+
     // Colunas adicionais de log (para bancos existentes)
     const colunasLog = [
       `ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS user_agent  TEXT`,
@@ -162,6 +166,23 @@ pool.connect()
     `);
     await client.query(`
       ALTER TABLE controle_viatura ADD COLUMN IF NOT EXISTS criado_por TEXT;
+    `);
+    await client.query(`
+      ALTER TABLE controle_viatura ADD COLUMN IF NOT EXISTS numero TEXT;
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS frota (
+        id        SERIAL PRIMARY KEY,
+        codigo    TEXT NOT NULL UNIQUE,
+        modelo    TEXT,
+        ano       INTEGER,
+        placa     TEXT,
+        cor       TEXT,
+        tipo      TEXT DEFAULT 'carro-patrulha',
+        status    TEXT DEFAULT 'ativa',
+        obs       TEXT,
+        criado_em TIMESTAMPTZ DEFAULT NOW()
+      );
     `);
     client.release();
   })

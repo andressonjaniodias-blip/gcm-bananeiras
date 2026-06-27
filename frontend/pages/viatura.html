@@ -73,7 +73,9 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;flex-wrap:wrap;">
         <div class="campo-group">
           <label class="obrigatorio">Código da Viatura</label>
-          <input type="text" id="viatCodigo" placeholder="Ex: GCM-01" required maxlength="30">
+          <input type="text" id="viatCodigo" placeholder="Ex: GCM-01" required maxlength="30" list="frotaList" autocomplete="off">
+          <datalist id="frotaList"></datalist>
+          <div id="viatCodigoInfo" style="font-size:0.78rem;color:var(--color-hint);margin-top:3px;min-height:1.1em;"></div>
         </div>
         <div class="campo-group">
           <label class="obrigatorio">Data / Hora</label>
@@ -314,6 +316,35 @@
         if (typeof updateSidebarUser === 'function') updateSidebarUser(perfil);
       } catch { window.location.href = '/'; return; }
       carregarViatura();
+      carregarFrotaAutocomplete();
+    });
+
+    let _frotaCache = [];
+    async function carregarFrotaAutocomplete() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/frota`, { credentials: 'include' });
+        if (!res.ok) return;
+        _frotaCache = await res.json();
+        const dl = document.getElementById('frotaList');
+        dl.innerHTML = _frotaCache.map(v =>
+          `<option value="${v.codigo}">${v.codigo}${v.modelo ? ' — ' + v.modelo : ''}${v.placa ? ' (' + v.placa + ')' : ''}</option>`
+        ).join('');
+      } catch {}
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const campo = document.getElementById('viatCodigo');
+      const info  = document.getElementById('viatCodigoInfo');
+      if (!campo || !info) return;
+      campo.addEventListener('change', () => {
+        const v = _frotaCache.find(x => x.codigo === campo.value.toUpperCase());
+        if (v) {
+          const partes = [v.modelo, v.ano, v.cor, v.placa].filter(Boolean);
+          info.textContent = partes.join(' · ');
+        } else {
+          info.textContent = '';
+        }
+      });
     });
 
     const VIAT_TABS = ['registrar', 'historico'];
@@ -526,7 +557,7 @@
         const res = await fetch(`${API_BASE_URL}/api/viatura/${id}/pdf`, { credentials: 'include' });
         if (!res.ok) { if (btn) btn.classList.remove('detail-icon-btn--loading'); return; }
         const blob = await res.blob();
-        _shareFileViat   = new File([blob], `viatura_VIA-${String(id).padStart(4,'0')}.pdf`, { type: 'application/pdf' });
+        _shareFileViat   = new File([blob], `${(_viatDetalhe?.numero || `VTR-GCM-${String(id).padStart(4,'0')}`).replace(/\//g, '-')}.pdf`, { type: 'application/pdf' });
         _shareFileViatId = id;
       } catch {}
       if (btn) btn.classList.remove('detail-icon-btn--loading');
@@ -542,7 +573,7 @@
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
         a.href = url;
-        a.download = `viatura_VIA-${String(id).padStart(4,'0')}.pdf`;
+        a.download = `${(_viatDetalhe?.numero || `VTR-GCM-${String(id).padStart(4,'0')}`).replace(/\//g, '-')}.pdf`;
         a.click();
         URL.revokeObjectURL(url);
       } catch { showToast('Erro ao baixar PDF.', 'danger'); }
@@ -588,12 +619,12 @@
     }
 
     // ── Anexos de viatura ────────────────────────────────────────────────────
-    let _anexosViat = [];
+    let _anexosViat = []; // {file, titulo, legenda}[]
 
     function adicionarAnexosViat(files) {
       for (const f of files) {
-        if (_anexosViat.some(x => x.name === f.name && x.size === f.size)) continue;
-        _anexosViat.push(f);
+        if (_anexosViat.some(x => x.file.name === f.name && x.file.size === f.size)) continue;
+        _anexosViat.push({ file: f, titulo: '', legenda: '' });
       }
       renderizarAnexosViat();
     }
@@ -603,21 +634,35 @@
       renderizarAnexosViat();
     }
 
+    function atualizarMetaAnexoViat(idx, campo, valor) {
+      if (_anexosViat[idx]) _anexosViat[idx][campo] = valor;
+    }
+
     function renderizarAnexosViat() {
       const lista = document.getElementById('listaAnexosViat');
       if (!_anexosViat.length) { lista.innerHTML = ''; return; }
-      lista.innerHTML = _anexosViat.map((f, i) => {
+      lista.innerHTML = _anexosViat.map(({ file: f, titulo, legenda }, i) => {
         const kb = (f.size / 1024).toFixed(1);
         const thumb = f.type.startsWith('image/')
           ? `<img class="anexo-thumb" src="${URL.createObjectURL(f)}" alt="">`
           : `<div class="anexo-thumb" style="background:var(--color-row-alt);display:flex;align-items:center;justify-content:center;font-size:1.3rem;border:1px solid var(--color-border);border-radius:4px;">📄</div>`;
-        return `<div class="anexo-item">
-          ${thumb}
-          <div class="anexo-info">
-            <div class="anexo-nome">${f.name}</div>
-            <div class="anexo-meta">${f.type || 'arquivo'} — ${kb} KB</div>
+        return `<div class="anexo-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            ${thumb}
+            <div class="anexo-info">
+              <div class="anexo-nome">${f.name}</div>
+              <div class="anexo-meta">${f.type || 'arquivo'} — ${kb} KB</div>
+            </div>
+            <button class="btn-rm-anexo" onclick="removerAnexoViat(${i})">Remover</button>
           </div>
-          <button class="btn-rm-anexo" onclick="removerAnexoViat(${i})">Remover</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;padding-left:4px;">
+            <input type="text" placeholder="Título (opcional — ABNT)" value="${titulo}"
+                   oninput="atualizarMetaAnexoViat(${i},'titulo',this.value)"
+                   style="flex:1;min-width:140px;padding:4px 8px;border:1px solid var(--color-border);border-radius:4px;font-size:0.85rem;">
+            <input type="text" placeholder="Legenda (opcional)" value="${legenda}"
+                   oninput="atualizarMetaAnexoViat(${i},'legenda',this.value)"
+                   style="flex:2;min-width:180px;padding:4px 8px;border:1px solid var(--color-border);border-radius:4px;font-size:0.85rem;">
+          </div>
         </div>`;
       }).join('');
     }
@@ -625,7 +670,11 @@
     async function enviarAnexosViat(viatId) {
       if (!_anexosViat.length) return;
       const fd = new FormData();
-      _anexosViat.forEach(f => fd.append('arquivos', f));
+      _anexosViat.forEach(({ file: f, titulo, legenda }) => {
+        fd.append('arquivos', f);
+        fd.append('titulos',  titulo  || '');
+        fd.append('legendas', legenda || '');
+      });
       await fetch(`${API_BASE_URL}/api/anexos/viatura/${viatId}`, {
         method: 'POST', credentials: 'include', body: fd
       });

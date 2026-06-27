@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gerenciar Usuários - GCM Bananeiras</title>
+  <title>Administração - GCM Bananeiras</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -135,6 +135,18 @@
     .empty-row td { text-align: center; color: var(--color-hint); padding: 20px; }
     .tag-voce { font-size: 0.74rem; color: var(--color-hint); margin-left: 4px; }
     .td-sec { color: var(--color-text-muted); white-space: nowrap; }
+
+    /* Abas de administração */
+    .admin-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--color-border); }
+    .admin-tab {
+      padding: 9px 20px; border: none; background: transparent; cursor: pointer;
+      font-size: 0.9rem; font-weight: 600; color: var(--color-text-muted);
+      border-bottom: 2px solid transparent; margin-bottom: -2px;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      transition: color 0.15s;
+    }
+    .admin-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+    .admin-tab:hover:not(.active) { color: var(--color-text); }
   </style>
 </head>
 <body>
@@ -149,10 +161,16 @@
   </header>
 
   <div class="page-wrap">
-    <div class="page-title"><span>👥</span> Gerenciamento de Usuários</div>
+    <div class="page-title"><span>⚙️</span> Administração</div>
 
     <div id="msgToast" class="msg-toast"></div>
 
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="usuarios" onclick="showAdminTab('usuarios')">👥 Usuários</button>
+      <button class="admin-tab"        data-tab="frota"    onclick="showAdminTab('frota')">🚓 Frota de Viaturas</button>
+    </div>
+
+    <div id="tabUsuarios">
     <!-- Formulário de cadastro -->
     <div class="card" id="cardNovoUsuario" style="display:none;">
       <div class="card-title">➕ Cadastrar Novo Servidor</div>
@@ -344,7 +362,98 @@
         </button>
       </div>
     </div>
-  </div>
+    </div><!-- /tabUsuarios -->
+
+    <!-- ── Frota de Viaturas ─────────────────────────────────────────────── -->
+    <div id="tabFrota" style="display:none;">
+
+      <!-- Formulário cadastro/edição -->
+      <div class="card" id="cardNovaViatura" style="display:none;">
+        <div class="card-title" id="tituloFormViatura">➕ Cadastrar Viatura</div>
+        <form onsubmit="salvarViatura(event)" autocomplete="off">
+          <div class="fg-3">
+            <div class="field">
+              <label>Código <span class="obrig">*</span></label>
+              <input type="text" id="vCodigo" placeholder="Ex: GCM-01" required maxlength="30">
+            </div>
+            <div class="field">
+              <label>Modelo / Marca</label>
+              <input type="text" id="vModelo" placeholder="Ex: Fiat Strada" maxlength="100">
+            </div>
+            <div class="field">
+              <label>Placa</label>
+              <input type="text" id="vPlaca" placeholder="Ex: PYR-1A23" maxlength="20">
+            </div>
+            <div class="field">
+              <label>Ano</label>
+              <input type="number" id="vAno" placeholder="Ex: 2022" min="1990" max="2100">
+            </div>
+            <div class="field">
+              <label>Cor</label>
+              <input type="text" id="vCor" placeholder="Ex: Prata" maxlength="50">
+            </div>
+            <div class="field">
+              <label>Tipo</label>
+              <select id="vTipo">
+                <option value="carro-patrulha">Carro-Patrulha</option>
+                <option value="motocicleta">Motocicleta</option>
+                <option value="caminhonete">Caminhonete</option>
+                <option value="van">Van</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg-2" style="margin-top:12px;">
+            <div class="field">
+              <label>Status</label>
+              <select id="vStatus">
+                <option value="ativa">Ativa</option>
+                <option value="manutencao">Em Manutenção</option>
+                <option value="inativa">Inativa</option>
+              </select>
+            </div>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label>Observações</label>
+            <textarea id="vObs" rows="2" maxlength="500" placeholder="Informações adicionais..."
+              style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--color-border);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--color-input-bg);color:var(--color-text);resize:vertical;font-family:inherit;"></textarea>
+          </div>
+          <div class="row-submit">
+            <button type="submit" class="btn-primary" id="btnSalvarViatura">Cadastrar Viatura</button>
+            <button type="button" class="btn-secondary" onclick="fecharFormViatura()">✕ Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Lista da frota -->
+      <div class="card" id="cardFrota">
+        <div class="card-title" style="justify-content:space-between;">
+          <span>🚓 Frota de Viaturas</span>
+          <button class="btn-primary" id="btnNovaViatura" onclick="abrirFormViatura()"
+                  style="padding:6px 16px;font-size:0.85rem;margin:0;">➕ Nova Viatura</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Modelo</th>
+                <th>Placa</th>
+                <th>Ano</th>
+                <th>Tipo</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyFrota">
+              <tr><td colspan="7" class="empty-row">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /tabFrota -->
+  </div><!-- /page-wrap -->
 
   <!-- Modal de edição -->
   <div class="modal-overlay" id="modalEditar">
@@ -891,6 +1000,107 @@
       el.className = `msg-toast msg-${tipo}`;
       el.style.display = 'block';
       setTimeout(() => el.style.display = 'none', 4500);
+    }
+
+    // ── Abas de administração ─────────────────────────────────────────────────
+    function showAdminTab(tab) {
+      document.getElementById('tabUsuarios').style.display = tab === 'usuarios' ? '' : 'none';
+      document.getElementById('tabFrota').style.display    = tab === 'frota'    ? '' : 'none';
+      document.querySelectorAll('.admin-tab').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.tab === tab)
+      );
+      if (tab === 'frota') carregarFrota();
+    }
+
+    // ── Frota de Viaturas ─────────────────────────────────────────────────────
+    let _frotaLista    = [];
+    let _viaturaEditId = null;
+    const TIPO_LABEL_FROTA  = { 'carro-patrulha': 'Carro-Patrulha', motocicleta: 'Motocicleta', caminhonete: 'Caminhonete', van: 'Van', outro: 'Outro' };
+    const STATUS_LABEL_FROTA = { ativa: '🟢 Ativa', manutencao: '🟡 Manutenção', inativa: '🔴 Inativa' };
+
+    async function carregarFrota() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/frota`, { credentials: 'include' });
+        _frotaLista = await res.json();
+        const tbody = document.getElementById('tbodyFrota');
+        if (!_frotaLista.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="empty-row">Nenhuma viatura cadastrada.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = _frotaLista.map(v => `
+          <tr>
+            <td><strong>${v.codigo}</strong></td>
+            <td>${v.modelo || '—'}</td>
+            <td>${v.placa  || '—'}</td>
+            <td>${v.ano    || '—'}</td>
+            <td>${TIPO_LABEL_FROTA[v.tipo]   || v.tipo}</td>
+            <td>${STATUS_LABEL_FROTA[v.status] || v.status}</td>
+            <td class="acoes-cell">
+              <button class="btn-icon btn-icon-editar"  title="Editar"  onclick="abrirFormViatura(${v.id})">✏️</button>
+              <button class="btn-icon btn-icon-excluir" title="Excluir" onclick="excluirViatura(${v.id}, '${v.codigo.replace(/'/g, "\\'")}')">🗑️</button>
+            </td>
+          </tr>`).join('');
+      } catch { toast('Erro ao carregar frota.', 'erro'); }
+    }
+
+    function abrirFormViatura(id = null) {
+      const v = id ? _frotaLista.find(x => x.id === id) : null;
+      _viaturaEditId = v ? v.id : null;
+      document.getElementById('tituloFormViatura').textContent = v ? '✏️ Editar Viatura' : '➕ Cadastrar Viatura';
+      document.getElementById('vCodigo').value = v?.codigo || '';
+      document.getElementById('vModelo').value = v?.modelo || '';
+      document.getElementById('vPlaca').value  = v?.placa  || '';
+      document.getElementById('vAno').value    = v?.ano    || '';
+      document.getElementById('vCor').value    = v?.cor    || '';
+      document.getElementById('vTipo').value   = v?.tipo   || 'carro-patrulha';
+      document.getElementById('vStatus').value = v?.status || 'ativa';
+      document.getElementById('vObs').value    = v?.obs    || '';
+      document.getElementById('btnSalvarViatura').textContent = v ? 'Salvar Alterações' : 'Cadastrar Viatura';
+      document.getElementById('cardNovaViatura').style.display = '';
+      document.getElementById('btnNovaViatura').style.display  = 'none';
+      document.getElementById('cardNovaViatura').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function fecharFormViatura() {
+      _viaturaEditId = null;
+      document.getElementById('cardNovaViatura').style.display = 'none';
+      document.getElementById('btnNovaViatura').style.display  = '';
+    }
+
+    async function salvarViatura(e) {
+      e.preventDefault();
+      const body = {
+        codigo: document.getElementById('vCodigo').value.trim(),
+        modelo: document.getElementById('vModelo').value.trim() || null,
+        ano:    parseInt(document.getElementById('vAno').value)  || null,
+        placa:  document.getElementById('vPlaca').value.trim()  || null,
+        cor:    document.getElementById('vCor').value.trim()    || null,
+        tipo:   document.getElementById('vTipo').value,
+        status: document.getElementById('vStatus').value,
+        obs:    document.getElementById('vObs').value.trim()    || null,
+      };
+      try {
+        const url    = _viaturaEditId ? `${API_BASE_URL}/api/frota/${_viaturaEditId}` : `${API_BASE_URL}/api/frota`;
+        const method = _viaturaEditId ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method, credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) { const d = await res.json(); toast(d.error || 'Erro ao salvar.', 'erro'); return; }
+        toast(_viaturaEditId ? 'Viatura atualizada!' : 'Viatura cadastrada!', 'ok');
+        fecharFormViatura();
+        carregarFrota();
+      } catch { toast('Erro de conexão.', 'erro'); }
+    }
+
+    async function excluirViatura(id, codigo) {
+      if (!await confirmarLocal(`Remover <strong>${codigo}</strong> da frota?`, 'Remover Viatura')) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/frota/${id}`, { method: 'DELETE', credentials: 'include' });
+        if (res.ok) { toast('Viatura removida.', 'ok'); carregarFrota(); }
+        else { const d = await res.json(); toast(d.error || 'Erro ao remover.', 'erro'); }
+      } catch { toast('Erro de conexão.', 'erro'); }
     }
 
     function confirmarLocal(mensagem, titulo = 'Confirmar') {

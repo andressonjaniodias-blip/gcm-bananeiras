@@ -19,6 +19,7 @@
     perfil:    `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg>`,
     logs:      `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg>`,
     usuarios:  `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="3"/><path d="M1 17c0-3.31 2.91-6 6.5-6"/><circle cx="14" cy="8" r="2.5"/><path d="M19 17c0-2.76-2.24-5-5-5"/></svg>`,
+    admin:     `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42"/></svg>`,
   };
 
   const MENU = [
@@ -30,7 +31,7 @@
     { href: '/pages/documentos.html', icon: ICONS.documentos, label: 'Documentos',          roles: ['agente', 'supervisor', 'admin'] },
     { href: '/pages/perfil.html',     icon: ICONS.perfil,     label: 'Meu Perfil',          roles: ['agente', 'supervisor', 'admin'] },
     { href: '/pages/logs.html',       icon: ICONS.logs,       label: 'Log de Auditoria',    roles: ['supervisor', 'admin'] },
-    { href: '/pages/usuarios.html',   icon: ICONS.usuarios,   label: 'Usuários',            roles: ['admin'] },
+    { href: '/pages/usuarios.html',   icon: ICONS.admin,      label: 'Administração',       roles: ['admin'] },
   ];
 
   function buildSidebar() {

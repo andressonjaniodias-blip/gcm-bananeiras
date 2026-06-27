@@ -12,11 +12,21 @@ const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.pn
 const NAVY = '#0e2a52';
 const TIPO_LABEL = { abastecimento: 'Abastecimento', revisao: 'Revisão', manutencao: 'Manutenção' };
 
+const VTR_MAX_SQL = `
+  SELECT COALESCE(MAX(
+    CASE
+      WHEN numero ~ '^VTR-GCM-[0-9]+/[0-9]{4}$'
+      THEN CAST(REGEXP_REPLACE(numero, '^VTR-GCM-([0-9]+)/[0-9]{4}$', '\\1') AS INTEGER)
+      ELSE 0
+    END
+  ), 0) AS max_seq FROM controle_viatura
+`;
+
 // Listar registros
 router.get('/', verificarToken, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, tipo, codigo, data_hora, km, responsavel, dados, obs
+      `SELECT id, tipo, codigo, data_hora, km, responsavel, dados, obs, numero
        FROM controle_viatura ORDER BY data_hora DESC LIMIT 200`
     );
     res.json(rows);
@@ -32,10 +42,14 @@ router.post('/', verificarToken, async (req, res) => {
     if (!tipo || !codigo || !dataHora || km === undefined) {
       return res.status(400).json({ error: 'Campos obrigatórios ausentes.' });
     }
+    const { rows: maxRows } = await pool.query(VTR_MAX_SQL);
+    const seq    = parseInt(maxRows[0].max_seq) + 1;
+    const ano    = new Date(dataHora).getFullYear();
+    const numero = `VTR-GCM-${String(seq).padStart(4, '0')}/${ano}`;
     const { rows } = await pool.query(
-      `INSERT INTO controle_viatura (tipo, codigo, data_hora, km, responsavel, dados, obs, criado_por)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
-      [tipo, codigo, dataHora, km, responsavel || req.usuario?.usuario, JSON.stringify(dados || {}), obs || null, req.usuario?.usuario]
+      `INSERT INTO controle_viatura (tipo, codigo, data_hora, km, responsavel, dados, obs, criado_por, numero)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, numero`,
+      [tipo, codigo, dataHora, km, responsavel || req.usuario?.usuario, JSON.stringify(dados || {}), obs || null, req.usuario?.usuario, numero]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -52,10 +66,10 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     const r = rows[0];
 
     const dados = typeof r.dados === 'string' ? JSON.parse(r.dados) : (r.dados || {});
-    const nomeRegistro = `VIA-${String(r.id).padStart(4, '0')}`;
+    const nomeRegistro = r.numero || `VTR-GCM-${String(r.id).padStart(4, '0')}`;
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="viatura_${nomeRegistro}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${nomeRegistro.replace(/\//g, '-')}.pdf"`);
 
     const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 55, right: 55 }, size: 'A4', bufferPages: true });
     doc.pipe(res);
@@ -65,7 +79,7 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     const conteudoW = pageW - margem * 2;
     const imgSize   = 60;
 
-    const dataRodape = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const dataRodape = new Date(r.data_hora).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
     const rodapeInfo = `Viatura ${r.codigo} — ${nomeRegistro} — Bananeiras/PB, ${dataRodape}`;
 
     // ── Cabeçalho com brasões ─────────────────────────────────────────────────

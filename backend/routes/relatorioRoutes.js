@@ -5,16 +5,38 @@ const { verificarToken, verificarSupervisor } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument = require('pdfkit');
 
+const TIPO_ABREV_REL = {
+  'Relatório de Ronda':       'RONDA',
+  'Relatório de Ocorrência':  'OCOR',
+  'Relatório Administrativo': 'ADM',
+  'Relatório de Fiscalização':'FISC',
+  'Relatório de Operação':    'OPER',
+  'Outro':                    'OUTRO',
+};
+function tipoAbrevRel(tipo) {
+  return TIPO_ABREV_REL[tipo] || tipo.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 8) || 'OUTRO';
+}
+const REL_MAX_SQL = `
+  SELECT COALESCE(MAX(
+    CASE
+      WHEN numero ~ '^REL-GCM-[A-Z]+-[0-9]+/[0-9]{4}$'
+      THEN CAST(REGEXP_REPLACE(numero, '^REL-GCM-[A-Z]+-([0-9]+)/[0-9]{4}$', '\\1') AS INTEGER)
+      WHEN numero ~ '^REL-GCM-[0-9]+/[0-9]{4}$'
+      THEN CAST(REGEXP_REPLACE(numero, '^REL-GCM-([0-9]+)/[0-9]{4}$', '\\1') AS INTEGER)
+      ELSE 0
+    END
+  ), 0) AS max_seq FROM relatorios
+`;
+
 // Próximo número disponível
 router.get('/proximo-numero', verificarToken, async (req, res) => {
   try {
     const ano = new Date().getFullYear();
-    const { rows } = await pool.query(
-      `SELECT COUNT(*) FROM relatorios WHERE numero LIKE $1`,
-      [`REL-GCM-%/${ano}`]
-    );
-    const seq = String(Number(rows[0].count) + 1).padStart(4, '0');
-    res.json({ numero: `REL-GCM-${seq}/${ano}` });
+    const { rows } = await pool.query(REL_MAX_SQL);
+    const seq  = String(parseInt(rows[0].max_seq) + 1).padStart(4, '0');
+    const tipo = req.query.tipo ? tipoAbrevRel(req.query.tipo) : null;
+    const numero = tipo ? `REL-GCM-${tipo}-${seq}/${ano}` : `REL-GCM-${seq}/${ano}`;
+    res.json({ numero });
   } catch (err) {
     erroServidor(res, err);
   }
@@ -50,12 +72,9 @@ router.post('/', verificarToken, async (req, res) => {
     if (!tipo || !titulo || !data) return res.status(400).json({ error: 'Campos obrigatórios ausentes.' });
 
     const ano = new Date().getFullYear();
-    const { rows: countRows } = await pool.query(
-      `SELECT COUNT(*) FROM relatorios WHERE numero LIKE $1`,
-      [`REL-GCM-%/${ano}`]
-    );
-    const seq    = String(Number(countRows[0].count) + 1).padStart(4, '0');
-    const numero = `REL-GCM-${seq}/${ano}`;
+    const { rows: maxRows } = await pool.query(REL_MAX_SQL);
+    const seq    = String(parseInt(maxRows[0].max_seq) + 1).padStart(4, '0');
+    const numero = `REL-GCM-${tipoAbrevRel(tipo)}-${seq}/${ano}`;
 
     const { rows } = await pool.query(
       `INSERT INTO relatorios (numero, tipo, titulo, data, local, equipe, conteudo, obs, status, criado_por)
@@ -87,7 +106,7 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     const NAVY = '#0e2a52';
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="relatorio_${r.numero.replace(/\//g, '-')}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${r.numero.replace(/\//g, '-')}.pdf"`);
 
     const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 55, right: 55 }, size: 'A4', bufferPages: true });
     doc.pipe(res);
@@ -97,7 +116,7 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     const conteudoW = pageW - margem * 2;
     const imgSize   = 60;
 
-    const dataRodape  = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const dataRodape  = new Date(r.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
     const localRodape = r.local ? `${r.local}, ` : 'Bananeiras/PB, ';
     const rodapeInfo  = `Relatório Nº ${r.numero}  —  ${localRodape}${dataRodape}`;
 
@@ -215,9 +234,15 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
         if (!fonteImg) continue;
         if (numAnexo > 1) doc.addPage();
         else doc.moveDown(0.8);
+
+        // ABNT NBR 14724: identificação acima — "Figura N — Título"
+        const rotulFig = img.titulo
+          ? `Figura ${numAnexo} — ${img.titulo}`
+          : `Figura ${numAnexo} — ${img.nome_original}`;
         doc.fontSize(11).font('Helvetica-Bold').fillColor('#333')
-           .text(`Anexo ${numAnexo}: ${img.nome_original}`, { align: 'center' });
+           .text(rotulFig, { align: 'center' });
         doc.moveDown(0.4);
+
         const maxW = Math.min(conteudoW, 260);
         const maxH = Math.min(doc.page.height - doc.y - 100, 300);
         try {
@@ -226,9 +251,13 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
           const scaledW = imgObj.width  * scale;
           const scaledH = imgObj.height * scale;
           const xCentro = margem + (conteudoW - scaledW) / 2;
-          const espacoV = doc.page.height - doc.y - 80;
-          const yCentro = doc.y + Math.max(0, (espacoV - scaledH) / 2);
-          doc.image(imgObj, xCentro, yCentro, { width: scaledW, height: scaledH });
+          doc.image(imgObj, xCentro, doc.y, { width: scaledW, height: scaledH });
+          doc.y += scaledH + 6;
+          // ABNT: legenda/fonte abaixo da figura
+          if (img.legenda) {
+            doc.fontSize(9).font('Helvetica-Oblique').fillColor('#555')
+               .text(img.legenda, { align: 'center', width: conteudoW });
+          }
         } catch (imgErr) {
           console.error(`[PDF-Rel] Erro ao incorporar ${img.nome_original}:`, imgErr.message);
           doc.fontSize(10).font('Helvetica-Oblique').fillColor('#888')

@@ -531,13 +531,13 @@ function restaurarRascunho(dados) {
 }
 
 // ── Anexos do BO ─────────────────────────────────────────────────────────────
-let _anexosBO    = [];   // File[] pendentes (antes de criar o BO)
+let _anexosBO    = [];   // {file, titulo, legenda}[] pendentes (antes de criar o BO)
 let _boIdAtual   = null; // ID do BO após criação (para upload real)
 
 function adicionarAnexosBO(files) {
   for (const f of Array.from(files)) {
-    if (_anexosBO.some(x => x.name === f.name && x.size === f.size)) continue; // evita dup
-    _anexosBO.push(f);
+    if (_anexosBO.some(x => x.file.name === f.name && x.file.size === f.size)) continue;
+    _anexosBO.push({ file: f, titulo: '', legenda: '' });
   }
   renderizarAnexosBO();
 }
@@ -547,23 +547,37 @@ function removerAnexoBO(idx) {
   renderizarAnexosBO();
 }
 
+function atualizarMetaAnexoBO(idx, campo, valor) {
+  if (_anexosBO[idx]) _anexosBO[idx][campo] = valor;
+}
+
 function renderizarAnexosBO() {
   const lista = document.getElementById('listaAnexosBO');
   if (!lista) return;
   if (!_anexosBO.length) { lista.innerHTML = ''; return; }
-  lista.innerHTML = _anexosBO.map((f, i) => {
+  lista.innerHTML = _anexosBO.map(({ file: f, titulo, legenda }, i) => {
     const isImg = f.type.startsWith('image/');
     const thumb = isImg
       ? `<img class="anexo-thumb" src="${URL.createObjectURL(f)}" alt="">`
       : `<div class="anexo-thumb" style="background:var(--color-row-alt);display:flex;align-items:center;justify-content:center;font-size:1.4rem;">📄</div>`;
     const kb = (f.size / 1024).toFixed(0);
-    return `<div class="anexo-item">
-      ${thumb}
-      <div class="anexo-info">
-        <div class="anexo-nome">${f.name}</div>
-        <div class="anexo-meta">${f.type || 'arquivo'} — ${kb} KB</div>
+    return `<div class="anexo-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        ${thumb}
+        <div class="anexo-info">
+          <div class="anexo-nome">${f.name}</div>
+          <div class="anexo-meta">${f.type || 'arquivo'} — ${kb} KB</div>
+        </div>
+        <button class="btn-rm-anexo" onclick="removerAnexoBO(${i})">Remover</button>
       </div>
-      <button class="btn-rm-anexo" onclick="removerAnexoBO(${i})">Remover</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;padding-left:4px;">
+        <input type="text" placeholder="Título (opcional — ABNT)" value="${titulo}"
+               oninput="atualizarMetaAnexoBO(${i},'titulo',this.value)"
+               style="flex:1;min-width:140px;padding:4px 8px;border:1px solid var(--color-border);border-radius:4px;font-size:0.85rem;">
+        <input type="text" placeholder="Legenda (opcional)" value="${legenda}"
+               oninput="atualizarMetaAnexoBO(${i},'legenda',this.value)"
+               style="flex:2;min-width:180px;padding:4px 8px;border:1px solid var(--color-border);border-radius:4px;font-size:0.85rem;">
+      </div>
     </div>`;
   }).join('');
 }
@@ -571,7 +585,11 @@ function renderizarAnexosBO() {
 async function enviarAnexosBO(boId) {
   if (!_anexosBO.length) return;
   const fd = new FormData();
-  _anexosBO.forEach(f => fd.append('arquivos', f));
+  _anexosBO.forEach(({ file: f, titulo, legenda }) => {
+    fd.append('arquivos', f);
+    fd.append('titulos',  titulo  || '');
+    fd.append('legendas', legenda || '');
+  });
   await fetch(`${API_BASE_URL}/api/anexos/bo/${boId}`, {
     method: 'POST', credentials: 'include', body: fd
   });

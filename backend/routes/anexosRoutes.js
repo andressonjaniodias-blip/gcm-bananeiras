@@ -70,15 +70,22 @@ router.post('/:tipo/:id', verificarToken, (req, res) => {
     if (!req.files?.length) return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
 
     try {
+      // titulos[] e legendas[] vêm em FormData na mesma ordem dos arquivos
+      const titulos  = [].concat(req.body?.titulos  || []);
+      const legendas = [].concat(req.body?.legendas || []);
+
       const inseridos = [];
-      for (const f of req.files) {
+      for (let idx = 0; idx < req.files.length; idx++) {
+        const f = req.files[idx];
         const filePath = path.join(UPLOADS_BASE, tipo, f.filename);
         let dadosBase64 = null;
         try { dadosBase64 = fs.readFileSync(filePath).toString('base64'); } catch {}
+        const titulo  = (titulos[idx]  || '').trim() || null;
+        const legenda = (legendas[idx] || '').trim() || null;
         const { rows } = await db.query(
-          `INSERT INTO anexos (tipo_ref, ref_id, nome_arquivo, nome_original, mime_type, tamanho, dados, criado_por)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-          [tipo, id, f.filename, sanitizarNome(f.originalname), f.mimetype, f.size, dadosBase64, req.usuario?.usuario]
+          `INSERT INTO anexos (tipo_ref, ref_id, nome_arquivo, nome_original, mime_type, tamanho, dados, criado_por, titulo, legenda)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+          [tipo, id, f.filename, sanitizarNome(f.originalname), f.mimetype, f.size, dadosBase64, req.usuario?.usuario, titulo, legenda]
         );
         inseridos.push(rows[0]);
       }

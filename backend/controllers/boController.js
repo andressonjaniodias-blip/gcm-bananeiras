@@ -110,9 +110,20 @@ exports.criarBO = async (req, res) => {
   }
 
   try {
-    const { rows: countRows } = await db.query('SELECT COUNT(*) AS total FROM boletins');
-    const numeroSequencial = parseInt(countRows[0].total) + 1;
-    const numero = `BO-GCM-${String(numeroSequencial).padStart(4, '0')}`;
+    const { rows: maxRows } = await db.query(`
+      SELECT COALESCE(MAX(
+        CASE
+          WHEN numero ~ '^BO-GCM-[0-9]+/[0-9]{4}$'
+          THEN CAST(REGEXP_REPLACE(numero, '^BO-GCM-([0-9]+)/[0-9]{4}$', '\\1') AS INTEGER)
+          WHEN numero ~ '^BO-GCM-[0-9]+$'
+          THEN CAST(REGEXP_REPLACE(numero, '^BO-GCM-([0-9]+)$', '\\1') AS INTEGER)
+          ELSE 0
+        END
+      ), 0) AS max_seq FROM boletins
+    `);
+    const seq = parseInt(maxRows[0].max_seq) + 1;
+    const ano = new Date().getFullYear();
+    const numero = `BO-GCM-${String(seq).padStart(4, '0')}/${ano}`;
     const dados = JSON.stringify(req.body);
     const data = new Date().toISOString();
     const criado_por = req.usuario.usuario;
@@ -265,7 +276,7 @@ exports.exportarPDF = async (req, res) => {
     try { dados = JSON.parse(row.dados); } catch { dados = {}; }
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="bo_${row.numero}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${row.numero.replace(/\//g, '-')}.pdf"`);
 
     const doc = new PDFDocument({ margins: { top: 50, bottom: 65, left: 50, right: 50 }, size: 'A4', bufferPages: true });
     doc.pipe(res);
@@ -275,7 +286,7 @@ exports.exportarPDF = async (req, res) => {
     const conteudoW = pageW - margem * 2;
     const imgSize   = 62;
 
-    const dataDocRodape = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const dataDocRodape = new Date(row.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
     const rodapeInfo = `BO Nº ${row.numero}  —  Bananeiras/PB, ${dataDocRodape}`;
 
     // ── Cabeçalho com brasões ─────────────────────────────────────────────────
@@ -390,7 +401,7 @@ exports.exportarPDF = async (req, res) => {
     const nomeAut    = autoridade.nomeAutoridade ? String(autoridade.nomeAutoridade).toUpperCase() : null;
     const cargoAut   = autoridade.cargo           || null;
     const matricAut  = autoridade.matricula        || null;
-    const dataDoc    = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const dataDoc    = new Date(row.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 
     // ── Recibo de Entrega de Ocorrência ───────────────────────────────────────
     doc.moveDown(1);
@@ -483,9 +494,15 @@ exports.exportarPDF = async (req, res) => {
         if (!fonteImg) continue;
         if (numAnexo > 1) doc.addPage();
         else doc.moveDown(0.8);
+
+        // ABNT NBR 14724: identificação acima — "Figura N — Título"
+        const rotulFig = img.titulo
+          ? `Figura ${numAnexo} — ${img.titulo}`
+          : `Figura ${numAnexo} — ${img.nome_original}`;
         doc.fontSize(11).font('Helvetica-Bold').fillColor('#333')
-           .text(`Anexo ${numAnexo}: ${img.nome_original}`, { align: 'center' });
+           .text(rotulFig, { align: 'center' });
         doc.moveDown(0.4);
+
         const maxW = Math.min(conteudoW, 260);
         const maxH = Math.min(doc.page.height - doc.y - 100, 300);
         try {
@@ -493,10 +510,14 @@ exports.exportarPDF = async (req, res) => {
           const scale   = Math.min(maxW / imgObj.width, maxH / imgObj.height);
           const scaledW = imgObj.width  * scale;
           const scaledH = imgObj.height * scale;
-          const xCentro  = margem + (conteudoW - scaledW) / 2;
-          const espacoV  = doc.page.height - doc.y - 80;
-          const yCentro  = doc.y + Math.max(0, (espacoV - scaledH) / 2);
-          doc.image(imgObj, xCentro, yCentro, { width: scaledW, height: scaledH });
+          const xCentro = margem + (conteudoW - scaledW) / 2;
+          doc.image(imgObj, xCentro, doc.y, { width: scaledW, height: scaledH });
+          doc.y += scaledH + 6;
+          // ABNT: legenda/fonte abaixo da figura
+          if (img.legenda) {
+            doc.fontSize(9).font('Helvetica-Oblique').fillColor('#555')
+               .text(img.legenda, { align: 'center', width: conteudoW });
+          }
         } catch (imgErr) {
           console.error(`[PDF-BO] Erro ao incorporar ${img.nome_original}:`, imgErr.message);
           doc.fontSize(10).font('Helvetica-Oblique').fillColor('#888')
