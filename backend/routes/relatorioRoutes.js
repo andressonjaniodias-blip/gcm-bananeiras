@@ -60,7 +60,7 @@ router.post('/', verificarToken, async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO relatorios (numero, tipo, titulo, data, local, equipe, conteudo, obs, status, criado_por)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, numero`,
-      [numero, tipo, titulo, data, local || null, equipe || null, conteudo || null, obs || null, status || 'rascunho', req.usuario]
+      [numero, tipo, titulo, data, local || null, equipe || null, conteudo || null, obs || null, status || 'rascunho', req.usuario.usuario]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
