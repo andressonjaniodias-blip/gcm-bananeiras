@@ -72,10 +72,13 @@ router.post('/:tipo/:id', verificarToken, (req, res) => {
     try {
       const inseridos = [];
       for (const f of req.files) {
+        const filePath = path.join(UPLOADS_BASE, tipo, f.filename);
+        let dadosBase64 = null;
+        try { dadosBase64 = fs.readFileSync(filePath).toString('base64'); } catch {}
         const { rows } = await db.query(
-          `INSERT INTO anexos (tipo_ref, ref_id, nome_arquivo, nome_original, mime_type, tamanho, criado_por)
-           VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-          [tipo, id, f.filename, sanitizarNome(f.originalname), f.mimetype, f.size, req.usuario?.usuario]
+          `INSERT INTO anexos (tipo_ref, ref_id, nome_arquivo, nome_original, mime_type, tamanho, dados, criado_por)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+          [tipo, id, f.filename, sanitizarNome(f.originalname), f.mimetype, f.size, dadosBase64, req.usuario?.usuario]
         );
         inseridos.push(rows[0]);
       }
