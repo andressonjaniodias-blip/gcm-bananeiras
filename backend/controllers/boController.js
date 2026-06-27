@@ -110,19 +110,8 @@ exports.criarBO = async (req, res) => {
   }
 
   try {
-    const { rows: maxRows } = await db.query(`
-      SELECT COALESCE(MAX(
-        CASE
-          WHEN numero ~ '^BO-GCM-[0-9]+/[0-9]{4}$'
-          THEN CAST(REGEXP_REPLACE(numero, '^BO-GCM-([0-9]+)/[0-9]{4}$', '\\1') AS INTEGER)
-          WHEN numero ~ '^BO-GCM-[0-9]+$'
-          THEN CAST(REGEXP_REPLACE(numero, '^BO-GCM-([0-9]+)$', '\\1') AS INTEGER)
-          ELSE 0
-        END
-      ), 0) AS max_seq FROM boletins
-    `);
-    const seq = parseInt(maxRows[0].max_seq) + 1;
-    const ano = new Date().getFullYear();
+    const { rows: [{ seq }] } = await db.query(`SELECT nextval('bo_seq') AS seq`);
+    const ano    = new Date().getFullYear();
     const numero = `BO-GCM-${String(seq).padStart(4, '0')}/${ano}`;
     const dados = JSON.stringify(req.body);
     const data = new Date().toISOString();
