@@ -23,10 +23,20 @@ router.get('/proximo-numero', verificarToken, async (req, res) => {
 // Listar relatórios
 router.get('/', verificarToken, async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT id, numero, tipo, titulo, data, status, criado_por, criado_em
-       FROM relatorios ORDER BY criado_em DESC`
-    );
+    const { usuario, role } = req.usuario;
+    let rows;
+    if (role === 'agente') {
+      ({ rows } = await pool.query(
+        `SELECT id, numero, tipo, titulo, data, status, criado_por, criado_em
+         FROM relatorios WHERE criado_por = $1 ORDER BY criado_em DESC`,
+        [usuario]
+      ));
+    } else {
+      ({ rows } = await pool.query(
+        `SELECT id, numero, tipo, titulo, data, status, criado_por, criado_em
+         FROM relatorios ORDER BY criado_em DESC`
+      ));
+    }
     res.json(rows);
   } catch (err) {
     erroServidor(res, err);
@@ -64,6 +74,11 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     const { rows } = await pool.query(`SELECT * FROM relatorios WHERE id=$1`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Relatório não encontrado.' });
     const r = rows[0];
+
+    const { usuario, role } = req.usuario;
+    if (role === 'agente' && r.criado_por !== usuario) {
+      return res.status(403).json({ error: 'Acesso negado a este relatório.' });
+    }
 
     const path = require('path');
     const fs   = require('fs');
