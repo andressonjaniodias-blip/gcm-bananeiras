@@ -16,25 +16,17 @@ const TIPO_ABREV_REL = {
 function tipoAbrevRel(tipo) {
   return TIPO_ABREV_REL[tipo] || tipo.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 8) || 'OUTRO';
 }
-const REL_MAX_SQL = `
-  SELECT COALESCE(MAX(
-    CASE
-      WHEN numero ~ '^REL-GCM-[A-Z]+-[0-9]+/[0-9]{4}$'
-      THEN CAST(REGEXP_REPLACE(numero, '^REL-GCM-[A-Z]+-([0-9]+)/[0-9]{4}$', '\\1') AS INTEGER)
-      WHEN numero ~ '^REL-GCM-[0-9]+/[0-9]{4}$'
-      THEN CAST(REGEXP_REPLACE(numero, '^REL-GCM-([0-9]+)/[0-9]{4}$', '\\1') AS INTEGER)
-      ELSE 0
-    END
-  ), 0) AS max_seq FROM relatorios
-`;
 
-// Próximo número disponível
+// Próximo número disponível (preview — não consome a sequence)
 router.get('/proximo-numero', verificarToken, async (req, res) => {
   try {
     const ano = new Date().getFullYear();
-    const { rows } = await pool.query(REL_MAX_SQL);
-    const seq  = String(parseInt(rows[0].max_seq) + 1).padStart(4, '0');
-    const tipo = req.query.tipo ? tipoAbrevRel(req.query.tipo) : null;
+    const { rows: [{ next_val }] } = await pool.query(`
+      SELECT CASE WHEN is_called THEN last_value + 1 ELSE last_value END AS next_val
+      FROM rel_seq
+    `);
+    const seq    = String(parseInt(next_val)).padStart(4, '0');
+    const tipo   = req.query.tipo ? tipoAbrevRel(req.query.tipo) : null;
     const numero = tipo ? `REL-GCM-${tipo}-${seq}/${ano}` : `REL-GCM-${seq}/${ano}`;
     res.json({ numero });
   } catch (err) {
@@ -72,9 +64,8 @@ router.post('/', verificarToken, async (req, res) => {
     if (!tipo || !titulo || !data) return res.status(400).json({ error: 'Campos obrigatórios ausentes.' });
 
     const ano = new Date().getFullYear();
-    const { rows: maxRows } = await pool.query(REL_MAX_SQL);
-    const seq    = String(parseInt(maxRows[0].max_seq) + 1).padStart(4, '0');
-    const numero = `REL-GCM-${tipoAbrevRel(tipo)}-${seq}/${ano}`;
+    const { rows: [{ seq }] } = await pool.query(`SELECT nextval('rel_seq') AS seq`);
+    const numero = `REL-GCM-${tipoAbrevRel(tipo)}-${String(seq).padStart(4, '0')}/${ano}`;
 
     const { rows } = await pool.query(
       `INSERT INTO relatorios (numero, tipo, titulo, data, local, equipe, conteudo, obs, status, criado_por)
