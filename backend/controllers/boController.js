@@ -455,7 +455,10 @@ exports.exportarPDF = async (req, res) => {
       for (const img of imgs) {
         numAnexo++;
         const filePath = path.join(__dirname, '../uploads/bo', img.nome_arquivo);
-        if (!fs.existsSync(filePath)) continue;
+        const fonteImg = img.dados
+          ? Buffer.from(img.dados, 'base64')
+          : (fs.existsSync(filePath) ? filePath : null);
+        if (!fonteImg) continue;
         doc.addPage();
         doc.fontSize(11).font('Helvetica-Bold').fillColor('#333')
            .text(`Anexo ${numAnexo}: ${img.nome_original}`, { align: 'center' });
@@ -463,7 +466,7 @@ exports.exportarPDF = async (req, res) => {
         const maxW = conteudoW;
         const maxH = doc.page.height - doc.y - 80;
         try {
-          const imgObj  = doc.openImage(filePath);
+          const imgObj  = doc.openImage(fonteImg);
           const scale   = Math.min(maxW / imgObj.width, maxH / imgObj.height);
           const scaledW = imgObj.width  * scale;
           const scaledH = imgObj.height * scale;
