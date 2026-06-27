@@ -335,16 +335,15 @@ exports.exportarPDF = async (req, res) => {
     secaoArray('Objetos Apreendidos',  'Objeto',   dados.objetos);
 
     if (dados.relato) {
-      doc.addPage();
+      doc.moveDown(0.5);
       tituloSecao('Relato da Ocorrência');
       doc.fontSize(12).font('Helvetica').fillColor('#000')
          .text(dados.relato, { align: 'justify', lineGap: 3 });
       doc.moveDown(0.8);
     }
 
-    // ── Nova página: Autoridade Policial + Recibo ─────────────────────────────
-    doc.addPage();
-
+    // ── Autoridade Policial + Recibo ──────────────────────────────────────────
+    doc.moveDown(0.5);
     secao('Autoridade Policial', dados.autoridade);
 
     // Nome e matrícula do comandante vêm do form; cargo buscado na tabela agentes
