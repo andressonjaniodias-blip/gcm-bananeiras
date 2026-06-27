@@ -221,6 +221,29 @@ exports.consultarBO = async (req, res) => {
   }
 };
 
+exports.excluirBO = async (req, res) => {
+  const { id } = req.params;
+  const { usuario, role } = req.usuario;
+
+  if (role !== 'admin') {
+    return res.status(403).json({ error: 'Apenas administradores podem excluir BOs.' });
+  }
+
+  try {
+    const { rows } = await db.query('SELECT numero FROM boletins WHERE id = $1', [id]);
+    if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
+
+    await db.query('DELETE FROM boletins WHERE id = $1', [id]);
+
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
+    await registrarAuditoria(usuario, 'EXCLUIR_BO', rows[0].numero, ip);
+
+    res.json({ message: 'BO excluído com sucesso', numero: rows[0].numero });
+  } catch (err) {
+    erroServidor(res, err);
+  }
+};
+
 exports.exportarPDF = async (req, res) => {
   const { id } = req.params;
   if (!id) return res.status(400).json({ error: 'ID do BO é obrigatório' });
