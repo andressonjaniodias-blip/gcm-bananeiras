@@ -31,6 +31,32 @@
     }
     .dz-over { border-color:var(--color-primary) !important; background:var(--color-primary-light) !important; }
 
+    /* Modal de confirmação de exclusão */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 1100;
+      background: rgba(0,0,0,0.45); align-items: center; justify-content: center;
+    }
+    .modal-overlay.aberto { display: flex; }
+    .modal-box {
+      background: var(--bg-card); border-radius: var(--radius);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25); padding: 28px 28px 22px;
+      max-width: 400px; width: 90%; text-align: center;
+    }
+    .modal-box h3 { margin: 0 0 10px; font-size: 1.1rem; color: var(--color-text); }
+    .modal-box p  { margin: 0 0 20px; font-size: 0.9rem; color: var(--color-text-muted); }
+    .modal-actions { display: flex; gap: 10px; justify-content: center; }
+    .btn-confirmar-excluir {
+      padding: 9px 22px; background: var(--color-danger); color: #fff;
+      border: none; border-radius: var(--radius-sm); font-weight: 700;
+      cursor: pointer; font-size: 0.9rem;
+    }
+    .btn-confirmar-excluir:hover { opacity: 0.88; }
+    .btn-cancelar-modal {
+      padding: 9px 22px; background: transparent;
+      border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+      color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;
+    }
+
   </style>
 </head>
 <body>
@@ -159,6 +185,18 @@
       </div>
     </section>
   </main>
+
+  <!-- Modal de confirmação de exclusão -->
+  <div class="modal-overlay" id="modalExcluirRel">
+    <div class="modal-box">
+      <h3>⚠️ Excluir Relatório</h3>
+      <p id="modalExcluirRelTexto">Tem certeza que deseja excluir este relatório? Esta ação não pode ser desfeita.</p>
+      <div class="modal-actions">
+        <button class="btn-cancelar-modal" onclick="fecharModalExcluirRel()">Cancelar</button>
+        <button class="btn-confirmar-excluir" onclick="confirmarExclusaoRel()">Excluir</button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL DE DETALHES DO RELATÓRIO -->
   <div class="detail-overlay" id="relDetailOverlay" onclick="fecharRelDetail(event)">
@@ -507,8 +545,14 @@
       obsWrap.style.display = r.obs ? '' : 'none';
       document.getElementById('rdAcoesNum').textContent = r.numero;
       const acoesList = document.getElementById('rdAcoesList');
+      const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
+      const podeExcluir = perfil.role === 'admin' || perfil.role === 'supervisor';
+      const btnExcluir = podeExcluir
+        ? `<button class="detail-icon-btn" title="Excluir Relatório" onclick="abrirModalExcluirRel(${r.id},'${r.numero}')" style="background:#FEE2E2;color:#991B1B;"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="3 6 5 6 17 6"/><path d="M8 6V4h4v2"/><path d="M6 6l1 11h6l1-11"/><line x1="10" y1="10" x2="10" y2="15"/><line x1="8" y1="10" x2="8.3" y2="15"/><line x1="12" y1="10" x2="11.7" y2="15"/></svg></button>`
+        : '';
       acoesList.innerHTML = `<button class="detail-icon-btn detail-icon-btn--pdf" title="Baixar PDF" onclick="baixarPDFRel(${r.id},'${r.numero}')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10 3v10M6 9l4 4 4-4"/><path d="M4 17h12"/></svg></button>
-        <button id="btn-share-rel" class="detail-icon-btn detail-icon-btn--share detail-icon-btn--loading" title="Compartilhar" onclick="compartilharPDFRel(${r.id},'${r.numero}')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="15" cy="4.5" r="2.2"/><circle cx="5" cy="10" r="2.2"/><circle cx="15" cy="15.5" r="2.2"/><path d="M6.9 8.9l6.2-3.3M6.9 11.1l6.2 3.3"/></svg></button>`;
+        <button id="btn-share-rel" class="detail-icon-btn detail-icon-btn--share detail-icon-btn--loading" title="Compartilhar" onclick="compartilharPDFRel(${r.id},'${r.numero}')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="15" cy="4.5" r="2.2"/><circle cx="5" cy="10" r="2.2"/><circle cx="15" cy="15.5" r="2.2"/><path d="M6.9 8.9l6.2-3.3M6.9 11.1l6.2 3.3"/></svg></button>
+        ${btnExcluir}`;
       document.getElementById('relDetailOverlay').classList.add('aberto');
 
       // Pré-carrega o PDF para o compartilhamento nativo poder disparar no clique.
@@ -534,6 +578,36 @@
     function fecharRelDetail(e) {
       if (e && e.target !== document.getElementById('relDetailOverlay')) return;
       document.getElementById('relDetailOverlay').classList.remove('aberto');
+    }
+
+    let _excluirRelId = null;
+    function abrirModalExcluirRel(id, numero) {
+      _excluirRelId = id;
+      document.getElementById('modalExcluirRelTexto').textContent =
+        `Tem certeza que deseja excluir o relatório ${numero}? Esta ação não pode ser desfeita.`;
+      document.getElementById('modalExcluirRel').classList.add('aberto');
+    }
+    function fecharModalExcluirRel() {
+      _excluirRelId = null;
+      document.getElementById('modalExcluirRel').classList.remove('aberto');
+    }
+    async function confirmarExclusaoRel() {
+      if (!_excluirRelId) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/relatorio/${_excluirRelId}`, {
+          method: 'DELETE', credentials: 'include'
+        });
+        if (res.ok) {
+          todosRelatorios = todosRelatorios.filter(r => r.id !== _excluirRelId);
+          renderizarRelatorios(todosRelatorios);
+          fecharModalExcluirRel();
+          document.getElementById('relDetailOverlay').classList.remove('aberto');
+          showToast('Relatório excluído com sucesso.', 'success');
+        } else {
+          const data = await res.json();
+          showToast(data.error || 'Erro ao excluir.', 'danger');
+        }
+      } catch { showToast('Erro de conexão ao tentar excluir.', 'danger'); }
     }
 
 
