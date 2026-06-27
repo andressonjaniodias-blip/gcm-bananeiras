@@ -199,7 +199,12 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
         const maxW = conteudoW;
         const maxH = doc.page.height - doc.y - 80;
         try {
-          doc.image(filePath, margem, doc.y, { fit: [maxW, maxH], align: 'center' });
+          const imgObj  = doc.openImage(filePath);
+          const scale   = Math.min(maxW / imgObj.width, maxH / imgObj.height);
+          const scaledW = imgObj.width  * scale;
+          const scaledH = imgObj.height * scale;
+          const xCentro = margem + (maxW - scaledW) / 2;
+          doc.image(filePath, xCentro, doc.y, { width: scaledW, height: scaledH });
         } catch (imgErr) {
           console.error(`[PDF-Rel] Erro ao incorporar ${img.nome_original}:`, imgErr.message);
           doc.fontSize(10).font('Helvetica-Oblique').fillColor('#888')
