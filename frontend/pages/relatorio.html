@@ -267,6 +267,20 @@
       usarLocalizacaoAtual({ tipo: 'local', campo: 'localRelatorio', btn });
     }
 
+    function dataLocalHoje() {
+      const d = new Date();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${d.getFullYear()}-${mm}-${dd}`;
+    }
+
+    function formatarData(iso) {
+      if (!iso) return '—';
+      const s = String(iso).slice(0, 10);
+      const [y, m, day] = s.split('-');
+      return `${day}/${m}/${y}`;
+    }
+
     let todosRelatorios = [];
     const RASCUNHO_KEY = 'gcm_relatorio_rascunho';
     let _autoSaveTimer = null;
@@ -316,7 +330,7 @@
     // Inicializa campos automáticos
     window.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('anoRelatorio').textContent = new Date().getFullYear();
-      document.getElementById('dataRelatorio').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('dataRelatorio').value = dataLocalHoje();
 
       // Verifica autenticação
       try {
@@ -418,7 +432,7 @@
         document.getElementById('numRelatorio').textContent = result.numero;
         mostrarMsg('Relatório finalizado com sucesso!', 'success');
         CAMPOS_RASCUNHO.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-        document.getElementById('dataRelatorio').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('dataRelatorio').value = dataLocalHoje();
         carregarRelatorios();
       } catch { mostrarMsg('Erro de conexão.', 'danger'); }
     }
@@ -502,7 +516,7 @@
       if (!lista.length) { el.innerHTML = '<p style="text-align:center;color:var(--color-hint);">Nenhum relatório encontrado.</p>'; return; }
       el.innerHTML = '<div class="hist-list">' + lista.map(r => {
         const icon = TIPO_ICON[r.tipo] || '📄';
-        const dataStr = new Date(r.data).toLocaleDateString('pt-BR');
+        const dataStr = formatarData(r.data);
         const badgeClass = r.status === 'finalizado' ? 'badge-supervisor' : 'badge-usuario';
         return `<div class="hist-item" onclick="abrirRelDetail(${r.id})">
           <div class="hist-item-icon">${icon}</div>
@@ -530,7 +544,7 @@
       _relDetalhe = todosRelatorios.find(r => r.id === id);
       if (!_relDetalhe) return;
       const r = _relDetalhe;
-      const dataStr = new Date(r.data).toLocaleDateString('pt-BR');
+      const dataStr = formatarData(r.data);
       document.getElementById('relDetailTitle').textContent = r.titulo;
       document.getElementById('relDetailSubtitle').textContent = `${r.numero} · ${dataStr}`;
       document.getElementById('rdNumero').textContent  = r.numero;
