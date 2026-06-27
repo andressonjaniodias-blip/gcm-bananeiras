@@ -1,28 +1,21 @@
-// Geolocalização reversa com Google Maps Geocoding API
-// Chave configurada em config.js → constante GOOGLE_MAPS_KEY
+// Geolocalização reversa com Nominatim (OpenStreetMap) — gratuito, sem chave
 
 async function _geoReverseGeocode(lat, lon) {
-  if (!GOOGLE_MAPS_KEY) {
-    throw Object.assign(new Error('Chave do Google Maps não configurada em config.js.'), { _keyMissing: true });
-  }
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_MAPS_KEY}&language=pt-BR`;
-  const res = await fetch(url);
+  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1&accept-language=pt-BR`;
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
   if (!res.ok) throw new Error('Geocodificação falhou');
   const data = await res.json();
-  if (data.status === 'REQUEST_DENIED') throw new Error('Chave do Google Maps inválida ou sem permissão para Geocoding API.');
-  if (data.status !== 'OK') throw new Error(`Geocodificação: ${data.status}`);
+  if (data.error) throw new Error(`Geocodificação: ${data.error}`);
 
-  const comps = data.results[0]?.address_components || [];
-  const get      = (...types) => comps.find(c => types.some(t => c.types.includes(t)))?.long_name  || '';
-  const getShort = (...types) => comps.find(c => types.some(t => c.types.includes(t)))?.short_name || '';
-  const cepRaw = get('postal_code').replace(/\D/g, '');
+  const a = data.address || {};
+  const cepRaw = (a.postcode || '').replace(/\D/g, '');
 
   return {
-    road:         get('route'),
-    house_number: get('street_number'),
-    suburb:       get('sublocality_level_1', 'sublocality', 'neighborhood'),
-    city:         get('administrative_area_level_2'),
-    state_code:   getShort('administrative_area_level_1'),
+    road:         a.road || a.pedestrian || a.footway || a.path || '',
+    house_number: a.house_number || '',
+    suburb:       a.suburb || a.neighbourhood || a.quarter || a.city_district || '',
+    city:         a.city || a.town || a.village || a.municipality || a.county || '',
+    state_code:   a.state_code ? a.state_code.replace(/^BR-/, '') : '',
     postcode:     cepRaw.length === 8 ? `${cepRaw.slice(0, 5)}-${cepRaw.slice(5)}` : cepRaw,
   };
 }
