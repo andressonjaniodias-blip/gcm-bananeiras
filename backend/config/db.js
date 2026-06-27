@@ -107,6 +107,11 @@ pool.connect()
       );
     `);
 
+    // Conteúdo binário dos anexos em base64 (garante persistência no Render.com)
+    await client.query(`
+      ALTER TABLE anexos ADD COLUMN IF NOT EXISTS dados TEXT;
+    `);
+
     // Colunas adicionais de log (para bancos existentes)
     const colunasLog = [
       `ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS user_agent  TEXT`,
