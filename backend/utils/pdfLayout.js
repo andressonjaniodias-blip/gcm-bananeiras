@@ -69,4 +69,21 @@ function rodapePDF(doc, { info } = {}) {
   doc.flushPages();
 }
 
-module.exports = { cabecalhoPDF, rodapePDF, NAVY };
+/**
+ * Formata uma data (string 'YYYY-MM-DD' ou Date vindo do driver pg, que
+ * representa colunas DATE em UTC) como 'DD/MM/AAAA'.
+ */
+function fmtData(iso) {
+  if (!iso) return '—';
+  if (iso instanceof Date) {
+    const d = String(iso.getUTCDate()).padStart(2, '0');
+    const m = String(iso.getUTCMonth() + 1).padStart(2, '0');
+    const y = iso.getUTCFullYear();
+    return `${d}/${m}/${y}`;
+  }
+  const s = String(iso).slice(0, 10);
+  const [y, m, d] = s.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+module.exports = { cabecalhoPDF, rodapePDF, fmtData, NAVY };
