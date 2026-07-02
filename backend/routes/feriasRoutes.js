@@ -4,14 +4,8 @@ const pool    = require('../config/db');
 const { verificarToken, verificarSupervisor } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
-const { cabecalhoPDF, rodapePDF, NAVY } = require('../utils/pdfLayout');
+const { cabecalhoPDF, rodapePDF, fmtData, NAVY } = require('../utils/pdfLayout');
 
-function fmtData(iso) {
-  if (!iso) return '—';
-  const s = String(iso).slice(0, 10);
-  const [y, m, d] = s.split('-');
-  return `${d}/${m}/${y}`;
-}
 function nomeMes(mesRef) {
   const [ano, mes] = String(mesRef).split('-');
   const nomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
