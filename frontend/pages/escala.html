@@ -123,8 +123,6 @@
             <input type="text" id="ferNome" placeholder="Nome do agente"></div>
           <div class="campo-group" style="margin:0;"><label>Início</label>
             <input type="date" id="ferInicio"></div>
-          <div class="campo-group" style="margin:0;"><label>Término</label>
-            <input type="date" id="ferFim"></div>
           <div class="campo-group" style="margin:0;"><label>&nbsp;</label>
             <button onclick="addFeria()" style="background:var(--color-success);width:100%;">Adicionar</button></div>
         </div>
@@ -227,6 +225,7 @@
     function msgFer(t,ok){ const e=document.getElementById('msgFer'); e.textContent=t; e.style.display='block';
       e.style.background=ok?'#dcfce7':'#fee2e2'; e.style.color=ok?'#166534':'#991b1b'; setTimeout(()=>e.style.display='none',4000); }
     function fmtData(iso){ if(!iso) return '—'; const[y,m,d]=String(iso).slice(0,10).split('-'); return `${d}/${m}/${y}`; }
+    function addDias(iso,dias){ const[y,m,d]=iso.split('-').map(Number); const dt=new Date(Date.UTC(y,m-1,d)); dt.setUTCDate(dt.getUTCDate()+dias); return dt.toISOString().slice(0,10); }
 
     function onFerAgente(){ const a=AGENTES.find(x=>String(x.id)===document.getElementById('ferAgente').value);
       if(a) document.getElementById('ferNome').value=a.nome||''; }
@@ -234,9 +233,9 @@
     async function addFeria(){
       const mes=document.getElementById('mesRef').value;
       const nome=document.getElementById('ferNome').value.trim();
-      const ini=document.getElementById('ferInicio').value, fim=document.getElementById('ferFim').value;
-      if(!nome||!ini||!fim){ msgFer('Preencha agente/nome, início e término.',false); return; }
-      if(fim<ini){ msgFer('Data final anterior à inicial.',false); return; }
+      const ini=document.getElementById('ferInicio').value;
+      if(!nome||!ini){ msgFer('Preencha agente/nome e a data de início.',false); return; }
+      const fim=addDias(ini,29);
       const a=AGENTES.find(x=>String(x.id)===document.getElementById('ferAgente').value);
       try{
         const r=await fetch(`${API_BASE_URL}/api/ferias`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
@@ -244,7 +243,7 @@
         const d=await r.json(); if(!r.ok){ msgFer(d.error||'Erro ao salvar.',false); return; }
         msgFer('Férias registradas!',true);
         document.getElementById('ferAgente').value=''; document.getElementById('ferNome').value='';
-        document.getElementById('ferInicio').value=''; document.getElementById('ferFim').value='';
+        document.getElementById('ferInicio').value='';
         carregarFeriasMes();
       }catch{ msgFer('Erro de conexão.',false); }
     }
