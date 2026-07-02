@@ -1,31 +1,38 @@
 // backend/utils/escalaCalc.js
 // Cálculo da rotação 24x72 (4 patrulhas) e utilitários de quinzena.
-// Convenção: a escala reinicia sempre no dia 1 do mês, com o dia 1 sendo o
-// dia de serviço da Patrulha 1. Patrulha P trabalha nos dias D onde
-// (D - P) é múltiplo de 4.
+// Convenção: a escala reinicia sempre no dia 1 do mês, mas a patrulha que
+// trabalha nesse dia 1 é configurável por escala (campo `patrulha_dia1`,
+// padrão '1'). Patrulha P trabalha no dia D quando
+// (D - 1 - P + patrulhaDia1) é múltiplo de 4.
 
 function _norm(n) { return ((n % 4) + 4) % 4; }
 
-// Patrulha (1..4) trabalha no dia-do-mês D?
-function trabalhaNoDia(patrulha, dia) {
+// Delta que define o "estado" da patrulha no dia: 0 = serviço, 1/2/3 = 1ª/2ª/3ª folga
+function _delta(patrulha, dia, patrulhaDia1) {
   const p = parseInt(patrulha, 10);
-  if (!(p >= 1 && p <= 4)) return false;
-  return _norm(dia - p) === 0;
+  const x = parseInt(patrulhaDia1 || 1, 10) || 1;
+  return _norm(dia - 1 - p + x);
 }
 
-// D é a 2ª folga da patrulha? (trabalhou em D-2, está de folga em D)
-function ehSegundaFolga(patrulha, dia) {
+// Patrulha (1..4) trabalha no dia-do-mês D?
+function trabalhaNoDia(patrulha, dia, patrulhaDia1 = '1') {
   const p = parseInt(patrulha, 10);
   if (!(p >= 1 && p <= 4)) return false;
-  return _norm(dia - p - 2) === 0 && !trabalhaNoDia(p, dia);
+  return _delta(patrulha, dia, patrulhaDia1) === 0;
+}
+
+// D é a 2ª folga da patrulha? (trabalhou 2 dias antes, está de folga em D)
+function ehSegundaFolga(patrulha, dia, patrulhaDia1 = '1') {
+  const p = parseInt(patrulha, 10);
+  if (!(p >= 1 && p <= 4)) return false;
+  return _delta(patrulha, dia, patrulhaDia1) === 2;
 }
 
 // Retorna o número da folga (1, 2 ou 3) para uma patrulha num dia, ou 0 se é dia de serviço
-function numeroFolga(patrulha, dia) {
+function numeroFolga(patrulha, dia, patrulhaDia1 = '1') {
   const p = parseInt(patrulha, 10);
   if (!(p >= 1 && p <= 4)) return null;
-  const delta = _norm(dia - p);
-  return delta; // 0 = serviço, 1/2/3 = 1ª/2ª/3ª folga
+  return _delta(patrulha, dia, patrulhaDia1); // 0 = serviço, 1/2/3 = 1ª/2ª/3ª folga
 }
 
 // A partir de uma data 'YYYY-MM-DD', retorna o dia do mês (número)
