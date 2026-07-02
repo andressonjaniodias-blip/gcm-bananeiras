@@ -4,7 +4,7 @@ const pool    = require('../config/db');
 const { verificarToken, verificarSupervisor } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
-const { cabecalhoPDF, rodapePDF, NAVY } = require('../utils/pdfLayout');
+const { cabecalhoPDF, rodapePDF, fmtData, NAVY } = require('../utils/pdfLayout');
 const { numeroFolga } = require('../utils/escalaCalc');
 
 const PATRULHAS = ['1', '2', '3', '4'];
@@ -13,12 +13,6 @@ function nomeMes(mesRef) {
   const [ano, mes] = String(mesRef).split('-');
   const nomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   return `${nomes[parseInt(mes, 10) - 1] || mes}/${ano}`;
-}
-function fmtData(iso) {
-  if (!iso) return '—';
-  const s = String(iso).slice(0, 10);
-  const [y, m, d] = s.split('-');
-  return `${d}/${m}/${y}`;
 }
 
 // ── Postos (lista configurável) ──────────────────────────────────────────────
@@ -243,17 +237,26 @@ router.get('/:id/pdf', verificarToken, verificarSupervisor, async (req, res) => 
       });
     }
 
-    if (ferias.length) {
-      doc.moveDown(0.8);
-      doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text('Férias no mês: ', { continued: true })
-         .fillColor('#222').font('Helvetica')
-         .text(ferias.map(f => `${f.nome}${f.matricula ? ' (' + f.matricula + ')' : ''} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}`).join('; '));
-    }
+    // Bloco de observações (férias + observações gerais), separado do
+    // quadro de escala e do bloco administrativo por um título e linha próprios.
+    if (ferias.length || escala.obs) {
+      doc.moveDown(0.9);
+      doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold')
+         .text('OBSERVAÇÕES', margem, doc.y, { width: conteudoW });
+      doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(0.8).stroke(NAVY);
+      doc.moveDown(0.4);
 
-    if (escala.obs) {
-      doc.moveDown(0.8);
-      doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text('Observações: ', { continued: true })
-         .fillColor('#222').font('Helvetica').text(escala.obs);
+      if (ferias.length) {
+        doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text('Férias no mês: ', { continued: true })
+           .fillColor('#222').font('Helvetica')
+           .text(ferias.map(f => `${f.nome}${f.matricula ? ' (' + f.matricula + ')' : ''} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}`).join('; '));
+      }
+
+      if (escala.obs) {
+        if (ferias.length) doc.moveDown(0.4);
+        doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text('Observações gerais: ', { continued: true })
+           .fillColor('#222').font('Helvetica').text(escala.obs);
+      }
     }
 
     rodapePDF(doc, { info: `Escala ${escala.numero || ''} — ${nomeMes(escala.mes_referencia)} — Bananeiras/PB` });
