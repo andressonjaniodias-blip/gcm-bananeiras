@@ -75,9 +75,16 @@
           <input type="month" id="mesRef" onchange="carregarMes()"></div>
         <div class="campo-group" style="margin:0;flex:1;min-width:200px;"><label>Título (opcional)</label>
           <input type="text" id="tituloEscala" placeholder="Ex: Escala Operacional"></div>
+        <div class="campo-group" style="margin:0;"><label>Patrulha que trabalha no dia 1</label>
+          <select id="patrulhaDia1" onchange="renderGrid()">
+            <option value="1">Patrulha 1</option>
+            <option value="2">Patrulha 2</option>
+            <option value="3">Patrulha 3</option>
+            <option value="4">Patrulha 4</option>
+          </select></div>
       </div>
       <p style="font-size:0.8rem;color:var(--color-hint);margin:8px 0;">
-        A escala inicia sempre no dia 1. Patrulha 1 trabalha dias 1, 5, 9…; Patrulha 2: 2, 6, 10…; e assim por diante (24x72).
+        A escala inicia sempre no dia 1 do mês, mas a patrulha de serviço nesse dia é configurável acima (rotação 24x72, de 4 em 4 dias).
         A 2ª folga de cada patrulha é priorizada nos plantões extras.</p>
 
       <div class="patrulhas-grid" id="grid"></div>
@@ -200,8 +207,9 @@
         const d=await r.json();
         if(d.escala){ ESCALA_ID=d.escala.id; document.getElementById('tituloEscala').value=d.escala.titulo||'';
           document.getElementById('obsEscala').value=d.escala.obs||'';
+          document.getElementById('patrulhaDia1').value=String(d.escala.patrulha_dia1||'1');
           ITENS=(d.itens||[]).map(i=>({patrulha:String(i.patrulha),posto:i.posto,agente_id:i.agente_id,nome:i.nome,matricula:i.matricula,regime:i.regime||'24x72',turno:i.turno||''}));
-        } else { document.getElementById('tituloEscala').value=''; document.getElementById('obsEscala').value=''; }
+        } else { document.getElementById('tituloEscala').value=''; document.getElementById('obsEscala').value=''; document.getElementById('patrulhaDia1').value='1'; }
       } catch {}
       document.getElementById('btnPdfAtual').style.display = ESCALA_ID?'inline-block':'none';
       renderGrid();
@@ -270,10 +278,11 @@
 
     function renderGrid(){
       const grid=document.getElementById('grid'); grid.innerHTML='';
+      const dia1=document.getElementById('patrulhaDia1')?.value||'1';
       PATRULHAS.forEach(p=>{
         const col=document.createElement('div'); col.className='patrulha-col';
         const linhas=ITENS.map((it,idx)=>({it,idx})).filter(x=>x.it.patrulha===p);
-        col.innerHTML=`<div class="patrulha-head">Patrulha ${p}</div>
+        col.innerHTML=`<div class="patrulha-head">Patrulha ${p}${p===dia1?' (dia 1)':''}</div>
           <div class="patrulha-body">
             ${linhas.map(x=>itemRowHTML(x.it,x.idx,false)).join('')}
             <button class="add-row" onclick="addItem('${p}')">+ Adicionar</button>
@@ -297,7 +306,7 @@
       try {
         const r=await fetch(`${API_BASE_URL}/api/escala`,{method:'POST',credentials:'include',
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({mes_referencia:mes,titulo:document.getElementById('tituloEscala').value.trim(),obs:document.getElementById('obsEscala').value.trim(),itens})});
+          body:JSON.stringify({mes_referencia:mes,titulo:document.getElementById('tituloEscala').value.trim(),obs:document.getElementById('obsEscala').value.trim(),patrulha_dia1:document.getElementById('patrulhaDia1').value,itens})});
         const d=await r.json();
         if(!r.ok){ msg(d.error||'Erro ao salvar.',false); return; }
         ESCALA_ID=d.id; document.getElementById('btnPdfAtual').style.display='inline-block';
@@ -333,6 +342,7 @@
         const {escala,itens}=await r.json();
         document.getElementById('viewTitle').textContent='Escala '+(escala.titulo?escala.titulo+' — ':'')+escala.mes_referencia;
         document.getElementById('viewSub').textContent=(escala.numero||'')+' · por '+(escala.criado_por||'—');
+        const dia1View=String(escala.patrulha_dia1||'1');
         let html='<div class="view-grid">';
         PATRULHAS.forEach(p=>{
           const its=itens.filter(i=>String(i.patrulha)===p);
@@ -344,7 +354,7 @@
             byPosto[posto].forEach(i=>{ const reg=i.regime==='12x36'?` <span style="color:var(--color-hint)">(12x36${i.turno?'/'+i.turno[0].toUpperCase():''})</span>`:'';
               colBody+=`<div class="view-agente">• ${i.nome}${i.matricula?' — '+i.matricula:''}${reg}</div>`; });
           });
-          html+=`<div class="view-col"><div class="view-col-head">Patrulha ${p}</div><div class="view-col-body">${colBody}</div></div>`;
+          html+=`<div class="view-col"><div class="view-col-head">Patrulha ${p}${p===dia1View?' (dia 1)':''}</div><div class="view-col-body">${colBody}</div></div>`;
         });
         html+='</div>';
         const adm=itens.filter(i=>i.patrulha==='ADM');
