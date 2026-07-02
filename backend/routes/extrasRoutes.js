@@ -33,24 +33,25 @@ async function horasNaQuinzena(agenteId, dataStr, excluirId = null) {
   return rows.reduce((acc, r) => acc + horasDoTipo(r.tipo), 0);
 }
 
-// Patrulha do agente na escala do mês da data (ou null)
+// Patrulha do agente e patrulha_dia1 da escala do mês da data (ou null)
 async function patrulhaDoAgente(agenteId, dataStr) {
   if (!agenteId) return null;
   const mes = String(dataStr).slice(0, 7);
   const { rows } = await pool.query(
-    `SELECT ei.patrulha FROM escala_itens ei
+    `SELECT ei.patrulha, e.patrulha_dia1 FROM escala_itens ei
      JOIN escalas e ON e.id = ei.escala_id
      WHERE e.mes_referencia = $1 AND ei.agente_id = $2
      LIMIT 1`,
     [mes, agenteId]
   );
-  return rows.length ? rows[0].patrulha : null;
+  return rows.length ? rows[0] : null;
 }
 
 async function avisoFolga(agenteId, dataStr) {
-  const patrulha = await patrulhaDoAgente(agenteId, dataStr);
+  const info = await patrulhaDoAgente(agenteId, dataStr);
+  const patrulha = info?.patrulha;
   if (!patrulha || !['1', '2', '3', '4'].includes(String(patrulha))) return null;
-  const nf = numeroFolga(patrulha, diaDoMes(dataStr));
+  const nf = numeroFolga(patrulha, diaDoMes(dataStr), info.patrulha_dia1 || '1');
   if (nf === 2) return null; // é a 2ª folga: preferência atendida
   if (nf === 0) return `Atenção: neste dia a Patrulha ${patrulha} está de SERVIÇO (não é dia de folga).`;
   const ord = { 1: '1ª', 3: '3ª' }[nf] || `${nf}ª`;
