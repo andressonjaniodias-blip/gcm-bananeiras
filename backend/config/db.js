@@ -206,12 +206,14 @@ pool.connect()
         mes_referencia TEXT NOT NULL,           -- 'YYYY-MM'
         titulo         TEXT,
         obs            TEXT,
+        patrulha_dia1  TEXT DEFAULT '1',       -- qual patrulha (1..4) trabalha no dia 1 do mês
         criado_por     TEXT,
         criado_em      TIMESTAMPTZ DEFAULT NOW(),
         atualizado_em  TIMESTAMPTZ DEFAULT NOW(),
         UNIQUE (mes_referencia)
       );
     `);
+    await client.query(`ALTER TABLE escalas ADD COLUMN IF NOT EXISTS patrulha_dia1 TEXT DEFAULT '1';`);
 
     // Itens da escala: cada linha = 1 agente em 1 posto de 1 patrulha
     await client.query(`
