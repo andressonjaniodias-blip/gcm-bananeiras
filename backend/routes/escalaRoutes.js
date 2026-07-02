@@ -14,6 +14,12 @@ function nomeMes(mesRef) {
   const nomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   return `${nomes[parseInt(mes, 10) - 1] || mes}/${ano}`;
 }
+function fmtData(iso) {
+  if (!iso) return '—';
+  const s = String(iso).slice(0, 10);
+  const [y, m, d] = s.split('-');
+  return `${d}/${m}/${y}`;
+}
 
 // ── Postos (lista configurável) ──────────────────────────────────────────────
 router.get('/postos', verificarToken, async (req, res) => {
@@ -162,6 +168,15 @@ router.get('/:id/pdf', verificarToken, verificarSupervisor, async (req, res) => 
       [escala.id]
     );
 
+    const mes = escala.mes_referencia;
+    const inicioMes = `${mes}-01`;
+    const [anoFer, mesFer] = mes.split('-');
+    const fimMes = `${mes}-${String(new Date(parseInt(anoFer, 10), parseInt(mesFer, 10), 0).getDate()).padStart(2, '0')}`;
+    const { rows: ferias } = await pool.query(
+      `SELECT * FROM ferias WHERE data_inicio <= $2 AND data_fim >= $1 ORDER BY data_inicio, nome`,
+      [inicioMes, fimMes]
+    );
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="escala-${escala.mes_referencia}.pdf"`);
 
@@ -226,6 +241,13 @@ router.get('/:id/pdf', verificarToken, verificarSupervisor, async (req, res) => 
         doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text(`${posto}: `, { continued: true })
            .fillColor('#222').font('Helvetica').text(nomes);
       });
+    }
+
+    if (ferias.length) {
+      doc.moveDown(0.8);
+      doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text('Férias no mês: ', { continued: true })
+         .fillColor('#222').font('Helvetica')
+         .text(ferias.map(f => `${f.nome}${f.matricula ? ' (' + f.matricula + ')' : ''} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}`).join('; '));
     }
 
     if (escala.obs) {
