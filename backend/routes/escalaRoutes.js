@@ -185,6 +185,7 @@ router.get('/:id/pdf', verificarToken, verificarSupervisor, async (req, res) => 
     const colGap = 10;
     const colW   = (conteudoW - colGap * 3) / 4;
     const topY   = doc.y + 4;
+    let maxColY  = topY;
 
     PATRULHAS.forEach((p, idx) => {
       const x = margem + idx * (colW + colGap);
@@ -217,12 +218,14 @@ router.get('/:id/pdf', verificarToken, verificarSupervisor, async (req, res) => 
         });
         y += 2;
       });
+      maxColY = Math.max(maxColY, y);
     });
 
-    // Bloco administrativo Seg–Sex (patrulha = 'ADM')
+    // Bloco administrativo Seg–Sex (patrulha = 'ADM'), logo após a coluna
+    // mais alta — não um deslocamento fixo, para ficar colado ao corpo da escala.
     const adm = itens.filter(i => i.patrulha === 'ADM');
     if (adm.length) {
-      doc.y = Math.max(doc.y, topY + 260);
+      doc.y = maxColY;
       doc.moveDown(0.5);
       doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold')
          .text('ADMINISTRATIVO — SEGUNDA A SEXTA', margem, doc.y, { width: conteudoW });
@@ -240,6 +243,7 @@ router.get('/:id/pdf', verificarToken, verificarSupervisor, async (req, res) => 
     // Bloco de observações (férias + observações gerais), separado do
     // quadro de escala e do bloco administrativo por um título e linha próprios.
     if (ferias.length || escala.obs) {
+      if (!adm.length) doc.y = maxColY;
       doc.moveDown(0.9);
       doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold')
          .text('OBSERVAÇÕES', margem, doc.y, { width: conteudoW });
