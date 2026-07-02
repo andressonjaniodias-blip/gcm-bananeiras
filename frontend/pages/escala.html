@@ -24,10 +24,30 @@
       font-size:0.82rem; font-weight:600; width:100%; }
     .adm-box { border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:10px; margin-top:14px; }
     .msg { padding:10px; border-radius:6px; margin-top:10px; display:none; font-size:0.88rem; }
-    .postos-config { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
-    .posto-chip { background:var(--color-bloco-bg); border:1px solid var(--color-border); border-radius:20px;
-      padding:4px 10px; font-size:0.78rem; display:flex; align-items:center; gap:6px; }
-    .posto-chip button { background:none;border:none;color:var(--color-danger);cursor:pointer;font-weight:700; }
+    .grid-form { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; align-items:end; }
+
+    /* Visualização da escala (modal) */
+    .view-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+    @media (max-width:820px){ .view-grid { grid-template-columns:1fr 1fr; } }
+    @media (max-width:520px){ .view-grid { grid-template-columns:1fr; } }
+    .view-col { border:1px solid var(--color-border); border-radius:var(--radius-sm); overflow:hidden; }
+    .view-col-head { background:var(--color-primary); color:#fff; text-align:center; font-weight:700; padding:7px; font-size:0.85rem; }
+    .view-col-body { padding:8px; }
+    .view-posto { font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--color-primary);
+      margin:7px 0 2px; letter-spacing:0.03em; }
+    .view-agente { font-size:0.82rem; padding:1px 0; color:var(--color-text); }
+    .view-obs { margin-top:14px; font-size:0.85rem; color:var(--color-text); }
+
+    /* Férias e Postos (cards no padrão do sistema) */
+    .fer-item, .posto-item { display:flex; align-items:center; gap:10px; padding:10px 12px;
+      background:var(--color-row-alt); border:1px solid var(--color-border); border-radius:var(--radius-sm); margin-bottom:6px; }
+    .fer-item .fc-body { flex:1; min-width:0; }
+    .fer-item .fc-nome { font-weight:600; font-size:0.86rem; }
+    .fer-item .fc-meta { font-size:0.78rem; color:var(--color-text-muted); }
+    .posto-item .pi-nome { flex:1; font-weight:600; font-size:0.88rem; }
+    .btn-rm-soft { background:#FEE2E2; color:#991B1B; border:none; border-radius:6px; padding:6px 11px;
+      cursor:pointer; font-size:0.78rem; font-weight:600; }
+    .btn-rm-soft:hover { background:#FECACA; }
   </style>
 </head>
 <body>
@@ -76,6 +96,27 @@
         <button id="btnPdfAtual" onclick="pdfEscalaAtual()" style="background:var(--color-primary);display:none;">Gerar PDF</button>
       </div>
       <p id="msg" class="msg"></p>
+
+      <!-- FÉRIAS DO MÊS -->
+      <div class="card" style="margin-top:18px;">
+        <h3 style="margin-top:0;font-size:1rem;">Férias do mês</h3>
+        <p style="font-size:0.8rem;color:var(--color-hint);margin:0 0 10px;">
+          Registre as férias dos agentes referentes ao mês selecionado. Cada registro é salvo imediatamente.</p>
+        <div class="grid-form">
+          <div class="campo-group" style="margin:0;"><label>Agente</label>
+            <select id="ferAgente" onchange="onFerAgente()"></select></div>
+          <div class="campo-group" style="margin:0;"><label>Nome</label>
+            <input type="text" id="ferNome" placeholder="Nome do agente"></div>
+          <div class="campo-group" style="margin:0;"><label>Início</label>
+            <input type="date" id="ferInicio"></div>
+          <div class="campo-group" style="margin:0;"><label>Término</label>
+            <input type="date" id="ferFim"></div>
+          <div class="campo-group" style="margin:0;"><label>&nbsp;</label>
+            <button onclick="addFeria()" style="background:var(--color-success);width:100%;">Adicionar</button></div>
+        </div>
+        <p id="msgFer" class="msg"></p>
+        <div id="listaFerias" style="margin-top:10px;"></div>
+      </div>
     </section>
 
     <!-- HISTÓRICO -->
@@ -86,16 +127,40 @@
 
     <!-- POSTOS -->
     <section id="postos" class="tab-content hidden">
-      <h3>Postos / Setores</h3>
-      <p style="font-size:0.82rem;color:var(--color-hint);">Gerencie a lista de postos disponíveis na escala.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
-        <div class="campo-group" style="margin:0;"><label>Novo posto</label><input type="text" id="novoPosto"></div>
-        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><input type="checkbox" id="novoPostoSegSex"> Seg–Sex</label>
-        <button onclick="addPosto()">Adicionar</button>
+      <div class="card">
+        <h3 style="margin-top:0;font-size:1rem;">Adicionar Posto / Setor</h3>
+        <p style="font-size:0.82rem;color:var(--color-hint);margin:0 0 10px;">
+          Postos ficam disponíveis nos seletores da escala. Marque "Administrativo" para postos de Segunda a Sexta.</p>
+        <div class="grid-form">
+          <div class="campo-group" style="margin:0;"><label>Nome do posto</label>
+            <input type="text" id="novoPosto" placeholder="Ex: Escola Municipal X"></div>
+          <div class="campo-group" style="margin:0;">
+            <label style="display:flex;align-items:center;gap:7px;font-size:0.85rem;cursor:pointer;">
+              <input type="checkbox" id="novoPostoSegSex"> Administrativo (Seg–Sex)</label>
+          </div>
+          <div class="campo-group" style="margin:0;"><label>&nbsp;</label>
+            <button onclick="addPosto()" style="background:var(--color-success);width:100%;">Adicionar Posto</button></div>
+        </div>
       </div>
-      <div class="postos-config" id="postosConfig"></div>
+
+      <h3 style="font-size:1rem;margin:18px 0 8px;">Postos cadastrados</h3>
+      <div id="postosConfig"></div>
     </section>
   </main>
+
+  <!-- MODAL DE VISUALIZAÇÃO DA ESCALA -->
+  <div class="detail-overlay" id="viewOverlay" onclick="fecharView(event)">
+    <div class="detail-modal" onclick="event.stopPropagation()">
+      <div class="detail-modal-head">
+        <div>
+          <div class="detail-modal-title" id="viewTitle">—</div>
+          <div class="detail-modal-subtitle" id="viewSub">—</div>
+        </div>
+        <button class="detail-modal-close" onclick="fecharView()">×</button>
+      </div>
+      <div class="detail-modal-body" id="viewBody"></div>
+    </div>
+  </div>
 
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
@@ -116,10 +181,15 @@
         if(typeof updateSidebarUser==='function') updateSidebarUser(PERFIL);
       } catch { window.location.href='/'; return; }
       await Promise.all([carregarAgentes(), carregarPostos()]);
+      montarFerAgente();
       carregarMes();
     });
 
     async function carregarAgentes(){ try{ const r=await fetch(`${API_BASE_URL}/api/agentes`,{credentials:'include'}); if(r.ok) AGENTES=await r.json(); }catch{} }
+    function montarFerAgente(){
+      const sel=document.getElementById('ferAgente'); if(!sel) return;
+      sel.innerHTML='<option value="">— selecione —</option>'+AGENTES.map(a=>`<option value="${a.id}">${a.nome}${a.matricula?' ('+a.matricula+')':''}</option>`).join('');
+    }
     async function carregarPostos(){ try{ const r=await fetch(`${API_BASE_URL}/api/escala/postos`,{credentials:'include'}); if(r.ok) POSTOS=await r.json(); }catch{} renderPostosConfig(); }
 
     async function carregarMes(){
@@ -135,7 +205,51 @@
       } catch {}
       document.getElementById('btnPdfAtual').style.display = ESCALA_ID?'inline-block':'none';
       renderGrid();
+      carregarFeriasMes();
     }
+
+    // ── Férias do mês ─────────────────────────────────────────────────────────
+    function msgFer(t,ok){ const e=document.getElementById('msgFer'); e.textContent=t; e.style.display='block';
+      e.style.background=ok?'#dcfce7':'#fee2e2'; e.style.color=ok?'#166534':'#991b1b'; setTimeout(()=>e.style.display='none',4000); }
+    function fmtData(iso){ if(!iso) return '—'; const[y,m,d]=String(iso).slice(0,10).split('-'); return `${d}/${m}/${y}`; }
+
+    function onFerAgente(){ const a=AGENTES.find(x=>String(x.id)===document.getElementById('ferAgente').value);
+      if(a) document.getElementById('ferNome').value=a.nome||''; }
+
+    async function addFeria(){
+      const mes=document.getElementById('mesRef').value;
+      const nome=document.getElementById('ferNome').value.trim();
+      const ini=document.getElementById('ferInicio').value, fim=document.getElementById('ferFim').value;
+      if(!nome||!ini||!fim){ msgFer('Preencha agente/nome, início e término.',false); return; }
+      if(fim<ini){ msgFer('Data final anterior à inicial.',false); return; }
+      const a=AGENTES.find(x=>String(x.id)===document.getElementById('ferAgente').value);
+      try{
+        const r=await fetch(`${API_BASE_URL}/api/ferias`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({agente_id:a?a.id:null,nome,matricula:a?a.matricula:null,data_inicio:ini,data_fim:fim})});
+        const d=await r.json(); if(!r.ok){ msgFer(d.error||'Erro ao salvar.',false); return; }
+        msgFer('Férias registradas!',true);
+        document.getElementById('ferAgente').value=''; document.getElementById('ferNome').value='';
+        document.getElementById('ferInicio').value=''; document.getElementById('ferFim').value='';
+        carregarFeriasMes();
+      }catch{ msgFer('Erro de conexão.',false); }
+    }
+
+    async function carregarFeriasMes(){
+      const cont=document.getElementById('listaFerias'); const mes=document.getElementById('mesRef').value;
+      if(!mes){ cont.innerHTML=''; return; }
+      try{
+        const r=await fetch(`${API_BASE_URL}/api/ferias?mes=${mes}`,{credentials:'include'});
+        const l=await r.json();
+        if(!l.length){ cont.innerHTML='<p style="color:var(--color-hint);font-size:0.82rem;">Nenhuma férias registrada neste mês.</p>'; return; }
+        cont.innerHTML=l.map(f=>{ const dias=Math.round((new Date(f.data_fim)-new Date(f.data_inicio))/86400000)+1;
+          return `<div class="fer-item"><div class="fc-body"><div class="fc-nome">${f.nome}${f.matricula?' <span style="font-weight:400;color:var(--color-text-muted)">— '+f.matricula+'</span>':''}</div>
+          <div class="fc-meta">${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)} · ${dias} dia(s)</div></div>
+          <button class="btn-rm-soft" onclick="rmFeria(${f.id})">Remover</button></div>`;
+        }).join('');
+      }catch{ cont.innerHTML='<p style="color:var(--color-danger);font-size:0.82rem;">Erro ao carregar férias.</p>'; }
+    }
+    async function rmFeria(id){ if(!confirm('Remover este registro de férias?'))return;
+      const r=await fetch(`${API_BASE_URL}/api/ferias/${id}`,{method:'DELETE',credentials:'include'}); if(r.ok) carregarFeriasMes(); }
 
     function optAgentes(sel){ return '<option value="">— agente —</option>'+AGENTES.map(a=>`<option value="${a.id}" ${String(a.id)===String(sel)?'selected':''}>${a.nome}${a.matricula?' ('+a.matricula+')':''}</option>`).join(''); }
     function optPostos(sel,segSex){ return '<option value="">— posto —</option>'+POSTOS.filter(p=>segSex===undefined||p.seg_sex===segSex).map(p=>`<option ${p.nome===sel?'selected':''}>${p.nome}</option>`).join(''); }
@@ -199,23 +313,73 @@
         const r=await fetch(`${API_BASE_URL}/api/escala`,{credentials:'include'});
         const l=await r.json();
         if(!l.length){ cont.innerHTML='<p style="color:var(--color-hint);text-align:center;">Nenhuma escala salva.</p>'; return; }
-        cont.innerHTML='<div class="hist-list">'+l.map(e=>`<div class="hist-item">
+        cont.innerHTML='<div class="hist-list">'+l.map(e=>`<div class="hist-item" style="cursor:pointer;" onclick="visualizarEscala(${e.id})" title="Clique para visualizar">
           <div class="hist-item-icon">📅</div>
           <div class="hist-item-body"><div class="hist-item-title">${e.mes_referencia}${e.titulo?' — '+e.titulo:''}</div>
           <div class="hist-item-meta"><span>${e.numero||''}</span><span>·</span><span>por ${e.criado_por||'—'}</span></div></div>
-          <div class="hist-item-right" style="display:flex;gap:6px;">
+          <div class="hist-item-right" style="display:flex;gap:6px;" onclick="event.stopPropagation()">
             <button class="add-row" style="width:auto;padding:6px 10px;" onclick="editarEscala('${e.mes_referencia}')">Editar</button>
             <button class="add-row" style="width:auto;padding:6px 10px;background:var(--color-primary);" onclick="baixarPDF('${API_BASE_URL}/api/escala/${e.id}/pdf','escala-${e.mes_referencia}.pdf')">PDF</button>
             <button class="rm" style="width:auto;padding:6px 10px;" onclick="excluirEscala(${e.id})">Excluir</button>
           </div></div>`).join('')+'</div>';
       }catch{ cont.innerHTML='<p style="color:var(--color-danger);text-align:center;">Erro.</p>'; }
     }
+
+    // ── Visualização da escala no sistema (sem PDF) ───────────────────────────
+    async function visualizarEscala(id){
+      try{
+        const r=await fetch(`${API_BASE_URL}/api/escala/${id}`,{credentials:'include'});
+        if(!r.ok){ alert('Erro ao carregar escala.'); return; }
+        const {escala,itens}=await r.json();
+        document.getElementById('viewTitle').textContent='Escala '+(escala.titulo?escala.titulo+' — ':'')+escala.mes_referencia;
+        document.getElementById('viewSub').textContent=(escala.numero||'')+' · por '+(escala.criado_por||'—');
+        let html='<div class="view-grid">';
+        PATRULHAS.forEach(p=>{
+          const its=itens.filter(i=>String(i.patrulha)===p);
+          const byPosto={}; its.forEach(i=>{(byPosto[i.posto]=byPosto[i.posto]||[]).push(i);});
+          const postos=Object.keys(byPosto);
+          let colBody = postos.length ? '' : '<div style="color:var(--color-hint);font-size:0.8rem;">(sem lançamentos)</div>';
+          postos.forEach(posto=>{
+            colBody+=`<div class="view-posto">${posto}</div>`;
+            byPosto[posto].forEach(i=>{ const reg=i.regime==='12x36'?` <span style="color:var(--color-hint)">(12x36${i.turno?'/'+i.turno[0].toUpperCase():''})</span>`:'';
+              colBody+=`<div class="view-agente">• ${i.nome}${i.matricula?' — '+i.matricula:''}${reg}</div>`; });
+          });
+          html+=`<div class="view-col"><div class="view-col-head">Patrulha ${p}</div><div class="view-col-body">${colBody}</div></div>`;
+        });
+        html+='</div>';
+        const adm=itens.filter(i=>i.patrulha==='ADM');
+        if(adm.length){
+          const byPosto={}; adm.forEach(i=>{(byPosto[i.posto]=byPosto[i.posto]||[]).push(i);});
+          html+='<div class="view-obs"><div class="view-posto">Administrativo — Segunda a Sexta</div>';
+          Object.keys(byPosto).forEach(posto=>{ html+=`<div class="view-agente"><strong>${posto}:</strong> ${byPosto[posto].map(i=>i.nome+(i.matricula?' ('+i.matricula+')':'')).join(', ')}</div>`; });
+          html+='</div>';
+        }
+        // Férias do mês na visualização
+        try{
+          const rf=await fetch(`${API_BASE_URL}/api/ferias?mes=${escala.mes_referencia}`,{credentials:'include'});
+          if(rf.ok){ const fer=await rf.json();
+            if(fer.length){ html+='<div class="view-obs"><div class="view-posto">Férias no mês</div>'+
+              fer.map(f=>`<div class="view-agente">• ${f.nome} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}</div>`).join('')+'</div>'; }
+          }
+        }catch{}
+        if(escala.obs){ html+=`<div class="view-obs"><strong>Observações:</strong> ${escala.obs}</div>`; }
+        document.getElementById('viewBody').innerHTML=html;
+        document.getElementById('viewOverlay').classList.add('aberto');
+      }catch{ alert('Erro ao carregar escala.'); }
+    }
+    function fecharView(e){ if(e && e.target!==document.getElementById('viewOverlay')) return;
+      document.getElementById('viewOverlay').classList.remove('aberto'); }
     function editarEscala(mes){ document.getElementById('mesRef').value=mes; showTab('editor'); document.querySelector('.tab-btn').classList.add('active'); carregarMes(); }
     async function excluirEscala(id){ if(!confirm('Excluir esta escala?'))return; const r=await fetch(`${API_BASE_URL}/api/escala/${id}`,{method:'DELETE',credentials:'include'}); if(r.ok) carregarEscalas(); }
 
     function renderPostosConfig(){
       const c=document.getElementById('postosConfig');
-      c.innerHTML=POSTOS.map(p=>`<span class="posto-chip">${p.nome}${p.seg_sex?' <em style="color:var(--color-hint)">(Seg–Sex)</em>':''} <button onclick="rmPosto(${p.id})" title="Remover">×</button></span>`).join('');
+      if(!POSTOS.length){ c.innerHTML='<p style="color:var(--color-hint);text-align:center;">Nenhum posto cadastrado.</p>'; return; }
+      c.innerHTML=POSTOS.map(p=>`<div class="posto-item">
+        <span class="pi-nome">${p.nome}</span>
+        ${p.seg_sex?'<span class="badge badge-supervisor">Seg–Sex</span>':'<span class="badge badge-usuario">Plantão</span>'}
+        <button class="btn-rm-soft" onclick="rmPosto(${p.id})">Remover</button>
+      </div>`).join('');
     }
     async function addPosto(){
       const nome=document.getElementById('novoPosto').value.trim(); if(!nome)return;
