@@ -10,12 +10,19 @@
   <link rel="stylesheet" href="../assets/css/style.css?v=2">
   <script src="../assets/js/theme-switcher.js"></script>
   <style>
+    /* sobrescreve o overflow:hidden / height:100% globais do style.css
+       para permitir a rolagem desta página quando o conteúdo é maior que a tela */
+    html, body {
+      overflow: visible;
+      height: auto;
+    }
     body {
       background: var(--bg-page);
       display: flex;
       flex-direction: column;
       min-height: 100vh;
       margin: 0;
+      overflow-y: auto;
     }
 
     /* reutiliza o cabeçalho oficial */
