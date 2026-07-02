@@ -20,6 +20,9 @@
     logs:      `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg>`,
     usuarios:  `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="3"/><path d="M1 17c0-3.31 2.91-6 6.5-6"/><circle cx="14" cy="8" r="2.5"/><path d="M19 17c0-2.76-2.24-5-5-5"/></svg>`,
     admin:     `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15.1 7.9L17.9 8.6L17.9 11.4L15.1 12.1L16.6 14.6L14.6 16.6L12.1 15.1L11.4 17.9L8.6 17.9L7.9 15.1L5.4 16.6L3.5 14.6L4.9 12.1L2.1 11.4L2.1 8.6L4.9 7.9L3.5 5.4L5.4 3.5L7.9 4.9L8.6 2.1L11.4 2.1L12.1 4.9L14.6 3.5L16.6 5.4Z"/><circle cx="10" cy="10" r="3.5"/></svg>`,
+    escala:    `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M8 8v9M13 8v9M3 12.5h14"/><path d="M7 2v3M13 2v3"/></svg>`,
+    extras:    `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.5 2.5"/></svg>`,
+    ferias:    `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12V6.5"/><path d="M10 6.5c0-2 1.6-3.5 3.6-3.5 1.2 3-1.4 4.6-3.6 3.5z"/><path d="M10 6.5c0-2-1.6-3.5-3.6-3.5-1.2 3 1.4 4.6 3.6 3.5z"/><path d="M4 17c1.2-1.2 2.8-1.2 4 0 1.2-1.2 2.8-1.2 4 0 1.2-1.2 2.8-1.2 4 0"/></svg>`,
   };
 
   const MENU = [
@@ -28,6 +31,9 @@
     { href: '/pages/consulta.html',   icon: ICONS.historico,  label: 'Histórico de BOs',    roles: ['supervisor', 'admin'] },
     { href: '/pages/relatorio.html',  icon: ICONS.relatorio,  label: 'Relatório Interno',   roles: ['agente', 'supervisor', 'admin'] },
     { href: '/pages/viatura.html',    icon: ICONS.viatura,    label: 'Controle de Viatura', roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/extras.html',     icon: ICONS.extras,     label: 'Plantões Extras',     roles: ['agente', 'supervisor', 'admin'] },
+    { href: '/pages/escala.html',     icon: ICONS.escala,     label: 'Escala de Serviço',   roles: ['supervisor', 'admin'] },
+    { href: '/pages/ferias.html',     icon: ICONS.ferias,     label: 'Férias',              roles: ['supervisor', 'admin'] },
     { href: '/pages/documentos.html', icon: ICONS.documentos, label: 'Documentos',          roles: ['agente', 'supervisor', 'admin'] },
     { href: '/pages/perfil.html',     icon: ICONS.perfil,     label: 'Meu Perfil',          roles: ['agente', 'supervisor', 'admin'] },
     { href: '/pages/logs.html',       icon: ICONS.logs,       label: 'Log de Auditoria',    roles: ['supervisor', 'admin'] },

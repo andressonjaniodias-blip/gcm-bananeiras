@@ -15,6 +15,9 @@ const documentoRoutes = require('./routes/documentoRoutes');
 const agentesRoutes   = require('./routes/agentesRoutes');
 const anexosRoutes    = require('./routes/anexosRoutes');
 const frotaRoutes     = require('./routes/frotaRoutes');
+const escalaRoutes    = require('./routes/escalaRoutes');
+const extrasRoutes    = require('./routes/extrasRoutes');
+const feriasRoutes    = require('./routes/feriasRoutes');
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -94,6 +97,9 @@ app.use('/api/documentos', documentoRoutes);
 app.use('/api/agentes',   agentesRoutes);
 app.use('/api/anexos',    anexosRoutes);
 app.use('/api/frota',     frotaRoutes);
+app.use('/api/escala',    escalaRoutes);
+app.use('/api/extras',    extrasRoutes);
+app.use('/api/ferias',    feriasRoutes);
 
 // ✅ Health check endpoint (Render verifica isso)
 app.get('/health', (req, res) => {

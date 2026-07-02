@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escala de Serviço - GCM Bananeiras</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="../assets/js/theme-switcher.js"></script>
+  <script src="../assets/js/sidebar.js"></script>
+  <style>
+    .patrulhas-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:12px; }
+    @media (max-width:900px){ .patrulhas-grid { grid-template-columns:1fr; } }
+    .patrulha-col { border:1px solid var(--color-border); border-radius:var(--radius-sm); overflow:hidden; }
+    .patrulha-head { background:var(--color-primary); color:#fff; padding:9px; font-weight:700; text-align:center; }
+    .patrulha-body { padding:8px; display:flex; flex-direction:column; gap:8px; }
+    .item-row { background:var(--color-row-alt); border:1px solid var(--color-border); border-radius:6px; padding:8px; }
+    .item-row select, .item-row input { width:100%; margin-bottom:5px; padding:5px 7px; font-size:0.8rem;
+      border:1px solid var(--color-border); border-radius:5px; background:var(--bg-card); color:var(--color-text); }
+    .item-row .rm { background:var(--color-danger); color:#fff; border:none; border-radius:5px; padding:4px 8px;
+      cursor:pointer; font-size:0.75rem; width:100%; }
+    .add-row { background:var(--color-success); color:#fff; border:none; border-radius:6px; padding:7px; cursor:pointer;
+      font-size:0.82rem; font-weight:600; width:100%; }
+    .adm-box { border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:10px; margin-top:14px; }
+    .msg { padding:10px; border-radius:6px; margin-top:10px; display:none; font-size:0.88rem; }
+    .postos-config { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+    .posto-chip { background:var(--color-bloco-bg); border:1px solid var(--color-border); border-radius:20px;
+      padding:4px 10px; font-size:0.78rem; display:flex; align-items:center; gap:6px; }
+    .posto-chip button { background:none;border:none;color:var(--color-danger);cursor:pointer;font-weight:700; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <img src="/brasao-gcm.png" alt="Brasão GCM" class="logo">
+    <div class="header-titulo">
+      <span class="header-linha-1">PREFEITURA MUNICIPAL DE BANANEIRAS</span>
+      <span class="header-linha-2">GUARDA CIVIL MUNICIPAL</span>
+      <span class="header-linha-3">Escala de Serviço</span>
+    </div>
+    <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+  </header>
+
+  <main class="dashboard">
+    <div class="tabs-scroll-wrap"><nav class="tabs">
+      <button class="tab-btn active" onclick="showTab('editor',event)">Montar Escala</button>
+      <button class="tab-btn" onclick="showTab('historico',event)">Escalas Salvas</button>
+      <button class="tab-btn" onclick="showTab('postos',event)">Postos</button>
+    </nav></div>
+
+    <!-- EDITOR -->
+    <section id="editor" class="tab-content">
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="campo-group" style="margin:0;"><label class="obrigatorio">Mês de referência</label>
+          <input type="month" id="mesRef" onchange="carregarMes()"></div>
+        <div class="campo-group" style="margin:0;flex:1;min-width:200px;"><label>Título (opcional)</label>
+          <input type="text" id="tituloEscala" placeholder="Ex: Escala Operacional"></div>
+      </div>
+      <p style="font-size:0.8rem;color:var(--color-hint);margin:8px 0;">
+        A escala inicia sempre no dia 1. Patrulha 1 trabalha dias 1, 5, 9…; Patrulha 2: 2, 6, 10…; e assim por diante (24x72).
+        A 2ª folga de cada patrulha é priorizada nos plantões extras.</p>
+
+      <div class="patrulhas-grid" id="grid"></div>
+
+      <div class="adm-box">
+        <div style="font-weight:700;margin-bottom:6px;">Administrativo — Segunda a Sexta</div>
+        <div class="patrulha-body" id="admBody" style="padding:0;"></div>
+        <button class="add-row" style="margin-top:8px;" onclick="addItem('ADM')">+ Adicionar (Seg–Sex)</button>
+      </div>
+
+      <div class="campo-group" style="margin-top:12px;"><label>Observações</label>
+        <textarea id="obsEscala" rows="2"></textarea></div>
+
+      <div class="actions" style="gap:10px;flex-wrap:wrap;">
+        <button onclick="salvarEscala()" style="background:var(--color-success);">Salvar Escala</button>
+        <button id="btnPdfAtual" onclick="pdfEscalaAtual()" style="background:var(--color-primary);display:none;">Gerar PDF</button>
+      </div>
+      <p id="msg" class="msg"></p>
+    </section>
+
+    <!-- HISTÓRICO -->
+    <section id="historico" class="tab-content hidden">
+      <h3>Escalas Salvas</h3>
+      <div id="listaEscalas" style="margin-top:10px;"><p style="color:var(--color-hint);text-align:center;">Carregando...</p></div>
+    </section>
+
+    <!-- POSTOS -->
+    <section id="postos" class="tab-content hidden">
+      <h3>Postos / Setores</h3>
+      <p style="font-size:0.82rem;color:var(--color-hint);">Gerencie a lista de postos disponíveis na escala.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+        <div class="campo-group" style="margin:0;"><label>Novo posto</label><input type="text" id="novoPosto"></div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><input type="checkbox" id="novoPostoSegSex"> Seg–Sex</label>
+        <button onclick="addPosto()">Adicionar</button>
+      </div>
+      <div class="postos-config" id="postosConfig"></div>
+    </section>
+  </main>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/main.js"></script>
+  <script>
+    let PERFIL={}, AGENTES=[], POSTOS=[], ITENS=[], ESCALA_ID=null;
+    const PATRULHAS=['1','2','3','4'];
+
+    function mesAtual(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+    function msg(t,ok){ const e=document.getElementById('msg'); e.textContent=t; e.style.display='block';
+      e.style.background=ok?'#dcfce7':'#fee2e2'; e.style.color=ok?'#166534':'#991b1b'; setTimeout(()=>e.style.display='none',5000); }
+
+    window.addEventListener('DOMContentLoaded', async ()=>{
+      document.getElementById('mesRef').value = mesAtual();
+      try {
+        const me = await fetch(`${API_BASE_URL}/api/auth/me`,{credentials:'include'});
+        if(!me.ok){ window.location.href='/'; return; }
+        PERFIL = await me.json(); sessionStorage.setItem('perfil', JSON.stringify(PERFIL));
+        if(typeof updateSidebarUser==='function') updateSidebarUser(PERFIL);
+      } catch { window.location.href='/'; return; }
+      await Promise.all([carregarAgentes(), carregarPostos()]);
+      carregarMes();
+    });
+
+    async function carregarAgentes(){ try{ const r=await fetch(`${API_BASE_URL}/api/agentes`,{credentials:'include'}); if(r.ok) AGENTES=await r.json(); }catch{} }
+    async function carregarPostos(){ try{ const r=await fetch(`${API_BASE_URL}/api/escala/postos`,{credentials:'include'}); if(r.ok) POSTOS=await r.json(); }catch{} renderPostosConfig(); }
+
+    async function carregarMes(){
+      const mes=document.getElementById('mesRef').value; if(!mes) return;
+      ITENS=[]; ESCALA_ID=null;
+      try {
+        const r=await fetch(`${API_BASE_URL}/api/escala/mes/${mes}`,{credentials:'include'});
+        const d=await r.json();
+        if(d.escala){ ESCALA_ID=d.escala.id; document.getElementById('tituloEscala').value=d.escala.titulo||'';
+          document.getElementById('obsEscala').value=d.escala.obs||'';
+          ITENS=(d.itens||[]).map(i=>({patrulha:String(i.patrulha),posto:i.posto,agente_id:i.agente_id,nome:i.nome,matricula:i.matricula,regime:i.regime||'24x72',turno:i.turno||''}));
+        } else { document.getElementById('tituloEscala').value=''; document.getElementById('obsEscala').value=''; }
+      } catch {}
+      document.getElementById('btnPdfAtual').style.display = ESCALA_ID?'inline-block':'none';
+      renderGrid();
+    }
+
+    function optAgentes(sel){ return '<option value="">— agente —</option>'+AGENTES.map(a=>`<option value="${a.id}" ${String(a.id)===String(sel)?'selected':''}>${a.nome}${a.matricula?' ('+a.matricula+')':''}</option>`).join(''); }
+    function optPostos(sel,segSex){ return '<option value="">— posto —</option>'+POSTOS.filter(p=>segSex===undefined||p.seg_sex===segSex).map(p=>`<option ${p.nome===sel?'selected':''}>${p.nome}</option>`).join(''); }
+
+    function itemRowHTML(it, idx, segSex){
+      return `<div class="item-row">
+        <select onchange="setItem(${idx},'posto',this.value)">${optPostos(it.posto, segSex)}</select>
+        <select onchange="onAgente(${idx},this.value)">${optAgentes(it.agente_id)}</select>
+        ${segSex?'':`<select onchange="setItem(${idx},'regime',this.value)">
+          <option value="24x72" ${it.regime==='24x72'?'selected':''}>24x72</option>
+          <option value="12x36" ${it.regime==='12x36'?'selected':''}>12x36</option></select>
+          ${it.regime==='12x36'?`<select onchange="setItem(${idx},'turno',this.value)">
+            <option value="">turno</option><option value="diurno" ${it.turno==='diurno'?'selected':''}>Diurno</option>
+            <option value="noturno" ${it.turno==='noturno'?'selected':''}>Noturno</option></select>`:''}`}
+        <button class="rm" onclick="rmItem(${idx})">Remover</button>
+      </div>`;
+    }
+
+    function renderGrid(){
+      const grid=document.getElementById('grid'); grid.innerHTML='';
+      PATRULHAS.forEach(p=>{
+        const col=document.createElement('div'); col.className='patrulha-col';
+        const linhas=ITENS.map((it,idx)=>({it,idx})).filter(x=>x.it.patrulha===p);
+        col.innerHTML=`<div class="patrulha-head">Patrulha ${p}</div>
+          <div class="patrulha-body">
+            ${linhas.map(x=>itemRowHTML(x.it,x.idx,false)).join('')}
+            <button class="add-row" onclick="addItem('${p}')">+ Adicionar</button>
+          </div>`;
+        grid.appendChild(col);
+      });
+      const admBody=document.getElementById('admBody');
+      const admLin=ITENS.map((it,idx)=>({it,idx})).filter(x=>x.it.patrulha==='ADM');
+      admBody.innerHTML=admLin.map(x=>itemRowHTML(x.it,x.idx,true)).join('');
+    }
+
+    function addItem(patrulha){ ITENS.push({patrulha,posto:'',agente_id:null,nome:'',matricula:'',regime:patrulha==='ADM'?'seg-sex':'24x72',turno:''}); renderGrid(); }
+    function rmItem(idx){ ITENS.splice(idx,1); renderGrid(); }
+    function setItem(idx,campo,val){ if(ITENS[idx]){ ITENS[idx][campo]=val; if(campo==='regime') renderGrid(); } }
+    function onAgente(idx,id){ const a=AGENTES.find(x=>String(x.id)===String(id)); if(ITENS[idx]){ ITENS[idx].agente_id=id?Number(id):null; ITENS[idx].nome=a?a.nome:''; ITENS[idx].matricula=a?a.matricula:''; } }
+
+    async function salvarEscala(){
+      const mes=document.getElementById('mesRef').value;
+      if(!mes){ msg('Informe o mês.',false); return; }
+      const itens=ITENS.filter(i=>i.posto && i.nome);
+      try {
+        const r=await fetch(`${API_BASE_URL}/api/escala`,{method:'POST',credentials:'include',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({mes_referencia:mes,titulo:document.getElementById('tituloEscala').value.trim(),obs:document.getElementById('obsEscala').value.trim(),itens})});
+        const d=await r.json();
+        if(!r.ok){ msg(d.error||'Erro ao salvar.',false); return; }
+        ESCALA_ID=d.id; document.getElementById('btnPdfAtual').style.display='inline-block';
+        msg('Escala salva! ('+d.numero+')',true);
+      } catch { msg('Erro de conexão.',false); }
+    }
+
+    function pdfEscalaAtual(){ if(ESCALA_ID) baixarPDF(`${API_BASE_URL}/api/escala/${ESCALA_ID}/pdf`,`escala-${document.getElementById('mesRef').value}.pdf`); }
+
+    async function carregarEscalas(){
+      const cont=document.getElementById('listaEscalas');
+      try{
+        const r=await fetch(`${API_BASE_URL}/api/escala`,{credentials:'include'});
+        const l=await r.json();
+        if(!l.length){ cont.innerHTML='<p style="color:var(--color-hint);text-align:center;">Nenhuma escala salva.</p>'; return; }
+        cont.innerHTML='<div class="hist-list">'+l.map(e=>`<div class="hist-item">
+          <div class="hist-item-icon">📅</div>
+          <div class="hist-item-body"><div class="hist-item-title">${e.mes_referencia}${e.titulo?' — '+e.titulo:''}</div>
+          <div class="hist-item-meta"><span>${e.numero||''}</span><span>·</span><span>por ${e.criado_por||'—'}</span></div></div>
+          <div class="hist-item-right" style="display:flex;gap:6px;">
+            <button class="add-row" style="width:auto;padding:6px 10px;" onclick="editarEscala('${e.mes_referencia}')">Editar</button>
+            <button class="add-row" style="width:auto;padding:6px 10px;background:var(--color-primary);" onclick="baixarPDF('${API_BASE_URL}/api/escala/${e.id}/pdf','escala-${e.mes_referencia}.pdf')">PDF</button>
+            <button class="rm" style="width:auto;padding:6px 10px;" onclick="excluirEscala(${e.id})">Excluir</button>
+          </div></div>`).join('')+'</div>';
+      }catch{ cont.innerHTML='<p style="color:var(--color-danger);text-align:center;">Erro.</p>'; }
+    }
+    function editarEscala(mes){ document.getElementById('mesRef').value=mes; showTab('editor'); document.querySelector('.tab-btn').classList.add('active'); carregarMes(); }
+    async function excluirEscala(id){ if(!confirm('Excluir esta escala?'))return; const r=await fetch(`${API_BASE_URL}/api/escala/${id}`,{method:'DELETE',credentials:'include'}); if(r.ok) carregarEscalas(); }
+
+    function renderPostosConfig(){
+      const c=document.getElementById('postosConfig');
+      c.innerHTML=POSTOS.map(p=>`<span class="posto-chip">${p.nome}${p.seg_sex?' <em style="color:var(--color-hint)">(Seg–Sex)</em>':''} <button onclick="rmPosto(${p.id})" title="Remover">×</button></span>`).join('');
+    }
+    async function addPosto(){
+      const nome=document.getElementById('novoPosto').value.trim(); if(!nome)return;
+      const seg=document.getElementById('novoPostoSegSex').checked;
+      const r=await fetch(`${API_BASE_URL}/api/escala/postos`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome,seg_sex:seg})});
+      if(r.ok){ document.getElementById('novoPosto').value=''; document.getElementById('novoPostoSegSex').checked=false; await carregarPostos(); renderGrid(); }
+    }
+    async function rmPosto(id){ if(!confirm('Remover este posto da lista?'))return; const r=await fetch(`${API_BASE_URL}/api/escala/postos/${id}`,{method:'DELETE',credentials:'include'}); if(r.ok){ await carregarPostos(); renderGrid(); } }
+
+    async function baixarPDF(url,nome){ try{ const res=await fetch(url,{credentials:'include'}); if(!res.ok){alert('Erro ao gerar PDF.');return;} const b=await res.blob(); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u;a.download=nome;a.click(); URL.revokeObjectURL(u);}catch{alert('Erro ao baixar PDF.');} }
+
+    window.showTab=function(id,ev){ document.querySelectorAll('.tab-content').forEach(s=>s.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.getElementById(id).classList.remove('hidden'); if(ev?.target) ev.target.classList.add('active');
+      if(id==='historico') carregarEscalas(); };
+  </script>
+</body>
+</html>
