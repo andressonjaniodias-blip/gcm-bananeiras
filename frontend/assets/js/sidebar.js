@@ -25,31 +25,77 @@
     ferias:    `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12V6.5"/><path d="M10 6.5c0-2 1.6-3.5 3.6-3.5 1.2 3-1.4 4.6-3.6 3.5z"/><path d="M10 6.5c0-2-1.6-3.5-3.6-3.5-1.2 3 1.4 4.6 3.6 3.5z"/><path d="M4 17c1.2-1.2 2.8-1.2 4 0 1.2-1.2 2.8-1.2 4 0 1.2-1.2 2.8-1.2 4 0"/></svg>`,
   };
 
-  const MENU = [
-    { href: '/pages/home.html',       icon: ICONS.home,       label: 'Início',              roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/dashboard.html',  icon: ICONS.novobo,     label: 'Novo BO',             roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/consulta.html',   icon: ICONS.historico,  label: 'Histórico de BOs',    roles: ['supervisor', 'admin'] },
-    { href: '/pages/relatorio.html',  icon: ICONS.relatorio,  label: 'Relatório Interno',   roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/viatura.html',    icon: ICONS.viatura,    label: 'Controle de Viatura', roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/extras.html',     icon: ICONS.extras,     label: 'Plantões Extras',     roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/escala.html',     icon: ICONS.escala,     label: 'Escala de Serviço',   roles: ['supervisor', 'admin'] },
-    { href: '/pages/ferias.html',     icon: ICONS.ferias,     label: 'Férias',              roles: ['supervisor', 'admin'] },
-    { href: '/pages/documentos.html', icon: ICONS.documentos, label: 'Documentos',          roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/perfil.html',     icon: ICONS.perfil,     label: 'Meu Perfil',          roles: ['agente', 'supervisor', 'admin'] },
-    { href: '/pages/logs.html',       icon: ICONS.logs,       label: 'Log de Auditoria',    roles: ['supervisor', 'admin'] },
-    { href: '/pages/usuarios.html',   icon: ICONS.admin,      label: 'Gerenciamento',       roles: ['admin'] },
+  // Menu agrupado (accordion). Cada seção só aparece se tiver itens visíveis
+  // para o perfil. "Meu Perfil" fica fora dos grupos, ao final.
+  const NAV = [
+    { group: 'Operacional', items: [
+      { href: '/pages/home.html',      icon: ICONS.home,      label: 'Início',              roles: ['agente', 'supervisor', 'admin'] },
+      { href: '/pages/dashboard.html', icon: ICONS.novobo,    label: 'Novo BO',             roles: ['agente', 'supervisor', 'admin'] },
+      { href: '/pages/consulta.html',  icon: ICONS.historico, label: 'Histórico de BOs',    roles: ['supervisor', 'admin'] },
+      { href: '/pages/relatorio.html', icon: ICONS.relatorio, label: 'Relatório Interno',   roles: ['agente', 'supervisor', 'admin'] },
+      { href: '/pages/viatura.html',   icon: ICONS.viatura,   label: 'Controle de Viatura', roles: ['agente', 'supervisor', 'admin'] },
+    ] },
+    { group: 'Escalas & Plantões', items: [
+      { href: '/pages/extras.html',    icon: ICONS.extras,    label: 'Plantões Extras',     roles: ['agente', 'supervisor', 'admin'] },
+      { href: '/pages/escala.html',    icon: ICONS.escala,    label: 'Escala de Serviço',   roles: ['supervisor', 'admin'] },
+      { href: '/pages/ferias.html',    icon: ICONS.ferias,    label: 'Férias',              roles: ['supervisor', 'admin'] },
+    ] },
+    { group: 'Administração', items: [
+      { href: '/pages/documentos.html',icon: ICONS.documentos,label: 'Documentos',          roles: ['agente', 'supervisor', 'admin'] },
+      { href: '/pages/logs.html',      icon: ICONS.logs,      label: 'Log de Auditoria',    roles: ['supervisor', 'admin'] },
+      { href: '/pages/usuarios.html',  icon: ICONS.admin,     label: 'Gerenciamento',       roles: ['admin'] },
+    ] },
   ];
+  const PERFIL_ITEM = { href: '/pages/perfil.html', icon: ICONS.perfil, label: 'Meu Perfil', roles: ['agente', 'supervisor', 'admin'] };
+
+  const CHEVRON = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8l4 4 4-4"/></svg>`;
+
+  function _grpState() { try { return JSON.parse(localStorage.getItem('gcm-sb-grupos') || '{}'); } catch { return {}; } }
+  function _grpSave(s)  { localStorage.setItem('gcm-sb-grupos', JSON.stringify(s)); }
+
+  function _linkHTML(item, currentPath) {
+    const active = currentPath.includes(item.href.replace('/pages/', '')) ? ' active' : '';
+    return `<a href="${item.href}" class="sb-link${active}" onclick="closeSidebar()"><span class="sb-icon">${item.icon}</span><span>${item.label}</span></a>`;
+  }
+
+  // Monta o HTML do menu agrupado para um perfil/rota
+  function renderNav(role, currentPath) {
+    const state = _grpState();
+    let html = '';
+    NAV.forEach(secao => {
+      const itens = secao.items.filter(it => it.roles.includes(role));
+      if (!itens.length) return;
+      const temAtivo   = itens.some(it => currentPath.includes(it.href.replace('/pages/', '')));
+      const collapsed  = temAtivo ? false : (state[secao.group] === true);
+      const linksHTML  = itens.map(it => _linkHTML(it, currentPath)).join('');
+      html += `<div class="sb-group${collapsed ? ' collapsed' : ''}" data-grupo="${secao.group}">
+        <button type="button" class="sb-group-head" onclick="toggleSidebarGroup(this)">
+          <span class="sb-group-title">${secao.group}</span>
+          <span class="sb-group-chev">${CHEVRON}</span>
+        </button>
+        <div class="sb-group-items">${linksHTML}</div>
+      </div>`;
+    });
+    if (PERFIL_ITEM.roles.includes(role)) {
+      html += `<div class="sb-nav-solo">${_linkHTML(PERFIL_ITEM, currentPath)}</div>`;
+    }
+    return html;
+  }
+
+  window.toggleSidebarGroup = function (btn) {
+    const g = btn.closest('.sb-group');
+    if (!g) return;
+    const collapsed = g.classList.toggle('collapsed');
+    const s = _grpState();
+    s[g.dataset.grupo] = collapsed;
+    _grpSave(s);
+  };
 
   function buildSidebar() {
     const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
     const ROLES_VALIDOS = ['admin', 'supervisor', 'agente'];
     const roleEfetivo = ROLES_VALIDOS.includes(perfil.role) ? perfil.role : 'agente';
-    const allMenu = MENU.filter(item => item.roles.includes(roleEfetivo));
-
-    const navHTML = allMenu.map(item => {
-      const active = window.location.pathname.includes(item.href.replace('/pages/', '')) ? ' active' : '';
-      return `<a href="${item.href}" class="sb-link${active}" onclick="closeSidebar()"><span class="sb-icon">${item.icon}</span><span>${item.label}</span></a>`;
-    }).join('');
+    const navHTML = renderNav(roleEfetivo, window.location.pathname);
 
     const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' }[roleEfetivo] || 'Agente GCM';
     const initial = (perfil.usuario || '?')[0].toUpperCase();
@@ -282,13 +328,7 @@
     if (nav && perfil.role) {
       const ROLES_VALIDOS = ['admin', 'supervisor', 'agente'];
       const roleEfetivo = ROLES_VALIDOS.includes(perfil.role) ? perfil.role : 'agente';
-      const currentPath = window.location.pathname;
-      nav.innerHTML = MENU
-        .filter(item => item.roles.includes(roleEfetivo))
-        .map(item => {
-          const active = currentPath.includes(item.href.replace('/pages/', '')) ? ' active' : '';
-          return `<a href="${item.href}" class="sb-link${active}" onclick="closeSidebar()"><span class="sb-icon">${item.icon}</span><span>${item.label}</span></a>`;
-        }).join('');
+      nav.innerHTML = renderNav(roleEfetivo, window.location.pathname);
     }
   };
 
