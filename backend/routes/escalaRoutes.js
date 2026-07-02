@@ -88,9 +88,11 @@ router.post('/', verificarToken, verificarSupervisor, async (req, res) => {
   const client = await pool.connect();
   try {
     const { mes_referencia, titulo, obs, itens } = req.body;
+    let { patrulha_dia1 } = req.body;
     if (!mes_referencia || !/^\d{4}-\d{2}$/.test(mes_referencia)) {
       return res.status(400).json({ error: 'Mês de referência inválido (use YYYY-MM).' });
     }
+    if (!PATRULHAS.includes(String(patrulha_dia1))) patrulha_dia1 = '1';
     await client.query('BEGIN');
 
     // Escala já existe para o mês?
@@ -103,8 +105,8 @@ router.post('/', verificarToken, verificarSupervisor, async (req, res) => {
       escalaId = existente[0].id;
       numero   = existente[0].numero;
       await client.query(
-        `UPDATE escalas SET titulo = $1, obs = $2, atualizado_em = NOW() WHERE id = $3`,
-        [titulo || null, obs || null, escalaId]
+        `UPDATE escalas SET titulo = $1, obs = $2, patrulha_dia1 = $3, atualizado_em = NOW() WHERE id = $4`,
+        [titulo || null, obs || null, patrulha_dia1, escalaId]
       );
       await client.query(`DELETE FROM escala_itens WHERE escala_id = $1`, [escalaId]);
     } else {
@@ -112,9 +114,9 @@ router.post('/', verificarToken, verificarSupervisor, async (req, res) => {
       const { rows: [{ seq }] } = await client.query(`SELECT nextval('esc_seq') AS seq`);
       numero = `ESC-GCM-${String(seq).padStart(4, '0')}/${ano}`;
       const { rows: novo } = await client.query(
-        `INSERT INTO escalas (numero, mes_referencia, titulo, obs, criado_por)
-         VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-        [numero, mes_referencia, titulo || null, obs || null, req.usuario.usuario]
+        `INSERT INTO escalas (numero, mes_referencia, titulo, obs, patrulha_dia1, criado_por)
+         VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+        [numero, mes_referencia, titulo || null, obs || null, patrulha_dia1, req.usuario.usuario]
       );
       escalaId = novo[0].id;
     }
@@ -180,8 +182,9 @@ router.get('/:id/pdf', verificarToken, verificarSupervisor, async (req, res) => 
       let y = topY;
       // Cabeçalho da coluna
       doc.rect(x, y, colW, 22).fill(NAVY);
+      const rotulo = String(escala.patrulha_dia1 || '1') === p ? `PATRULHA ${p} (dia 1)` : `PATRULHA ${p}`;
       doc.fillColor('#fff').fontSize(11).font('Helvetica-Bold')
-         .text(`PATRULHA ${p}`, x, y + 6, { width: colW, align: 'center' });
+         .text(rotulo, x, y + 6, { width: colW, align: 'center' });
       y += 26;
 
       const itensP = itens.filter(i => i.patrulha === p);
