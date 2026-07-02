@@ -4,7 +4,7 @@ const pool    = require('../config/db');
 const { verificarToken, verificarSupervisor } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
-const { cabecalhoPDF, rodapePDF, NAVY } = require('../utils/pdfLayout');
+const { cabecalhoPDF, rodapePDF, fmtData, NAVY } = require('../utils/pdfLayout');
 const { quinzenaDe, numeroFolga, diaDoMes } = require('../utils/escalaCalc');
 
 const VALOR_12H   = 140;   // R$ por 12h (24h = 280)
@@ -14,12 +14,6 @@ const LIMITE_HORAS = 96;   // 4 plantões de 24h por quinzena
 function horasDoTipo(tipo)  { return String(tipo) === '24' ? 24 : 12; }
 function valorDoTipo(tipo)  { return (horasDoTipo(tipo) / 12) * VALOR_12H; }
 function ehComando(req)      { return ['admin', 'supervisor'].includes(req.usuario?.role); }
-
-function fmtData(iso) {
-  const s = String(iso).slice(0, 10);
-  const [y, m, d] = s.split('-');
-  return `${d}/${m}/${y}`;
-}
 
 // Soma de horas já lançadas para um agente na quinzena de uma data (exclui uma vaga opcional)
 async function horasNaQuinzena(agenteId, dataStr, excluirId = null) {
