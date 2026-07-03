@@ -271,6 +271,7 @@ exports.exportarPDF = async (req, res) => {
     doc.pipe(res);
 
     const pageW  = doc.page.width;
+    const pageH  = doc.page.height;
     const margem = 50;
     const conteudoW = pageW - margem * 2;
     const imgSize   = 62;
@@ -393,7 +394,11 @@ exports.exportarPDF = async (req, res) => {
     const dataDoc    = new Date(row.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 
     // ── Recibo de Entrega de Ocorrência ───────────────────────────────────────
-    doc.moveDown(1);
+    // Sempre em página nova: garante que o texto do recibo e o bloco de
+    // assinaturas abaixo dele nunca fiquem espremidos no rodapé da página
+    // anterior (causava sobreposição de linhas/assinaturas).
+    doc.addPage();
+    doc.y = doc.page.margins.top;
     doc.moveTo(margem, doc.y).lineTo(pageW - margem, doc.y).lineWidth(1).stroke(NAVY);
     doc.moveDown(0.8);
 
@@ -425,6 +430,17 @@ exports.exportarPDF = async (req, res) => {
     doc.moveDown(2.5);
 
     // ── Assinaturas ───────────────────────────────────────────────────────────
+    // O bloco é desenhado com coordenadas absolutas (doc.moveTo/text com y
+    // fixo), que o PDFKit não pagina automaticamente. Se não sobrar espaço
+    // antes do rodapé, força nova página para não desenhar linhas/assinaturas
+    // em cima do rodapé ou cortadas no fim da página.
+    const blocoAssinH = 60;
+    const limiteYAssin = pageH - doc.page.margins.bottom - blocoAssinH;
+    if (doc.y > limiteYAssin) {
+      doc.addPage();
+      doc.y = doc.page.margins.top;
+    }
+
     const largAssin = 190;
     const xEsq      = margem;
     const xDir      = pageW - margem - largAssin;
