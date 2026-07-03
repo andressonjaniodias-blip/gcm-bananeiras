@@ -56,12 +56,21 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
     }
 
+    const ipTentativa = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+    const extraTentativa = extraFromReq({ headers: req.headers, usuario: {} });
+
     const { rows } = await db.query('SELECT * FROM usuarios WHERE usuario = $1', [usuario]);
     const row = rows[0];
-    if (!row) return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+    if (!row) {
+      await registrarAuditoria(usuario, 'LOGIN_FALHA', 'Usuário inexistente', ipTentativa, extraTentativa);
+      return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+    }
 
     const senhaValida = await bcrypt.compare(senha, row.senha);
-    if (!senhaValida) return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+    if (!senhaValida) {
+      await registrarAuditoria(row.usuario, 'LOGIN_FALHA', 'Senha incorreta', ipTentativa, extraTentativa);
+      return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+    }
 
     const sessao_id = uuidv4();
     const token = jwt.sign(
