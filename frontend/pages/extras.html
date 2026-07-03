@@ -52,7 +52,6 @@
     .cota-bar > div { height:100%; background:var(--color-success); transition:width .3s; }
     .aviso-folga { background:var(--color-warning-bg); border:1px solid var(--color-warning); color:var(--color-warning-text);
       padding:9px 12px; border-radius:var(--radius-sm); font-size:0.83rem; margin-bottom:10px; }
-    .grid-form { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
     .msg { padding:10px; border-radius:var(--radius-sm); margin-top:10px; display:none; font-size:0.88rem; }
   </style>
 </head>
@@ -133,7 +132,7 @@
         </div>
       </div>
       <div class="actions" style="margin-top:2px;margin-bottom:16px;gap:10px;flex-wrap:wrap;">
-        <button onclick="salvarVaga()" style="background:var(--color-success);">Confirmar Inscrição</button>
+        <button class="btn-ok" onclick="salvarVaga()">Confirmar Inscrição</button>
         <button onclick="baixarPdfDia()" style="background:var(--color-primary);">Gerar PDF do Dia</button>
       </div>
       <p id="msgDia" class="msg"></p>
