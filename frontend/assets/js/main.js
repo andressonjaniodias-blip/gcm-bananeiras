@@ -78,10 +78,10 @@ function _toastErro(msg) { showToast(msg, 'danger'); }
 function showToast(msg, tipo = 'danger') {
   document.getElementById('tab-toast')?.remove();
   const cores = {
-    danger:  { bg: '#C62828', color: '#fff' },
-    success: { bg: '#1B5E20', color: '#fff' },
-    warning: { bg: '#E65100', color: '#fff' },
-    info:    { bg: '#0D47A1', color: '#fff' },
+    danger:  { bg: 'var(--color-danger)', color: '#fff' },
+    success: { bg: 'var(--color-success)', color: '#fff' },
+    warning: { bg: 'var(--color-accent-hover)', color: '#fff' },
+    info:    { bg: 'var(--color-primary)', color: '#fff' },
   };
   const { bg, color } = cores[tipo] || cores.danger;
   const t = document.createElement('div');
@@ -90,7 +90,7 @@ function showToast(msg, tipo = 'danger') {
   Object.assign(t.style, {
     position:'fixed', bottom:'90px', left:'50%', transform:'translateX(-50%)',
     background: bg, color, padding:'10px 20px',
-    borderRadius:'8px', fontSize:'0.88rem', fontWeight:'600',
+    borderRadius:'var(--radius)', fontSize:'0.88rem', fontWeight:'600',
     zIndex:'9999', boxShadow:'0 4px 16px rgba(0,0,0,0.3)',
     whiteSpace:'nowrap', pointerEvents:'none',
     animation:'fadeInUp 0.2s ease'
@@ -111,19 +111,19 @@ function confirmar(mensagem, titulo = 'Confirmar') {
       zIndex:'10000'
     });
     overlay.innerHTML = `
-      <div style="background:var(--bg-card,#fff);border-radius:12px;padding:28px 32px;max-width:420px;width:90%;
+      <div style="background:var(--bg-card,#fff);border-radius:var(--radius-lg);padding:28px 32px;max-width:420px;width:90%;
                   box-shadow:0 8px 32px rgba(0,0,0,0.25);font-family:inherit;">
         <h3 style="margin:0 0 12px;font-size:1rem;color:var(--color-text,#111)">${titulo}</h3>
         <p style="margin:0 0 24px;font-size:0.9rem;color:var(--color-text-muted,#555);line-height:1.5">${mensagem}</p>
         <div style="display:flex;gap:10px;justify-content:flex-end">
           <button id="_confirm-no"
-            style="padding:8px 20px;border-radius:8px;border:1px solid var(--color-border,#ccc);
+            style="padding:8px 20px;border-radius:var(--radius);border:1px solid var(--color-border,#ccc);
                    background:transparent;cursor:pointer;font-size:0.9rem;color:var(--color-text,#111)">
             Cancelar
           </button>
           <button id="_confirm-yes"
-            style="padding:8px 20px;border-radius:8px;border:none;
-                   background:#C62828;color:#fff;cursor:pointer;font-size:0.9rem;font-weight:600">
+            style="padding:8px 20px;border-radius:var(--radius);border:none;
+                   background:var(--color-danger);color:#fff;cursor:pointer;font-size:0.9rem;font-weight:600">
             Confirmar
           </button>
         </div>
@@ -573,10 +573,10 @@ function renderizarAnexosBO() {
       <div style="display:flex;gap:8px;flex-wrap:wrap;padding-left:4px;">
         <input type="text" placeholder="Título (opcional — ABNT)" value="${titulo}"
                oninput="atualizarMetaAnexoBO(${i},'titulo',this.value)"
-               style="flex:1;min-width:140px;padding:4px 8px;border:1px solid var(--color-border);border-radius:4px;font-size:0.85rem;">
+               style="flex:1;min-width:140px;padding:4px 8px;border:1px solid var(--color-border);border-radius:var(--radius-sm);font-size:0.85rem;">
         <input type="text" placeholder="Legenda (opcional)" value="${legenda}"
                oninput="atualizarMetaAnexoBO(${i},'legenda',this.value)"
-               style="flex:2;min-width:180px;padding:4px 8px;border:1px solid var(--color-border);border-radius:4px;font-size:0.85rem;">
+               style="flex:2;min-width:180px;padding:4px 8px;border:1px solid var(--color-border);border-radius:var(--radius-sm);font-size:0.85rem;">
       </div>
     </div>`;
   }).join('');
