@@ -81,10 +81,9 @@
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5a7.5 7.5 0 1 0 7.5 7.5c0-1.38-1.12-2.5-2.5-2.5h-1.25c-.69 0-1.25-.56-1.25-1.25V5c0-1.38-1.12-2.5-2.5-2.5z"/><circle cx="6.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="11.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="8.5" r="1" fill="currentColor" stroke="none"/></svg>
         </button>
         <div class="header-tema-menu" id="hdr-tema-menu">
-          <button class="sb-tema-item" data-theme="gov-modern" onclick="aplicarTema('gov-modern')">
-            <span class="nav-item-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><circle cx="7.2" cy="8" r="1.1" fill="currentColor"/><circle cx="10" cy="6.2" r="1.1" fill="currentColor"/><circle cx="12.8" cy="8" r="1.1" fill="currentColor"/><circle cx="8" cy="12.5" r="1.1" fill="currentColor"/></svg></span>
-            <span class="nav-item-label">Gov Modern</span>
-          </button>
+          <button class="sb-tema-item" data-theme="gov-modern"      onclick="aplicarTema('gov-modern')"><span class="sb-tema-dot" style="background:#2171B5"></span>Gov Modern</button>
+          <button class="sb-tema-item" data-theme="dark-command"    onclick="aplicarTema('dark-command')"><span class="sb-tema-dot" style="background:#0d1a2e"></span>Dark Command</button>
+          <button class="sb-tema-item" data-theme="google-material" onclick="aplicarTema('google-material')"><span class="sb-tema-dot" style="background:#1A73E8"></span>Claro Operacional</button>
         </div>
       </div>
     </div>
@@ -111,12 +110,12 @@
   <script>
     const LOGIN_FORM_HTML = `
       <div style="padding:28px 30px;">
-        <div id="avisoInatividade" style="display:none;background:#FEF3C7;border-left:4px solid #F59E0B;
-          color:#92400E;padding:10px 14px;border-radius:6px;font-size:0.84rem;font-weight:600;margin-bottom:14px;">
+        <div id="avisoInatividade" style="display:none;background:var(--color-warning-bg);border-left:4px solid var(--color-warning);
+          color:var(--color-warning-text);padding:10px 14px;border-radius:var(--radius-sm);font-size:0.84rem;font-weight:600;margin-bottom:14px;">
           ⏱️ Sua sessão foi encerrada por inatividade. Faça login novamente.
         </div>
-        <div id="avisoSessaoSubstituida" style="display:none;background:#FEE2E2;border-left:4px solid #EF4444;
-          color:#991B1B;padding:10px 14px;border-radius:6px;font-size:0.84rem;font-weight:600;margin-bottom:14px;">
+        <div id="avisoSessaoSubstituida" style="display:none;background:var(--color-danger-bg);border-left:4px solid var(--color-danger);
+          color:var(--color-danger-text);padding:10px 14px;border-radius:var(--radius-sm);font-size:0.84rem;font-weight:600;margin-bottom:14px;">
           🔒 Sua sessão foi encerrada porque a conta foi acessada em outro dispositivo.
         </div>
         <form onsubmit="login(); return false;">
@@ -133,8 +132,8 @@
           </div>
           <button type="submit" class="btn-gerar-bo">ENTRAR</button>
         </form>
-        <p style="font-size:0.82rem;color:#888;text-align:center;margin-top:8px;">
-          <a href="#" onclick="openPageModal('/pages/recuperar-senha.html','Recuperar Senha',{narrow:true});return false;" style="color:#1d4ed8;">Esqueceu sua senha?</a>
+        <p style="font-size:0.82rem;color:var(--color-text-muted);text-align:center;margin-top:8px;">
+          <a href="#" onclick="openPageModal('/pages/recuperar-senha.html','Recuperar Senha',{narrow:true});return false;" style="color:var(--color-link);">Esqueceu sua senha?</a>
         </p>
       </div>`;
 
