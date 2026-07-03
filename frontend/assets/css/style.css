@@ -1,8 +1,41 @@
 /* ============================================================
-   TEMAS — variáveis CSS por data-theme no <html>
+   DESIGN TOKENS — base compartilhada por todos os temas
+   Valores que NÃO mudam entre temas (raios, espaçamento,
+   tipografia). As cores ficam em cada bloco [data-theme].
+   ============================================================ */
+:root {
+  /* Raio de canto — padrão suave e institucional */
+  --radius:       8px;   /* cards, botões, inputs, modais */
+  --radius-sm:    6px;   /* elementos menores, chips de ação */
+  --radius-lg:    14px;  /* modais grandes, painéis */
+  --radius-pill:  999px; /* badges, avatares, pílulas */
+
+  /* Escala de espaçamento (8pt) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* Tipografia */
+  --font-sans: 'Inter', Arial, sans-serif;
+
+  /* Botões de ícone — escala única com papéis definidos */
+  --icon-btn-sm: 32px;  /* ações compactas em linha (tabelas, cards) */
+  --icon-btn:    40px;   /* botão de ícone padrão (cabeçalho, modais, nav) */
+  --icon-btn-lg: 52px;   /* ação flutuante primária (FAB) */
+
+  /* Transições padrão */
+  --tr-fast: 0.15s ease;
+  --tr-base: 0.2s ease;
+}
+
+/* ============================================================
+   TEMAS — variáveis de cor por data-theme no <html>
    ============================================================ */
 
-/* Gov Modern (padrão) — paleta azul Uxintace #2171B5 → #EFF3FF */
+/* ── Gov Modern (padrão) — claro, azul naval + âmbar ──────── */
 :root,
 [data-theme="gov-modern"] {
   --header-h: 110px;
@@ -11,6 +44,7 @@
   --bg-body-mid:     #112444;
   --bg-body-to:      #1a3560;
   --bg-card:         #FFFFFF;
+  --bg-surface-2:    #F7FAFF;
   --bg-header-from:  #0e1f3d;
   --bg-header-to:    #2171B5;
   --header-accent:   #F59E0B;
@@ -29,6 +63,17 @@
   --color-success-hover: #155e15;
   --color-danger:        #C62828;
   --color-danger-hover:  #B71C1C;
+
+  /* Superfícies semânticas (avisos, toasts, badges de estado) */
+  --color-warning:        #F59E0B;
+  --color-warning-bg:     #FEF3C7;
+  --color-warning-text:   #92400E;
+  --color-success-bg:     #D1FAE5;
+  --color-success-text:   #065F46;
+  --color-danger-bg:      #FEE2E2;
+  --color-danger-text:    #991B1B;
+  --color-info-bg:        #E8F0FE;
+  --color-info-text:      #1E40AF;
 
   --color-text:       #1A202C;
   --color-text-muted: #6B7280;
@@ -49,9 +94,127 @@
 
   --shadow-card:  0 4px 18px rgba(33,113,181,0.10);
   --shadow-input: 0 0 0 3px rgba(107,174,214,0.30);
-  --radius:       0;
-  --radius-sm:    0;
-  --radius-pill:  0;
+  --shadow-pop:   0 10px 30px rgba(15,30,60,0.18);
+}
+
+/* ── Dark Command — escuro, comando/operação noturna ──────── */
+[data-theme="dark-command"] {
+  --header-h: 110px;
+  --bg-page:         #0f1826;
+  --bg-body-from:    #04070d;
+  --bg-body-mid:     #080f1c;
+  --bg-body-to:      #0d1a2e;
+  --bg-card:         #172336;
+  --bg-surface-2:    #1c2a40;
+  --bg-header-from:  #05090f;
+  --bg-header-to:    #14375f;
+  --header-accent:   #F59E0B;
+  --header-text:     #FFFFFF;
+  --header-text-sub: #9FB6D4;
+
+  --color-primary:       #3B8FD6;
+  --color-primary-hover: #2C79BC;
+  --color-primary-light: #24405e;
+
+  --color-accent:        #F59E0B;
+  --color-accent-hover:  #D97706;
+  --color-accent-light:  #3a2f14;
+
+  --color-success:       #34A853;
+  --color-success-hover: #2C8C46;
+  --color-danger:        #EF5350;
+  --color-danger-hover:  #E53935;
+
+  --color-warning:        #F59E0B;
+  --color-warning-bg:     #3a2f14;
+  --color-warning-text:   #FCD34D;
+  --color-success-bg:     #14311f;
+  --color-success-text:   #86EFAC;
+  --color-danger-bg:      #3a1a1a;
+  --color-danger-text:    #FCA5A5;
+  --color-info-bg:        #14263f;
+  --color-info-text:      #93C5FD;
+
+  --color-text:       #E6ECF5;
+  --color-text-muted: #94A3B8;
+  --color-label:      #C3D0E0;
+  --color-border:     #2A3A52;
+  --color-input-bg:   #1E2C42;
+  --color-row-alt:    #1b283c;
+  --color-row-hover:  #24344d;
+  --color-bloco-bg:   #16202f;
+  --color-bloco-border:#2A3A52;
+  --color-hint:       #64748B;
+  --color-link:       #6BAED6;
+
+  --tab-active-bg:    #3B8FD6;
+  --tab-active-text:  #FFFFFF;
+  --tab-inactive-bg:  #16202f;
+  --tab-inactive-text:#9FB6D4;
+
+  --shadow-card:  0 4px 20px rgba(0,0,0,0.45);
+  --shadow-input: 0 0 0 3px rgba(59,143,214,0.35);
+  --shadow-pop:   0 12px 34px rgba(0,0,0,0.55);
+}
+
+/* ── Claro Operacional (google-material) — claro neutro ───── */
+[data-theme="google-material"] {
+  --header-h: 110px;
+  --bg-page:         #F5F7FA;
+  --bg-body-from:    #0a1a2e;
+  --bg-body-mid:     #112444;
+  --bg-body-to:      #1a3560;
+  --bg-card:         #FFFFFF;
+  --bg-surface-2:    #F1F3F4;
+  --bg-header-from:  #0e1f3d;
+  --bg-header-to:    #1A73E8;
+  --header-accent:   #F9AB00;
+  --header-text:     #FFFFFF;
+  --header-text-sub: #C6DAFC;
+
+  --color-primary:       #1A73E8;
+  --color-primary-hover: #1558B0;
+  --color-primary-light: #E8F0FE;
+
+  --color-accent:        #F9AB00;
+  --color-accent-hover:  #E37400;
+  --color-accent-light:  #FEF7E0;
+
+  --color-success:       #188038;
+  --color-success-hover: #12652b;
+  --color-danger:        #D93025;
+  --color-danger-hover:  #B3261E;
+
+  --color-warning:        #F9AB00;
+  --color-warning-bg:     #FEF7E0;
+  --color-warning-text:   #7A5900;
+  --color-success-bg:     #E6F4EA;
+  --color-success-text:   #137333;
+  --color-danger-bg:      #FCE8E6;
+  --color-danger-text:    #C5221F;
+  --color-info-bg:        #E8F0FE;
+  --color-info-text:      #1A73E8;
+
+  --color-text:       #202124;
+  --color-text-muted: #5F6368;
+  --color-label:      #3C4043;
+  --color-border:     #DADCE0;
+  --color-input-bg:   #FFFFFF;
+  --color-row-alt:    #F1F3F4;
+  --color-row-hover:  #E8F0FE;
+  --color-bloco-bg:   #F1F3F4;
+  --color-bloco-border:#DADCE0;
+  --color-hint:       #80868B;
+  --color-link:       #1A73E8;
+
+  --tab-active-bg:    #1A73E8;
+  --tab-active-text:  #FFFFFF;
+  --tab-inactive-bg:  #F1F3F4;
+  --tab-inactive-text:#1A73E8;
+
+  --shadow-card:  0 1px 3px rgba(60,64,67,0.15), 0 4px 12px rgba(60,64,67,0.08);
+  --shadow-input: 0 0 0 3px rgba(26,115,232,0.25);
+  --shadow-pop:   0 10px 30px rgba(60,64,67,0.22);
 }
 
 
@@ -89,7 +252,7 @@ body {
   max-width: 1520px;
   width: 100%;
   margin: 0 auto;
-  border-radius: 0;
+  border-radius: var(--radius-lg);
   /* overflow: clip preserva o recorte visual das bordas arredondadas
      sem criar um scroll container — o que quebraria position: sticky */
   overflow: clip;
@@ -195,8 +358,8 @@ body {
 }
 
 .stage-fab {
-  width: 52px;
-  height: 52px;
+  width: var(--icon-btn-lg);
+  height: var(--icon-btn-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -418,6 +581,97 @@ body {
 }
 
 /* ============================================================
+   AÇÕES DO CABEÇALHO (páginas internas) — injetadas por sidebar.js
+   Botões de ícone unificados no mesmo idioma dos FABs do login.
+   ============================================================ */
+.header-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  z-index: 3;
+}
+
+/* Botão redondo de ícone padrão do cabeçalho */
+.header-icon-btn {
+  width: var(--icon-btn);
+  height: var(--icon-btn);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: var(--radius-pill);
+  background: rgba(255,255,255,0.12);
+  color: var(--header-text);
+  cursor: pointer;
+  transition: background var(--tr-base), transform var(--tr-fast), border-color var(--tr-base);
+}
+.header-icon-btn:hover {
+  background: rgba(255,255,255,0.22);
+  border-color: rgba(255,255,255,0.4);
+  transform: translateY(-1px);
+}
+.header-icon-btn svg { width: 20px; height: 20px; }
+
+/* ── Menu de tema (dropdown popover) — usado no login e nas páginas ── */
+.header-tema-menu {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  position: fixed;
+  z-index: 9999;
+  min-width: 190px;
+  padding: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+}
+.header-tema-menu.open { display: flex; }
+
+/* Sobrescreve o comportamento de "pílula que expande": no dropdown de tema
+   os itens são linhas normais com bolinha de cor + rótulo sempre visível. */
+.header-tema-menu .sb-tema-item {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  overflow: visible;
+  box-shadow: none;
+  gap: 10px;
+  padding: 9px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background var(--tr-fast), color var(--tr-fast);
+  animation: none !important;
+}
+.header-tema-menu .sb-tema-item:hover {
+  width: 100%;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  box-shadow: none;
+}
+.header-tema-menu .sb-tema-item.active {
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: none;
+}
+.sb-tema-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,0.6);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.12);
+}
+
+/* Rótulo da seção da sidebar (span dentro de .sb-group-head) */
+.sb-group-title { flex: 1; text-align: left; }
+
+/* ============================================================
    LOGIN
    ============================================================ */
 .login-container {
@@ -492,7 +746,7 @@ body {
    ============================================================ */
 .dashboard {
   width: 95%;
-  max-width: 1200px;
+  max-width: 1140px;
   margin: clamp(16px, 3vw, 24px) auto;
   background: var(--bg-card);
   padding: clamp(16px, 3vw, 24px);
@@ -838,7 +1092,7 @@ form textarea {
    ============================================================ */
 .consulta {
   width: 95%;
-  max-width: 1000px;
+  max-width: 1140px;
   margin: clamp(16px, 3vw, 24px) auto;
   background: var(--bg-card);
   padding: clamp(16px, 3vw, 24px);
@@ -1127,15 +1381,16 @@ table button:hover { background: var(--color-primary-hover); }
   font-weight: 600;
   border-left: 4px solid;
 }
-.msg-ok   { background: #D1FAE5; color: #065F46; border-color: var(--color-success); }
-.msg-erro { background: #FEE2E2; color: #991B1B; border-color: var(--color-danger); }
+.msg-ok   { background: var(--color-success-bg); color: var(--color-success-text); border-color: var(--color-success); }
+.msg-erro { background: var(--color-danger-bg); color: var(--color-danger-text); border-color: var(--color-danger); }
 
 /* ============================================================
    PAGE WRAP — container padrão de páginas internas
    ============================================================ */
 .page-wrap {
-  width: 92%;
-  margin: 28px auto;
+  width: 95%;
+  max-width: 1140px;
+  margin: clamp(16px, 3vw, 24px) auto;
 }
 
 .page-title {
@@ -1740,8 +1995,8 @@ body.has-sidebar .header {
    ============================================================ */
 .home-container {
   width: 95%;
-  max-width: 1100px;
-  margin: 28px auto;
+  max-width: 1140px;
+  margin: clamp(16px, 3vw, 24px) auto;
 }
 
 .home-welcome {
@@ -2035,8 +2290,8 @@ body.has-sidebar .header {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: var(--icon-btn);
+  height: var(--icon-btn);
   padding: 0;
   background: var(--color-primary);
   color: #fff;
@@ -2396,7 +2651,7 @@ table th {
   font-size: 1.5rem; line-height: 1; color: var(--color-hint);
   padding: 0 4px; border-radius: 6px; flex-shrink: 0; transition: color 0.15s, background 0.15s;
 }
-.detail-modal-close:hover { color: var(--color-danger); background: #FEE2E2; }
+.detail-modal-close:hover { color: var(--color-danger); background: var(--color-danger-bg); }
 
 .detail-tabs {
   padding: 10px 20px 0;
@@ -2453,36 +2708,36 @@ table th {
   font-weight: 700; font-size: 0.86rem; cursor: pointer; transition: opacity 0.15s;
 }
 .detail-footer button:hover { opacity: 0.85; }
-.detail-btn-pdf      { background: #EEF2FF; color: #4F46E5; }
-.detail-btn-edit     { background: #FEF9C3; color: #854D0E; }
-.detail-btn-del      { background: #FEE2E2; color: #991B1B; }
+.detail-btn-pdf      { background: var(--color-info-bg); color: var(--color-info-text); }
+.detail-btn-edit     { background: var(--color-warning-bg); color: var(--color-warning-text); }
+.detail-btn-del      { background: var(--color-danger-bg); color: var(--color-danger-text); }
 .detail-btn-dl       { background: var(--color-primary); color: #fff; }
 .detail-btn-close    { background: var(--color-row-alt); border: 1px solid var(--color-border) !important; color: var(--color-text-muted); }
 .detail-btn-close:hover { background: var(--color-border) !important; }
 .btn-icon {
-  width: 32px; height: 32px; border-radius: 50%; border: none;
+  width: var(--icon-btn-sm); height: var(--icon-btn-sm); border-radius: 50%; border: none;
   display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; transition: background 0.15s, transform 0.15s;
   background: transparent; color: var(--color-text-muted);
   flex-shrink: 0; padding: 0;
 }
 .btn-icon:hover { transform: scale(1.12); }
-.btn-icon-editar:hover { background: #EEF2FF; color: #4F46E5; }
-.btn-icon-excluir:hover { background: #FEF2F2; color: #DC2626; }
+.btn-icon-editar:hover { background: var(--color-info-bg); color: var(--color-info-text); }
+.btn-icon-excluir:hover { background: var(--color-danger-bg); color: var(--color-danger); }
 
 .detail-icon-btn {
-  width: 40px; height: 40px; border-radius: 50%; border: none;
+  width: var(--icon-btn); height: var(--icon-btn); border-radius: 50%; border: none;
   display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; transition: opacity 0.15s, transform 0.1s;
   flex-shrink: 0;
 }
 .detail-icon-btn:hover { opacity: 0.8; transform: scale(1.08); }
-.detail-icon-btn--pdf  { background: #EEF2FF; color: #4F46E5; }
-.detail-icon-btn--share { background: #DCFCE7; color: #15803D; }
-.detail-icon-btn--del  { background: #FEE2E2; color: #991B1B; }
+.detail-icon-btn--pdf  { background: var(--color-info-bg); color: var(--color-info-text); }
+.detail-icon-btn--share { background: var(--color-success-bg); color: var(--color-success-text); }
+.detail-icon-btn--del  { background: var(--color-danger-bg); color: var(--color-danger-text); }
 .detail-icon-btn--dl   { background: var(--color-primary); color: #fff; }
-.detail-icon-btn--star { background: #FEF9C3; color: #854D0E; }
-.detail-icon-btn--star.active { background: #FEF08A; color: #713F12; }
+.detail-icon-btn--star { background: var(--color-warning-bg); color: var(--color-warning-text); }
+.detail-icon-btn--star.active { background: var(--color-accent); color: #fff; }
 @keyframes _share-spin { to { transform: rotate(360deg); } }
 .detail-icon-btn--loading { opacity: 0.45; pointer-events: none; cursor: default; }
 .detail-icon-btn--loading svg { animation: _share-spin 0.8s linear infinite; }
