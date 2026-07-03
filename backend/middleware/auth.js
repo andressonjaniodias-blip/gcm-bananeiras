@@ -113,7 +113,19 @@ function extraFromReq(req) {
   };
 }
 
+// Extrai o IP do cliente de forma consistente (respeita proxy reverso)
+function ipFromReq(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+}
+
+// Auditoria a partir de um request autenticado — captura usuário, IP e dispositivo
+// automaticamente. Uso: await auditar(req, 'ALTERAR_AGENTE', `${nome} (${matricula})`);
+async function auditar(req, acao, recurso = null, usuarioOverride = null) {
+  const usuario = usuarioOverride || req.usuario?.usuario || 'desconhecido';
+  return registrarAuditoria(usuario, acao, recurso, ipFromReq(req), extraFromReq(req));
+}
+
 module.exports = {
   verificarToken, verificarAdmin, verificarSupervisor,
-  registrarAuditoria, extraFromReq, parseUserAgent, ROLES
+  registrarAuditoria, extraFromReq, ipFromReq, auditar, parseUserAgent, ROLES
 };
