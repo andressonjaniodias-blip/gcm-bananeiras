@@ -380,19 +380,19 @@
         display:flex; align-items:center; justify-content:center; padding:20px;
       }
       #modal-inativ .mi-card {
-        background:#fff; border-radius:12px; padding:32px 28px;
+        background:var(--bg-card); border-radius:var(--radius-lg); padding:32px 28px;
         max-width:400px; width:100%; text-align:center;
         box-shadow:0 16px 48px rgba(0,0,0,0.35);
       }
       #modal-inativ .mi-icon  { font-size:2.8rem; margin-bottom:10px; }
-      #modal-inativ .mi-title { font-size:1.05rem; font-weight:800; color:#92400E; margin-bottom:8px; }
-      #modal-inativ .mi-msg   { font-size:0.88rem; color:#6B7280; margin-bottom:6px; }
-      #modal-inativ .mi-cnt   { font-size:1.6rem; font-weight:800; color:#DC2626; margin:10px 0 18px; }
+      #modal-inativ .mi-title { font-size:1.05rem; font-weight:800; color:var(--color-warning-text); margin-bottom:8px; }
+      #modal-inativ .mi-msg   { font-size:0.88rem; color:var(--color-text-muted); margin-bottom:6px; }
+      #modal-inativ .mi-cnt   { font-size:1.6rem; font-weight:800; color:var(--color-danger); margin:10px 0 18px; }
       #modal-inativ .mi-btn   {
-        background:#1E3A5F; color:#fff; border:none; border-radius:8px;
+        background:var(--color-primary); color:#fff; border:none; border-radius:var(--radius);
         padding:11px 24px; font-size:0.95rem; font-weight:700; cursor:pointer; width:100%;
       }
-      #modal-inativ .mi-btn:hover { background:#162d4a; }
+      #modal-inativ .mi-btn:hover { background:var(--color-primary-hover); }
     `;
     document.head.appendChild(style);
 
@@ -485,18 +485,18 @@
     style.textContent = `
       #banner-dados {
         position: fixed; top: var(--header-h, 60px); left: 0; right: 0; z-index: 9000;
-        background: #FEF3C7; border-bottom: 3px solid #F59E0B;
-        color: #92400E; padding: 12px 20px;
+        background: var(--color-warning-bg); border-bottom: 3px solid var(--color-warning);
+        color: var(--color-warning-text); padding: 12px 20px;
         display: flex; align-items: center; justify-content: space-between;
         gap: 12px; font-size: 0.88rem; font-weight: 600; flex-wrap: wrap;
       }
       #banner-dados .banner-msg { flex: 1; }
       #banner-dados .banner-acao {
-        background: #F59E0B; color: #fff; border: none;
-        border-radius: 6px; padding: 7px 16px; cursor: pointer;
+        background: var(--color-warning); color: #fff; border: none;
+        border-radius: var(--radius-sm); padding: 7px 16px; cursor: pointer;
         font-weight: 700; font-size: 0.85rem; white-space: nowrap;
       }
-      #banner-dados .banner-acao:hover { background: #D97706; }
+      #banner-dados .banner-acao:hover { background: var(--color-accent-hover); }
     `;
     document.head.appendChild(style);
 
@@ -524,27 +524,27 @@
         display: flex; align-items: center; justify-content: center; padding: 20px;
       }
       #overlay-dados .od-card {
-        background: #fff; border-radius: 12px; padding: 36px 32px;
+        background: var(--bg-card); border-radius: var(--radius-lg); padding: 36px 32px;
         max-width: 460px; width: 100%; text-align: center;
         box-shadow: 0 20px 60px rgba(0,0,0,0.4);
       }
       #overlay-dados .od-icon  { font-size: 3rem; margin-bottom: 12px; }
       #overlay-dados .od-title {
-        font-size: 1.15rem; font-weight: 800; color: #1E3A5F; margin-bottom: 10px;
+        font-size: 1.15rem; font-weight: 800; color: var(--color-primary); margin-bottom: 10px;
       }
       #overlay-dados .od-msg {
-        font-size: 0.9rem; color: #4B5563; margin-bottom: 8px; line-height: 1.55;
+        font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 8px; line-height: 1.55;
       }
       #overlay-dados .od-meta {
-        font-size: 0.8rem; color: #9CA3AF; margin-bottom: 24px;
+        font-size: 0.8rem; color: var(--color-hint); margin-bottom: 24px;
       }
       #overlay-dados .od-btn {
-        display: block; width: 100%; background: #1E3A5F; color: #fff;
-        border: none; border-radius: 8px; padding: 13px;
+        display: block; width: 100%; background: var(--color-primary); color: #fff;
+        border: none; border-radius: var(--radius); padding: 13px;
         font-size: 1rem; font-weight: 700; cursor: pointer;
         text-decoration: none; transition: background 0.2s;
       }
-      #overlay-dados .od-btn:hover { background: #162d4a; }
+      #overlay-dados .od-btn:hover { background: var(--color-primary-hover); }
     `;
     document.head.appendChild(style);
 
