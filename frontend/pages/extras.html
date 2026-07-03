@@ -95,35 +95,37 @@
       <div id="avisoFolga"></div>
 
       <div class="form-inscricao">
-        <div class="campo-group cmd-only" style="display:none;flex:1.3 1 180px;">
+        <div class="campo-group cmd-only" style="display:none;flex:1 1 200px;">
           <label>Agente</label>
           <select id="selAgente" onchange="onSelAgente()"></select>
         </div>
-        <div class="campo-group" style="flex:1.6 1 200px;">
+        <div class="campo-group cmd-hide" style="flex:1 1 200px;">
           <label class="obrigatorio">Nome</label>
           <input type="text" id="fNome" placeholder="Nome do agente">
         </div>
-        <div class="campo-group" style="flex:0.6 1 100px;">
+        <div class="campo-group" style="flex:0 1 110px;">
           <label>Matrícula</label>
           <input type="text" id="fMatricula">
         </div>
-        <div class="campo-group" style="flex:1.2 1 170px;">
+        <div class="campo-group" style="flex:2 1 260px;">
+          <label>Função no plantão</label>
+          <input type="text" id="fFuncao" placeholder="Ex: Patrulhamento, Base">
+        </div>
+      </div>
+      <div class="form-inscricao">
+        <div class="campo-group" style="flex:0 1 190px;">
           <label class="obrigatorio">Duração</label>
           <select id="fTipo" onchange="atualizarCota()">
             <option value="12">12 horas (R$ 140,00)</option>
             <option value="24">24 horas (R$ 280,00)</option>
           </select>
         </div>
-        <div class="campo-group" style="flex:1.6 1 200px;">
-          <label>Função no plantão</label>
-          <input type="text" id="fFuncao" placeholder="Ex: Patrulhamento, Base">
-        </div>
-        <div class="campo-group" style="flex:0.7 1 110px;">
+        <div class="campo-group" style="flex:0 1 130px;">
           <label>Horário início</label>
           <input type="time" id="fInicio" onchange="atualizarPreviaFim()">
           <small id="previaFim" style="color:var(--color-text-muted);"></small>
         </div>
-        <div class="campo-group" style="flex:1 1 150px;">
+        <div class="campo-group" style="flex:0 1 190px;">
           <label>Telefone de contato</label>
           <input type="text" id="fTelefone" placeholder="(83) 9....">
         </div>
@@ -206,7 +208,10 @@
         if (typeof updateSidebarUser==='function') updateSidebarUser(PERFIL);
       } catch { window.location.href='/'; return; }
 
-      if (isComando()) document.querySelectorAll('.cmd-only').forEach(e=>e.style.display='');
+      if (isComando()) {
+        document.querySelectorAll('.cmd-only').forEach(e=>e.style.display='');
+        document.querySelectorAll('.cmd-hide').forEach(e=>e.style.display='none');
+      }
 
       try {
         const r = await fetch(`${API_BASE_URL}/api/agentes`, { credentials:'include' });
