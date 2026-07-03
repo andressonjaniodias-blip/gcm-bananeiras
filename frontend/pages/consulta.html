@@ -675,7 +675,7 @@
         const res = await fetch(`${API_BASE_URL}/api/bo/${id}/pdf`, { credentials: 'include' });
         if (!res.ok) { if (btn) btn.classList.remove('detail-icon-btn--loading'); return; }
         const blob = await res.blob();
-        _shareFileBO   = new File([blob], `bo_${numero}.pdf`, { type: 'application/pdf' });
+        _shareFileBO   = new File([blob], `bo_${numero.replace(/\//g, '-')}.pdf`, { type: 'application/pdf' });
         _shareFileBOId = id;
       } catch {}
       if (btn) btn.classList.remove('detail-icon-btn--loading');
@@ -833,7 +833,7 @@
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
         a.href     = url;
-        a.download = `bo_${numero}.pdf`;
+        a.download = `bo_${numero.replace(/\//g, '-')}.pdf`;
         a.click();
         URL.revokeObjectURL(url);
       } catch { showToast('Erro ao baixar PDF.', 'danger'); }
