@@ -127,8 +127,8 @@
       display: inline-block; padding: 2px 8px;
       border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 700;
     }
-    .badge-vitima   { background: #FEF3C7; color: #92400E; }
-    .badge-suspeito { background: #FEE2E2; color: #991B1B; }
+    .badge-vitima   { background: var(--color-warning-bg); color: var(--color-warning-text); }
+    .badge-suspeito { background: var(--color-danger-bg); color: var(--color-danger-text); }
     .badge-zero     { color: var(--color-hint); }
 
     mark {
@@ -145,9 +145,9 @@
       transition: opacity 0.15s, transform 0.1s;
     }
     .btn-acao:hover { opacity: 0.85; transform: scale(1.1); }
-    .btn-acao-pdf    { background: #EEF2FF; color: #4F46E5; }
-    .btn-acao-editar { background: #FEF9C3; color: #854D0E; }
-    .btn-acao-excluir{ background: #FEE2E2; color: #991B1B; }
+    .btn-acao-pdf    { background: var(--color-info-bg); color: var(--color-info-text); }
+    .btn-acao-editar { background: var(--color-warning-bg); color: var(--color-warning-text); }
+    .btn-acao-excluir{ background: var(--color-danger-bg); color: var(--color-danger-text); }
 
     /* Modal de confirmação de exclusão */
     .modal-overlay {
@@ -446,13 +446,13 @@
       if (_totalPaginas <= 1) { el.innerHTML = ''; return; }
       el.innerHTML = `
         <button onclick="carregarBOs(${_paginaAtual - 1})"
-          style="padding:6px 14px;border-radius:8px;border:1px solid var(--color-border);background:var(--bg-card);cursor:pointer;"
+          style="padding:6px 14px;border-radius:var(--radius);border:1px solid var(--color-border);background:var(--bg-card);cursor:pointer;"
           ${_paginaAtual <= 1 ? 'disabled' : ''}>← Anterior</button>
         <span style="font-size:0.9rem;color:var(--color-text-muted);">
           Página ${_paginaAtual} de ${_totalPaginas}
         </span>
         <button onclick="carregarBOs(${_paginaAtual + 1})"
-          style="padding:6px 14px;border-radius:8px;border:1px solid var(--color-border);background:var(--bg-card);cursor:pointer;"
+          style="padding:6px 14px;border-radius:var(--radius);border:1px solid var(--color-border);background:var(--bg-card);cursor:pointer;"
           ${_paginaAtual >= _totalPaginas ? 'disabled' : ''}>Próxima →</button>`;
     }
 
