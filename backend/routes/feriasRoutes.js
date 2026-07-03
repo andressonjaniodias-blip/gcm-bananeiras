@@ -1,7 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
-const { verificarToken, verificarSupervisor } = require('../middleware/auth');
+const { verificarToken, verificarSupervisor, auditar } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
 const { cabecalhoPDF, rodapePDF, fmtData, NAVY } = require('../utils/pdfLayout');
@@ -43,6 +43,7 @@ router.post('/', verificarToken, verificarSupervisor, async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
       [agente_id || null, nome, matricula || null, data_inicio, data_fim, obs || null, req.usuario.usuario]
     );
+    await auditar(req, 'CRIAR_FERIAS', `${nome} — ${data_inicio} a ${data_fim}`);
     res.status(201).json(rows[0]);
   } catch (err) { erroServidor(res, err); }
 });
@@ -61,6 +62,7 @@ router.put('/:id', verificarToken, verificarSupervisor, async (req, res) => {
       `UPDATE ferias SET nome=$1, matricula=$2, data_inicio=$3, data_fim=$4, obs=$5 WHERE id=$6 RETURNING *`,
       [nome ?? a.nome, matricula ?? a.matricula, ini, fim, obs ?? a.obs, req.params.id]
     );
+    await auditar(req, 'ALTERAR_FERIAS', `${rows[0].nome} — ${rows[0].data_inicio} a ${rows[0].data_fim}`);
     res.json(rows[0]);
   } catch (err) { erroServidor(res, err); }
 });
@@ -68,7 +70,8 @@ router.put('/:id', verificarToken, verificarSupervisor, async (req, res) => {
 // Excluir
 router.delete('/:id', verificarToken, verificarSupervisor, async (req, res) => {
   try {
-    await pool.query(`DELETE FROM ferias WHERE id = $1`, [req.params.id]);
+    const { rows } = await pool.query(`DELETE FROM ferias WHERE id = $1 RETURNING nome, data_inicio, data_fim`, [req.params.id]);
+    if (rows.length) await auditar(req, 'REMOVER_FERIAS', `${rows[0].nome} — ${rows[0].data_inicio} a ${rows[0].data_fim}`);
     res.json({ ok: true });
   } catch (err) { erroServidor(res, err); }
 });
