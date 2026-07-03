@@ -68,6 +68,14 @@
         <input type="date" id="dataDia" onchange="carregarDia()">
       </div>
 
+      <div class="campo-group cmd-only" style="display:none;max-width:260px;margin-bottom:10px;">
+        <label>Vagas disponíveis no dia</label>
+        <div style="display:flex;gap:8px;">
+          <input type="number" id="fVagasTotal" min="1" style="width:90px;">
+          <button onclick="salvarVagasTotal()" style="background:var(--color-primary);">Atualizar</button>
+        </div>
+      </div>
+
       <div id="listaVagas" style="margin:10px 0 18px;"></div>
 
       <h3 style="margin-bottom:8px;">Inscrever agente na vaga</h3>
@@ -100,11 +108,8 @@
         </div>
         <div class="campo-group">
           <label>Horário início</label>
-          <input type="time" id="fInicio">
-        </div>
-        <div class="campo-group">
-          <label>Horário término</label>
-          <input type="time" id="fFim">
+          <input type="time" id="fInicio" onchange="atualizarPreviaFim()">
+          <small id="previaFim" style="color:var(--color-text-muted);"></small>
         </div>
         <div class="campo-group">
           <label>Telefone de contato</label>
@@ -230,9 +235,39 @@
       atualizarCota();
     }
 
+    function atualizarPreviaFim() {
+      const el = document.getElementById('previaFim');
+      const hi = document.getElementById('fInicio').value;
+      const tipo = parseInt(document.getElementById('fTipo').value, 10);
+      if (!hi) { el.textContent = ''; return; }
+      const [h, m] = hi.split(':').map(Number);
+      const fimMin = (h * 60 + m + tipo * 60) % (24 * 60);
+      const hh = String(Math.floor(fimMin / 60)).padStart(2, '0');
+      const mm = String(fimMin % 60).padStart(2, '0');
+      el.textContent = `Término previsto: ${hh}:${mm}`;
+    }
+
+    async function salvarVagasTotal() {
+      const data = document.getElementById('dataDia').value;
+      const vagas_total = parseInt(document.getElementById('fVagasTotal').value, 10);
+      if (!data || !Number.isInteger(vagas_total) || vagas_total < 1) { msg('Informe um número válido de vagas.', false); return; }
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/extras/dia/${data}/vagas`, {
+          method: 'PUT', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vagas_total })
+        });
+        const dd = await r.json();
+        if (!r.ok) { msg(dd.error || 'Erro ao atualizar vagas.', false); return; }
+        msg('Número de vagas atualizado!', true);
+        carregarDia();
+      } catch { msg('Erro de conexão.', false); }
+    }
+
     function renderVagas(d) {
       const cont = document.getElementById('listaVagas');
       const vagas = d.vagas || [];
+      const fVagasTotal = document.getElementById('fVagasTotal');
+      if (fVagasTotal && document.activeElement !== fVagasTotal) fVagasTotal.value = d.total_vagas;
       let html = `<div style="font-weight:600;margin-bottom:6px;">${vagas.length}/${d.total_vagas} vagas preenchidas — ${d.livres} livre(s)</div>`;
       vagas.forEach((v, i) => {
         const podeEditar = isComando();
@@ -287,7 +322,6 @@
         funcao: document.getElementById('fFuncao').value.trim(),
         tipo: document.getElementById('fTipo').value,
         hora_inicio: document.getElementById('fInicio').value,
-        hora_fim: document.getElementById('fFim').value,
         telefone: document.getElementById('fTelefone').value.trim(),
         override: !!force,
       };
@@ -305,7 +339,8 @@
         document.getElementById('avisoFolga').innerHTML = d.aviso_folga
           ? `<div class="aviso-folga">⚠️ ${d.aviso_folga}</div>` : '';
         msg('Inscrição registrada!' + (d.liberado?' (liberada pelo comando)':''), true);
-        document.getElementById('fFuncao').value=''; document.getElementById('fInicio').value=''; document.getElementById('fFim').value='';
+        document.getElementById('fFuncao').value=''; document.getElementById('fInicio').value='';
+        document.getElementById('previaFim').textContent='';
         carregarDia();
       } catch { msg('Erro de conexão.', false); }
     }
@@ -327,13 +362,12 @@
       const nome = prompt('Nome:', v.nome); if (nome===null) return;
       const funcao = prompt('Função no plantão:', v.funcao||''); if (funcao===null) return;
       const tipo = prompt('Duração (12 ou 24):', v.tipo); if (tipo===null) return;
-      const hi = prompt('Início (HH:MM):', v.hora_inicio||''); if (hi===null) return;
-      const hf = prompt('Término (HH:MM):', v.hora_fim||''); if (hf===null) return;
+      const hi = prompt('Início (HH:MM) — término é calculado automaticamente:', v.hora_inicio||''); if (hi===null) return;
       const tel = prompt('Telefone:', v.telefone||''); if (tel===null) return;
       try {
         const rr = await fetch(`${API_BASE_URL}/api/extras/${id}`, {
           method:'PUT', credentials:'include', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ nome, funcao, tipo, hora_inicio:hi, hora_fim:hf, telefone:tel })
+          body: JSON.stringify({ nome, funcao, tipo, hora_inicio:hi, telefone:tel })
         });
         if (rr.ok) carregarDia(); else { const e=await rr.json(); msg(e.error||'Erro.', false); }
       } catch { msg('Erro de conexão.', false); }
