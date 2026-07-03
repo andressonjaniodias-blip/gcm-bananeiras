@@ -23,10 +23,10 @@
 
   <main class="login-container">
     <h2>Criar Administrador</h2>
-    <p style="text-align:center; margin-bottom:16px; color:#666; font-size:0.9rem;">
+    <p style="text-align:center; margin-bottom:16px; color:var(--color-text-muted); font-size:0.9rem;">
       Esta página só funciona uma vez, enquanto não houver nenhum usuário cadastrado.
     </p>
-    <div id="msg" style="display:none; padding:10px; border-radius:4px; margin-bottom:12px; text-align:center;"></div>
+    <div id="msg" style="display:none; padding:10px; border-radius:var(--radius-sm); margin-bottom:12px; text-align:center;"></div>
     <form onsubmit="criarAdmin(event)">
       <input type="text" id="usuario" placeholder="Nome de usuário" required autocomplete="off">
       <input type="password" id="senha" placeholder="Senha" required>
