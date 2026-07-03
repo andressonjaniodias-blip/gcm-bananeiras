@@ -5,7 +5,7 @@ const path     = require('path');
 const fs       = require('fs');
 const erroServidor = require('../utils/erroServidor');
 const pool     = require('../config/db');
-const { verificarToken, verificarSupervisor } = require('../middleware/auth');
+const { verificarToken, verificarSupervisor, auditar } = require('../middleware/auth');
 
 const UPLOADS_DIR = path.join(__dirname, '../uploads/documentos');
 
@@ -101,6 +101,7 @@ router.post('/', verificarToken, verificarSupervisor, (req, res) => {
           destaqueHome === 'true' || destaqueHome === true,
         ]
       );
+      await auditar(req, 'PUBLICAR_DOCUMENTO', `${tipo}: ${titulo}`);
       res.status(201).json(rows[0]);
     } catch (dbErr) {
       fs.unlink(req.file.path, () => {});
@@ -114,10 +115,11 @@ router.patch('/:id/destaque', verificarToken, verificarSupervisor, async (req, r
   try {
     const { destaque_home } = req.body;
     const { rows } = await pool.query(
-      `UPDATE documentos SET destaque_home=$1 WHERE id=$2 RETURNING id, destaque_home`,
+      `UPDATE documentos SET destaque_home=$1 WHERE id=$2 RETURNING id, titulo, destaque_home`,
       [!!destaque_home, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Documento não encontrado.' });
+    await auditar(req, 'DESTAQUE_DOCUMENTO', `${rows[0].destaque_home ? 'Destacado' : 'Removido destaque'}: ${rows[0].titulo}`);
     res.json(rows[0]);
   } catch (err) {
     erroServidor(res, err);
