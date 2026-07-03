@@ -86,4 +86,40 @@ function fmtData(iso) {
   return `${d}/${m}/${y}`;
 }
 
-module.exports = { cabecalhoPDF, rodapePDF, fmtData, NAVY };
+/**
+ * Desenha, ao final do documento, os campos de assinatura do Comandante e
+ * do Subcomandante da GCM. Se não houver espaço suficiente antes do rodapé
+ * na página atual, insere uma nova página antes de desenhar o bloco.
+ */
+function assinaturasPDF(doc, { comandante = 'Comandante da GCM', subcomandante = 'Subcomandante da GCM' } = {}) {
+  const margem  = doc.page.margins.left;
+  const pageW   = doc.page.width;
+  const pageH   = doc.page.height;
+  const conteudoW = pageW - margem * 2;
+  const blocoH  = 70;
+  const limiteY = pageH - doc.page.margins.bottom - blocoH;
+
+  if (doc.y > limiteY) {
+    doc.addPage();
+    doc.y = doc.page.margins.top;
+  } else {
+    doc.moveDown(2);
+  }
+
+  const colW = (conteudoW - 40) / 2;
+  const linhaY = doc.y + 30;
+  const col1X = margem;
+  const col2X = margem + colW + 40;
+
+  doc.moveTo(col1X, linhaY).lineTo(col1X + colW, linhaY).lineWidth(0.8).stroke('#333');
+  doc.moveTo(col2X, linhaY).lineTo(col2X + colW, linhaY).lineWidth(0.8).stroke('#333');
+
+  doc.fontSize(9).font('Helvetica-Bold').fillColor('#222')
+     .text(comandante, col1X, linhaY + 4, { width: colW, align: 'center' });
+  doc.fontSize(9).font('Helvetica-Bold').fillColor('#222')
+     .text(subcomandante, col2X, linhaY + 4, { width: colW, align: 'center' });
+
+  doc.y = linhaY + 20;
+}
+
+module.exports = { cabecalhoPDF, rodapePDF, assinaturasPDF, fmtData, NAVY };
