@@ -8,12 +8,29 @@ const { cabecalhoPDF, rodapePDF, fmtData, NAVY } = require('../utils/pdfLayout')
 const { quinzenaDe, numeroFolga, diaDoMes } = require('../utils/escalaCalc');
 
 const VALOR_12H   = 140;   // R$ por 12h (24h = 280)
-const VAGAS_DIA   = 4;     // 4 vagas por dia
+const VAGAS_DIA_PADRAO = 4; // padrão de vagas por dia (ajustável por admin/supervisor)
 const LIMITE_HORAS = 96;   // 4 plantões de 24h por quinzena
 
 function horasDoTipo(tipo)  { return String(tipo) === '24' ? 24 : 12; }
 function valorDoTipo(tipo)  { return (horasDoTipo(tipo) / 12) * VALOR_12H; }
 function ehComando(req)      { return ['admin', 'supervisor'].includes(req.usuario?.role); }
+
+// Calcula o horário de término a partir do início + duração em horas (mod 24h)
+function calcularHoraFim(horaInicio, horas) {
+  if (!horaInicio) return null;
+  const m = /^(\d{1,2}):(\d{2})$/.exec(horaInicio);
+  if (!m) return null;
+  const inicioMin = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  const fimMin = (inicioMin + horas * 60) % (24 * 60);
+  const hh = String(Math.floor(fimMin / 60)).padStart(2, '0');
+  const mm = String(fimMin % 60).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
+async function vagasDoDia(dataStr) {
+  const { rows } = await pool.query(`SELECT vagas_total FROM extras_config_dia WHERE data = $1`, [dataStr]);
+  return rows.length ? rows[0].vagas_total : VAGAS_DIA_PADRAO;
+}
 
 // Soma de horas já lançadas para um agente na quinzena de uma data (exclui uma vaga opcional)
 async function horasNaQuinzena(agenteId, dataStr, excluirId = null) {
@@ -58,7 +75,25 @@ router.get('/dia/:data', verificarToken, async (req, res) => {
     const { rows } = await pool.query(
       `SELECT * FROM extras_vagas WHERE data = $1 ORDER BY criado_em`, [req.params.data]
     );
-    res.json({ data: req.params.data, vagas: rows, total_vagas: VAGAS_DIA, livres: Math.max(0, VAGAS_DIA - rows.length) });
+    const totalVagas = await vagasDoDia(req.params.data);
+    res.json({ data: req.params.data, vagas: rows, total_vagas: totalVagas, livres: Math.max(0, totalVagas - rows.length) });
+  } catch (err) { erroServidor(res, err); }
+});
+
+// Alterar o número de vagas do dia (somente admin/supervisor)
+router.put('/dia/:data/vagas', verificarToken, verificarSupervisor, async (req, res) => {
+  try {
+    const vagasTotal = parseInt(req.body.vagas_total, 10);
+    if (!Number.isInteger(vagasTotal) || vagasTotal < 1) {
+      return res.status(400).json({ error: 'Informe um número válido de vagas (mínimo 1).' });
+    }
+    await pool.query(
+      `INSERT INTO extras_config_dia (data, vagas_total, atualizado_por, atualizado_em)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (data) DO UPDATE SET vagas_total = $2, atualizado_por = $3, atualizado_em = NOW()`,
+      [req.params.data, vagasTotal, req.usuario.usuario]
+    );
+    res.json({ data: req.params.data, total_vagas: vagasTotal });
   } catch (err) { erroServidor(res, err); }
 });
 
@@ -90,13 +125,14 @@ router.get('/cota/:agenteId/:data', verificarToken, async (req, res) => {
 // Criar vaga
 router.post('/', verificarToken, async (req, res) => {
   try {
-    const { data, agente_id, nome, matricula, funcao, tipo, hora_inicio, hora_fim, telefone, override } = req.body;
+    const { data, agente_id, nome, matricula, funcao, tipo, hora_inicio, telefone, override } = req.body;
     if (!data || !nome) return res.status(400).json({ error: 'Data e nome são obrigatórios.' });
     if (!['12', '24'].includes(String(tipo))) return res.status(400).json({ error: 'Tipo deve ser 12 ou 24 horas.' });
 
-    // Limite de 4 vagas por dia
+    // Limite de vagas por dia (configurável por admin/supervisor)
+    const vagasTotal = await vagasDoDia(data);
     const { rows: [{ n }] } = await pool.query(`SELECT COUNT(*)::int AS n FROM extras_vagas WHERE data = $1`, [data]);
-    if (n >= VAGAS_DIA) return res.status(409).json({ error: `As ${VAGAS_DIA} vagas deste dia já foram preenchidas.` });
+    if (n >= vagasTotal) return res.status(409).json({ error: `As ${vagasTotal} vagas deste dia já foram preenchidas.` });
 
     // Agente não pode se lançar duas vezes no mesmo dia
     if (agente_id) {
@@ -129,11 +165,12 @@ router.post('/', verificarToken, async (req, res) => {
     }
 
     const valor = valorDoTipo(tipo);
+    const horaFim = calcularHoraFim(hora_inicio, horasDoTipo(tipo));
     const { rows } = await pool.query(
       `INSERT INTO extras_vagas (data, agente_id, nome, matricula, funcao, tipo, hora_inicio, hora_fim, telefone, valor, liberado_por, criado_por)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
       [data, agente_id || null, nome, matricula || null, funcao || null, String(tipo),
-       hora_inicio || null, hora_fim || null, telefone || null, valor, liberado_por, req.usuario.usuario]
+       hora_inicio || null, horaFim, telefone || null, valor, liberado_por, req.usuario.usuario]
     );
 
     const aviso = await avisoFolga(agente_id, data);
@@ -144,17 +181,19 @@ router.post('/', verificarToken, async (req, res) => {
 // Editar vaga (comando)
 router.put('/:id', verificarToken, verificarSupervisor, async (req, res) => {
   try {
-    const { nome, matricula, funcao, tipo, hora_inicio, hora_fim, telefone } = req.body;
+    const { nome, matricula, funcao, tipo, hora_inicio, telefone } = req.body;
     const { rows: atual } = await pool.query(`SELECT * FROM extras_vagas WHERE id = $1`, [req.params.id]);
     if (!atual.length) return res.status(404).json({ error: 'Vaga não encontrada.' });
     const t = ['12', '24'].includes(String(tipo)) ? String(tipo) : atual[0].tipo;
     const valor = valorDoTipo(t);
+    const horaInicioFinal = hora_inicio ?? atual[0].hora_inicio;
+    const horaFim = calcularHoraFim(horaInicioFinal, horasDoTipo(t));
     const { rows } = await pool.query(
       `UPDATE extras_vagas SET nome=$1, matricula=$2, funcao=$3, tipo=$4, hora_inicio=$5,
               hora_fim=$6, telefone=$7, valor=$8, atualizado_em=NOW()
        WHERE id=$9 RETURNING *`,
       [nome ?? atual[0].nome, matricula ?? atual[0].matricula, funcao ?? atual[0].funcao,
-       t, hora_inicio ?? atual[0].hora_inicio, hora_fim ?? atual[0].hora_fim,
+       t, horaInicioFinal, horaFim,
        telefone ?? atual[0].telefone, valor, req.params.id]
     );
     res.json(rows[0]);
