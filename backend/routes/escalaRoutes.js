@@ -1,7 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
-const { verificarToken, verificarSupervisor } = require('../middleware/auth');
+const { verificarToken, verificarSupervisor, auditar } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
 const { cabecalhoPDF, rodapePDF, assinaturasPDF, fmtData, NAVY } = require('../utils/pdfLayout');
@@ -33,13 +33,15 @@ router.post('/postos', verificarToken, verificarSupervisor, async (req, res) => 
        ON CONFLICT (nome) DO UPDATE SET ativo = true RETURNING *`,
       [nome.trim(), seg_sex === true, mx]
     );
+    await auditar(req, 'CRIAR_POSTO', `Posto de escala: ${rows[0].nome}`);
     res.status(201).json(rows[0]);
   } catch (err) { erroServidor(res, err); }
 });
 
 router.delete('/postos/:id', verificarToken, verificarSupervisor, async (req, res) => {
   try {
-    await pool.query(`UPDATE postos SET ativo = false WHERE id = $1`, [req.params.id]);
+    const { rows } = await pool.query(`UPDATE postos SET ativo = false WHERE id = $1 RETURNING nome`, [req.params.id]);
+    await auditar(req, 'REMOVER_POSTO', `Posto de escala: ${rows[0]?.nome || req.params.id}`);
     res.json({ ok: true });
   } catch (err) { erroServidor(res, err); }
 });
@@ -132,6 +134,9 @@ router.post('/', verificarToken, verificarSupervisor, async (req, res) => {
     }
 
     await client.query('COMMIT');
+    const acaoEscala = existente.length ? 'ALTERAR_ESCALA' : 'CRIAR_ESCALA';
+    const qtdItens = (itens || []).filter(it => it.patrulha && it.posto && it.nome).length;
+    await auditar(req, acaoEscala, `${numero} — ${mes_referencia} (${qtdItens} lançamentos)`);
     res.status(201).json({ id: escalaId, numero });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -144,9 +149,10 @@ router.post('/', verificarToken, verificarSupervisor, async (req, res) => {
 // Excluir escala
 router.delete('/:id', verificarToken, verificarSupervisor, async (req, res) => {
   try {
-    const { rows } = await pool.query(`SELECT id FROM escalas WHERE id = $1`, [req.params.id]);
+    const { rows } = await pool.query(`SELECT id, numero, mes_referencia FROM escalas WHERE id = $1`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Escala não encontrada.' });
     await pool.query(`DELETE FROM escalas WHERE id = $1`, [req.params.id]);
+    await auditar(req, 'EXCLUIR_ESCALA', `${rows[0].numero || ''} — ${rows[0].mes_referencia}`);
     res.json({ ok: true });
   } catch (err) { erroServidor(res, err); }
 });
