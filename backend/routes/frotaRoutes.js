@@ -1,7 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
-const { verificarToken, verificarAdmin } = require('../middleware/auth');
+const { verificarToken, verificarAdmin, auditar } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
 
 // Listar frota — disponível a todos autenticados (autocomplete)
@@ -28,6 +28,7 @@ router.post('/', verificarToken, verificarAdmin, async (req, res) => {
       [codigo.toUpperCase(), modelo || null, ano || null, placa || null,
        cor || null, tipo || 'carro-patrulha', status || 'ativa', obs || null]
     );
+    await auditar(req, 'CADASTRAR_VIATURA', `Viatura ${rows[0].codigo}${rows[0].placa ? ' — ' + rows[0].placa : ''}`);
     res.status(201).json(rows[0]);
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Código já cadastrado.' });
@@ -48,6 +49,7 @@ router.put('/:id', verificarToken, verificarAdmin, async (req, res) => {
        req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Viatura não encontrada.' });
+    await auditar(req, 'ALTERAR_VIATURA', `Viatura ${rows[0].codigo} — status: ${rows[0].status}`);
     res.json(rows[0]);
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Código já cadastrado.' });
@@ -59,9 +61,10 @@ router.put('/:id', verificarToken, verificarAdmin, async (req, res) => {
 router.delete('/:id', verificarToken, verificarAdmin, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `DELETE FROM frota WHERE id=$1 RETURNING id`, [req.params.id]
+      `DELETE FROM frota WHERE id=$1 RETURNING id, codigo`, [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Viatura não encontrada.' });
+    await auditar(req, 'REMOVER_VIATURA', `Viatura ${rows[0].codigo}`);
     res.json({ ok: true });
   } catch (err) {
     erroServidor(res, err);
