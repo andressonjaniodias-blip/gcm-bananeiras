@@ -254,6 +254,16 @@ pool.connect()
     await client.query(`CREATE INDEX IF NOT EXISTS idx_extras_data ON extras_vagas(data)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_extras_agente ON extras_vagas(agente_id)`);
 
+    // Configuração do número de vagas de extras por dia (padrão 4, ajustável por admin/supervisor)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS extras_config_dia (
+        data          DATE PRIMARY KEY,
+        vagas_total   INTEGER NOT NULL DEFAULT 4,
+        atualizado_por TEXT,
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
     // Férias
     await client.query(`
       CREATE TABLE IF NOT EXISTS ferias (
