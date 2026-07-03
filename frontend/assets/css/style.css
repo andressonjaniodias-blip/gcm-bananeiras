@@ -899,6 +899,19 @@ body {
 /* ============================================================
    FORMULÁRIOS / CAMPO-GROUP
    ============================================================ */
+/* Linha de formulário compacta e responsiva: campos lado a lado que se
+   reorganizam sozinhos. Padrão institucional usado em Escala, Extras e
+   demais formulários de cadastro/registro. */
+.grid-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+.grid-form .campo-group {
+  margin-bottom: 0;
+}
+
 .campo-group {
   display: flex;
   flex-direction: column;
@@ -1034,6 +1047,19 @@ form textarea {
 .btn-adicionar:hover {
   background: var(--color-success-hover);
   transform: translateY(-1px);
+}
+
+/* Botão verde padrão para ações de confirmar/salvar/publicar. Funciona
+   isolado e também dentro de .actions (onde a paginação/base já é definida
+   por .actions button — aqui só garantimos a cor verde institucional). */
+.btn-ok,
+.actions button.btn-ok {
+  background: var(--color-success);
+  color: #fff;
+}
+.btn-ok:hover,
+.actions button.btn-ok:hover {
+  background: var(--color-success-hover);
 }
 
 .btn-remover,
