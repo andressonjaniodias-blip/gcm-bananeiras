@@ -32,7 +32,6 @@
       cursor:pointer; font-size:0.72rem; flex-shrink:0; }
     .adm-box { border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:10px; margin-top:14px; }
     .msg { padding:10px; border-radius:var(--radius-sm); margin-top:10px; display:none; font-size:0.88rem; }
-    .grid-form { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; align-items:end; }
 
     /* Visualização da escala (modal) */
     .view-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
@@ -106,7 +105,7 @@
         <textarea id="obsEscala" rows="2"></textarea></div>
 
       <div class="actions" style="gap:10px;flex-wrap:wrap;">
-        <button onclick="salvarEscala()" style="background:var(--color-success);">Salvar Escala</button>
+        <button class="btn-ok" onclick="salvarEscala()">Salvar Escala</button>
         <button id="btnPdfAtual" onclick="pdfEscalaAtual()" style="background:var(--color-primary);display:none;">Gerar PDF</button>
       </div>
       <p id="msg" class="msg"></p>
@@ -117,14 +116,12 @@
         <p style="font-size:0.8rem;color:var(--color-hint);margin:0 0 10px;">
           Registre as férias dos agentes referentes ao mês selecionado. Cada registro é salvo imediatamente.</p>
         <div class="grid-form">
-          <div class="campo-group" style="margin:0;"><label>Agente</label>
-            <select id="ferAgente" onchange="onFerAgente()"></select></div>
-          <div class="campo-group" style="margin:0;"><label>Nome</label>
-            <input type="text" id="ferNome" placeholder="Nome do agente"></div>
-          <div class="campo-group" style="margin:0;"><label>Início</label>
+          <div class="campo-group"><label>Agente</label>
+            <select id="ferAgente"></select></div>
+          <div class="campo-group"><label>Início</label>
             <input type="date" id="ferInicio"></div>
-          <div class="campo-group" style="margin:0;"><label>&nbsp;</label>
-            <button onclick="addFeria()" style="background:var(--color-success);width:100%;">Adicionar</button></div>
+          <div class="campo-group"><label>&nbsp;</label>
+            <button class="btn-adicionar" style="width:100%;margin-top:0;" onclick="addFeria()">Adicionar</button></div>
         </div>
         <p id="msgFer" class="msg"></p>
         <div id="listaFerias" style="margin-top:10px;"></div>
@@ -151,7 +148,7 @@
               <input type="checkbox" id="novoPostoSegSex"> Administrativo (Seg–Sex)</label>
           </div>
           <div class="campo-group" style="margin:0;"><label>&nbsp;</label>
-            <button onclick="addPosto()" style="background:var(--color-success);width:100%;">Adicionar Posto</button></div>
+            <button class="btn-adicionar" style="width:100%;margin-top:0;" onclick="addPosto()">Adicionar Posto</button></div>
         </div>
       </div>
 
@@ -227,22 +224,19 @@
     function fmtData(iso){ if(!iso) return '—'; const[y,m,d]=String(iso).slice(0,10).split('-'); return `${d}/${m}/${y}`; }
     function addDias(iso,dias){ const[y,m,d]=iso.split('-').map(Number); const dt=new Date(Date.UTC(y,m-1,d)); dt.setUTCDate(dt.getUTCDate()+dias); return dt.toISOString().slice(0,10); }
 
-    function onFerAgente(){ const a=AGENTES.find(x=>String(x.id)===document.getElementById('ferAgente').value);
-      if(a) document.getElementById('ferNome').value=a.nome||''; }
-
     async function addFeria(){
       const mes=document.getElementById('mesRef').value;
-      const nome=document.getElementById('ferNome').value.trim();
       const ini=document.getElementById('ferInicio').value;
-      if(!nome||!ini){ msgFer('Preencha agente/nome e a data de início.',false); return; }
-      const fim=addDias(ini,29);
       const a=AGENTES.find(x=>String(x.id)===document.getElementById('ferAgente').value);
+      const nome=a?(a.nome||'').trim():'';
+      if(!nome||!ini){ msgFer('Selecione o agente e a data de início.',false); return; }
+      const fim=addDias(ini,29);
       try{
         const r=await fetch(`${API_BASE_URL}/api/ferias`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({agente_id:a?a.id:null,nome,matricula:a?a.matricula:null,data_inicio:ini,data_fim:fim})});
         const d=await r.json(); if(!r.ok){ msgFer(d.error||'Erro ao salvar.',false); return; }
         msgFer('Férias registradas!',true);
-        document.getElementById('ferAgente').value=''; document.getElementById('ferNome').value='';
+        document.getElementById('ferAgente').value='';
         document.getElementById('ferInicio').value='';
         carregarFeriasMes();
       }catch{ msgFer('Erro de conexão.',false); }
