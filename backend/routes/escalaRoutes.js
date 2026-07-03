@@ -4,7 +4,7 @@ const pool    = require('../config/db');
 const { verificarToken, verificarSupervisor } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
-const { cabecalhoPDF, rodapePDF, fmtData, NAVY } = require('../utils/pdfLayout');
+const { cabecalhoPDF, rodapePDF, assinaturasPDF, fmtData, NAVY } = require('../utils/pdfLayout');
 const { numeroFolga } = require('../utils/escalaCalc');
 
 const PATRULHAS = ['1', '2', '3', '4'];
@@ -262,6 +262,8 @@ router.get('/:id/pdf', verificarToken, verificarSupervisor, async (req, res) => 
            .fillColor('#222').font('Helvetica').text(escala.obs);
       }
     }
+
+    assinaturasPDF(doc);
 
     rodapePDF(doc, { info: `Escala ${escala.numero || ''} — ${nomeMes(escala.mes_referencia)} — Bananeiras/PB` });
     doc.end();
