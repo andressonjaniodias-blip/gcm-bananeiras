@@ -1,7 +1,7 @@
 const express  = require('express');
 const router   = express.Router();
 const db       = require('../config/db');
-const { verificarToken, verificarAdmin } = require('../middleware/auth');
+const { verificarToken, verificarAdmin, auditar } = require('../middleware/auth');
 const exigirAdmin = verificarAdmin;
 const erroServidor = require('../utils/erroServidor');
 
@@ -50,6 +50,7 @@ router.post('/', verificarToken, exigirAdmin, async (req, res) => {
         bairro?.trim() || null, cidade?.trim() || null, uf?.trim() || null,
       ]
     );
+    await auditar(req, 'CRIAR_AGENTE', `${rows[0].nome} (mat. ${rows[0].matricula})`);
     res.status(201).json(rows[0]);
   } catch (err) { erroServidor(res, err); }
 });
@@ -86,6 +87,7 @@ router.put('/:id', verificarToken, exigirAdmin, async (req, res) => {
       ]
     );
     if (!rows.length) return res.status(404).json({ error: 'Agente não encontrado.' });
+    await auditar(req, 'ALTERAR_AGENTE', `${rows[0].nome} (mat. ${rows[0].matricula})`);
     res.json(rows[0]);
   } catch (err) { erroServidor(res, err); }
 });
@@ -110,6 +112,7 @@ router.patch('/meu-contato', verificarToken, async (req, res) => {
       ]
     );
     if (!rows.length) return res.status(404).json({ error: 'Agente vinculado ao usuário não encontrado.' });
+    await auditar(req, 'ATUALIZAR_CONTATO', `Dados de contato — ${rows[0].nome}`);
     res.json(rows[0]);
   } catch (err) { erroServidor(res, err); }
 });
@@ -133,8 +136,9 @@ router.patch('/minha-foto', verificarToken, async (req, res) => {
 // Remover agente
 router.delete('/:id', verificarToken, exigirAdmin, async (req, res) => {
   try {
-    const { rows } = await db.query(`DELETE FROM agentes WHERE id=$1 RETURNING id`, [req.params.id]);
+    const { rows } = await db.query(`DELETE FROM agentes WHERE id=$1 RETURNING id, nome, matricula`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Agente não encontrado.' });
+    await auditar(req, 'REMOVER_AGENTE', `${rows[0].nome} (mat. ${rows[0].matricula})`);
     res.json({ ok: true });
   } catch (err) { erroServidor(res, err); }
 });
