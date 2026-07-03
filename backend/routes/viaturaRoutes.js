@@ -1,7 +1,7 @@
 const express      = require('express');
 const router       = express.Router();
 const pool         = require('../config/db');
-const { verificarToken } = require('../middleware/auth');
+const { verificarToken, auditar } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
 const path         = require('path');
@@ -41,6 +41,7 @@ router.post('/', verificarToken, async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, numero`,
       [tipo, codigo, dataHora, km, responsavel || req.usuario?.usuario, JSON.stringify(dados || {}), obs || null, req.usuario?.usuario, numero]
     );
+    await auditar(req, 'REGISTRAR_VIATURA', `${rows[0].numero} — ${String(codigo).toUpperCase()} (${TIPO_LABEL[tipo] || tipo})`);
     res.status(201).json(rows[0]);
   } catch (err) {
     erroServidor(res, err);
