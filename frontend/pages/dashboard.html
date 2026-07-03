@@ -22,14 +22,14 @@
     }
     .anexo-item .anexo-thumb {
       width:44px; height:44px; object-fit:cover;
-      border-radius:4px; flex-shrink:0;
+      border-radius:var(--radius-sm); flex-shrink:0;
     }
     .anexo-item .anexo-info { flex:1; min-width:0; }
     .anexo-item .anexo-nome { font-weight:600; color:var(--color-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .anexo-item .anexo-meta { font-size:0.75rem; color:var(--color-hint); }
     .anexo-item .btn-rm-anexo {
       background:var(--color-danger); color:#fff; border:none;
-      border-radius:4px; padding:4px 10px; cursor:pointer; font-size:0.8rem; flex-shrink:0;
+      border-radius:var(--radius-sm); padding:4px 10px; cursor:pointer; font-size:0.8rem; flex-shrink:0;
     }
     .dz-over { border-color:var(--color-primary) !important; background:var(--color-primary-light) !important; }
 
@@ -288,7 +288,7 @@
     onclick="if(event.target===this){this.style.display='none';}">
     <div style="
       position:relative;
-      background:#fff; border-radius:14px; padding:32px 28px; border:none; outline:none;
+      background:var(--bg-card); border-radius:var(--radius-lg); padding:32px 28px; border:none; outline:none;
       max-width:420px; width:92%; box-shadow:0 0 50px rgba(0,0,0,0.30);
       text-align:center; overflow:hidden;">
       <button type="button" aria-label="Fechar"
@@ -296,32 +296,32 @@
         style="position:absolute; top:12px; right:12px; width:32px; height:32px;
                display:flex; align-items:center; justify-content:center;
                background:transparent; border:none; outline:none; cursor:pointer;
-               color:#9CA3AF; font-size:1.4rem; line-height:1; border-radius:8px;">
+               color:var(--color-hint); font-size:1.4rem; line-height:1; border-radius:var(--radius);">
         &times;
       </button>
       <div style="font-size:2.8rem; margin-bottom:10px;">✅</div>
-      <div style="font-size:1.1rem; font-weight:800; color:#1E3A5F; margin-bottom:6px;">BO Finalizado com Sucesso!</div>
-      <div style="font-size:0.88rem; color:#6B7280; margin-bottom:4px;">Número registrado:</div>
-      <div id="modal-bo-numero" style="font-size:1.3rem; font-weight:800; color:#059669; margin-bottom:22px; letter-spacing:0.04em;"></div>
+      <div style="font-size:1.1rem; font-weight:800; color:var(--color-primary); margin-bottom:6px;">BO Finalizado com Sucesso!</div>
+      <div style="font-size:0.88rem; color:var(--color-text-muted); margin-bottom:4px;">Número registrado:</div>
+      <div id="modal-bo-numero" style="font-size:1.3rem; font-weight:800; color:var(--color-success); margin-bottom:22px; letter-spacing:0.04em;"></div>
 
       <div style="display:flex; flex-direction:column; gap:10px;">
         <button onclick="modalBOBaixarPDF()" style="
-          background:#1E3A5F; color:#fff; border:none; border-radius:8px;
+          background:var(--color-primary); color:#fff; border:none; border-radius:var(--radius);
           padding:12px; font-size:0.95rem; font-weight:700; cursor:pointer; width:100%;">
           📄 Baixar PDF
         </button>
         <button onclick="modalBOCompartilhar()" style="
-          background:#25D366; color:#fff; border:none; border-radius:8px;
+          background:#25D366; color:#fff; border:none; border-radius:var(--radius);
           padding:12px; font-size:0.95rem; font-weight:700; cursor:pointer; width:100%;">
           📤 Compartilhar
         </button>
         <button onclick="modalBOHistorico()" style="
-          background:#e5e7eb; color:#374151; border:none; border-radius:8px;
+          background:var(--color-row-hover); color:var(--color-label); border:none; border-radius:var(--radius);
           padding:12px; font-size:0.95rem; font-weight:700; cursor:pointer; width:100%;">
           📋 Ver Histórico de BOs
         </button>
         <button onclick="modalBONovo()" style="
-          background:transparent; color:#6B7280; border:1px solid #d1d5db; border-radius:8px;
+          background:transparent; color:var(--color-text-muted); border:1px solid var(--color-border); border-radius:var(--radius);
           padding:10px; font-size:0.88rem; font-weight:600; cursor:pointer; width:100%;">
           + Criar Novo BO
         </button>
