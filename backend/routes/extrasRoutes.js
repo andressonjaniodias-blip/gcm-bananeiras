@@ -1,7 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
-const { verificarToken, verificarSupervisor } = require('../middleware/auth');
+const { verificarToken, verificarSupervisor, auditar } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
 const { cabecalhoPDF, rodapePDF, fmtData, NAVY } = require('../utils/pdfLayout');
@@ -93,6 +93,7 @@ router.put('/dia/:data/vagas', verificarToken, verificarSupervisor, async (req, 
        ON CONFLICT (data) DO UPDATE SET vagas_total = $2, atualizado_por = $3, atualizado_em = NOW()`,
       [req.params.data, vagasTotal, req.usuario.usuario]
     );
+    await auditar(req, 'ALTERAR_VAGAS_EXTRA', `${req.params.data}: ${vagasTotal} vaga(s)/dia`);
     res.json({ data: req.params.data, total_vagas: vagasTotal });
   } catch (err) { erroServidor(res, err); }
 });
@@ -173,6 +174,11 @@ router.post('/', verificarToken, async (req, res) => {
        hora_inicio || null, horaFim, telefone || null, valor, liberado_por, req.usuario.usuario]
     );
 
+    const acaoExtra = liberado_por
+      ? `Plantão extra ${tipo}h — ${nome} em ${data} (R$ ${valor.toFixed(2)}) — COTA LIBERADA por ${liberado_por}`
+      : `Plantão extra ${tipo}h — ${nome} em ${data} (R$ ${valor.toFixed(2)})`;
+    await auditar(req, 'CRIAR_EXTRA', acaoExtra);
+
     const aviso = await avisoFolga(agente_id, data);
     res.status(201).json({ vaga: rows[0], aviso_folga: aviso, liberado: !!liberado_por });
   } catch (err) { erroServidor(res, err); }
@@ -196,6 +202,7 @@ router.put('/:id', verificarToken, verificarSupervisor, async (req, res) => {
        t, horaInicioFinal, horaFim,
        telefone ?? atual[0].telefone, valor, req.params.id]
     );
+    await auditar(req, 'ALTERAR_EXTRA', `Plantão extra — ${rows[0].nome} em ${rows[0].data} (${rows[0].tipo}h, R$ ${Number(rows[0].valor).toFixed(2)})`);
     res.json(rows[0]);
   } catch (err) { erroServidor(res, err); }
 });
@@ -209,6 +216,7 @@ router.delete('/:id', verificarToken, async (req, res) => {
     const dono = v.criado_por === req.usuario.usuario;
     if (!ehComando(req) && !dono) return res.status(403).json({ error: 'Sem permissão para remover esta vaga.' });
     await pool.query(`DELETE FROM extras_vagas WHERE id = $1`, [req.params.id]);
+    await auditar(req, 'REMOVER_EXTRA', `Plantão extra — ${v.nome} em ${v.data} (${v.tipo}h, R$ ${Number(v.valor).toFixed(2)})`);
     res.json({ ok: true });
   } catch (err) { erroServidor(res, err); }
 });
