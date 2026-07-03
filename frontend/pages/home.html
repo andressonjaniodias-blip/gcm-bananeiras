@@ -63,7 +63,7 @@
     }
     .quick-action-btn .qa-icon {
       width: 36px; height: 36px;
-      border-radius: 0;
+      border-radius: var(--radius-sm);
       background: var(--color-row-alt);
       display: flex; align-items: center; justify-content: center;
     }
@@ -101,7 +101,7 @@
     .stat-card {
       position: relative;
       background: var(--bg-card);
-      border-radius: 0;
+      border-radius: var(--radius);
       box-shadow: var(--shadow-card);
       padding: 18px 16px 16px;
       border: 1px solid var(--color-bloco-border);
@@ -220,12 +220,12 @@
       flex-shrink: 0;
     }
     .pub-icon svg { width: 18px; height: 18px; }
-    .pub-icon.icon-pdf      { background: #FEE2E2; }
-    .pub-icon.icon-pdf svg  { stroke: #DC2626; }
-    .pub-icon.icon-doc      { background: #DBEAFE; }
-    .pub-icon.icon-doc svg  { stroke: #2563EB; }
-    .pub-icon.icon-img      { background: #D1FAE5; }
-    .pub-icon.icon-img svg  { stroke: #059669; }
+    .pub-icon.icon-pdf      { background: var(--color-danger-bg); }
+    .pub-icon.icon-pdf svg  { stroke: var(--color-danger); }
+    .pub-icon.icon-doc      { background: var(--color-info-bg); }
+    .pub-icon.icon-doc svg  { stroke: var(--color-primary); }
+    .pub-icon.icon-img      { background: var(--color-success-bg); }
+    .pub-icon.icon-img svg  { stroke: var(--color-success); }
     .pub-icon.icon-default  { background: var(--color-primary-light); }
     .pub-icon.icon-default svg { stroke: var(--color-primary); }
 
