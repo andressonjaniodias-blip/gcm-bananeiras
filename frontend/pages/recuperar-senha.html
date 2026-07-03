@@ -26,26 +26,26 @@
     <!-- Etapa 1: solicitar link -->
     <div id="etapa-solicitar">
       <h2>Recuperar Senha</h2>
-      <p style="text-align:center;color:#666;font-size:0.88rem;margin-bottom:16px;">
+      <p style="text-align:center;color:var(--color-text-muted);font-size:0.88rem;margin-bottom:16px;">
         Informe seu número de matrícula. Se houver um e-mail cadastrado no sistema, você receberá um link de redefinição.
       </p>
-      <div id="msg-solicitar" style="display:none;padding:10px;border-radius:4px;margin-bottom:12px;text-align:center;"></div>
+      <div id="msg-solicitar" style="display:none;padding:10px;border-radius:var(--radius-sm);margin-bottom:12px;text-align:center;"></div>
       <form onsubmit="solicitarReset(event)">
         <input type="text" id="matricula" placeholder="Número de matrícula" required autocomplete="off">
         <button type="submit" id="btn-solicitar">Enviar link de recuperação</button>
       </form>
       <p style="text-align:center;margin-top:14px;font-size:0.85rem;">
-        <a href="/" style="color:#1d4ed8;">Voltar ao login</a>
+        <a href="/" style="color:var(--color-link);">Voltar ao login</a>
       </p>
     </div>
 
     <!-- Etapa 2: redefinir com token -->
     <div id="etapa-redefinir" style="display:none;">
       <h2>Nova Senha</h2>
-      <p style="text-align:center;color:#666;font-size:0.88rem;margin-bottom:16px;">
+      <p style="text-align:center;color:var(--color-text-muted);font-size:0.88rem;margin-bottom:16px;">
         Escolha uma senha forte para o seu usuário.
       </p>
-      <div id="msg-redefinir" style="display:none;padding:10px;border-radius:4px;margin-bottom:12px;text-align:center;"></div>
+      <div id="msg-redefinir" style="display:none;padding:10px;border-radius:var(--radius-sm);margin-bottom:12px;text-align:center;"></div>
       <form onsubmit="redefinirSenha(event)">
         <div class="input-icon-group">
           <span class="input-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="9" width="10" height="8" rx="1.5"/><path d="M7 9V6a3 3 0 016 0v3"/></svg></span>
@@ -63,7 +63,7 @@
         </div>
         <button type="submit" id="btn-redefinir">Salvar nova senha</button>
       </form>
-      <p style="font-size:0.8rem;color:#888;text-align:center;margin-top:10px;">
+      <p style="font-size:0.8rem;color:var(--color-hint);text-align:center;margin-top:10px;">
         Mínimo 8 caracteres, 1 maiúscula, 1 número, 1 caractere especial.
       </p>
     </div>
