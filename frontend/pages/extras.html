@@ -26,7 +26,7 @@
     .vaga-card .vc-meta { font-size:0.8rem; color:var(--color-text-muted); }
     .vaga-card .vc-actions { display:flex; gap:6px; flex-shrink:0; }
     .vaga-card .vc-btn {
-      border:none; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:0.78rem; font-weight:600;
+      border:none; border-radius:var(--radius-sm); padding:6px 10px; cursor:pointer; font-size:0.78rem; font-weight:600;
     }
     .vaga-livre { border-style:dashed; color:var(--color-hint); justify-content:center; font-style:italic; }
     .cota-box {
@@ -35,10 +35,10 @@
     }
     .cota-bar { height:8px; border-radius:4px; background:var(--color-border); overflow:hidden; margin-top:6px; }
     .cota-bar > div { height:100%; background:var(--color-success); transition:width .3s; }
-    .aviso-folga { background:#FEF3C7; border:1px solid #F59E0B; color:#92400E;
-      padding:9px 12px; border-radius:6px; font-size:0.83rem; margin-bottom:10px; }
+    .aviso-folga { background:var(--color-warning-bg); border:1px solid var(--color-warning); color:var(--color-warning-text);
+      padding:9px 12px; border-radius:var(--radius-sm); font-size:0.83rem; margin-bottom:10px; }
     .grid-form { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
-    .msg { padding:10px; border-radius:6px; margin-top:10px; display:none; font-size:0.88rem; }
+    .msg { padding:10px; border-radius:var(--radius-sm); margin-top:10px; display:none; font-size:0.88rem; }
   </style>
 </head>
 <body>
