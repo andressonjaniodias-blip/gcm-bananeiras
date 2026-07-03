@@ -495,8 +495,9 @@ async function finalizarBO() {
       if (_anexosBO.length) {
         await enviarAnexosBO(result.id);
       }
-      _boIdAtual = result.id;
-      _pdfBOId   = result.id;
+      _boIdAtual   = result.id;
+      _pdfBOId     = result.id;
+      _pdfBONumero = result.numero;
       document.getElementById('modal-bo-numero').textContent = result.numero;
       const modal = document.getElementById('modal-bo-concluido');
       if (modal) modal.style.display = 'flex';
@@ -621,8 +622,10 @@ function dzDrop(e, inputId, dzId) {
 
 // Download de PDF do BO — anexos sempre incluídos
 let _pdfBOId = null;
-function abrirModalPdfBO(boId) {
+let _pdfBONumero = null;
+function abrirModalPdfBO(boId, numero) {
   _pdfBOId = boId;
+  _pdfBONumero = numero || null;
   confirmarPdfBO();
 }
 async function confirmarPdfBO() {
@@ -633,7 +636,8 @@ async function confirmarPdfBO() {
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    a.href = url; a.download = `bo_${_pdfBOId}.pdf`; a.click();
+    const nomeArquivo = _pdfBONumero ? `bo_${_pdfBONumero.replace(/\//g, '-')}.pdf` : `bo_${_pdfBOId}.pdf`;
+    a.href = url; a.download = nomeArquivo; a.click();
     URL.revokeObjectURL(url);
   } catch { showToast('Erro ao exportar PDF.', 'danger'); }
 }
@@ -660,7 +664,8 @@ async function modalBOCompartilhar() {
       const res = await fetch(`${API_BASE_URL}/api/bo/${_pdfBOId}/pdf`, { credentials: 'include' });
       if (res.ok) {
         const blob = await res.blob();
-        const file = new File([blob], `bo_${numero || _pdfBOId}.pdf`, { type: 'application/pdf' });
+        const nomeArquivo = numero ? `bo_${numero.replace(/\//g, '-')}.pdf` : `bo_${_pdfBOId}.pdf`;
+        const file = new File([blob], nomeArquivo, { type: 'application/pdf' });
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: titulo, text: texto });
           return;
