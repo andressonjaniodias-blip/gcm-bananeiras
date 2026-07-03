@@ -4,6 +4,11 @@ const db       = require('../config/db');
 const { verificarToken, verificarAdmin, auditar } = require('../middleware/auth');
 const exigirAdmin = verificarAdmin;
 const erroServidor = require('../utils/erroServidor');
+const { encriptar, desencriptarComFallback } = require('../utils/encryption');
+
+function decifrarAgente(a) {
+  return { ...a, cpf: desencriptarComFallback(a.cpf), rg: desencriptarComFallback(a.rg) };
+}
 
 const CAMPOS_AGENTE = `
   id, nome, matricula, cargo, usuario, ativo, criado_em, atualizado_em,
@@ -17,7 +22,7 @@ router.get('/', verificarToken, async (req, res) => {
     const { rows } = await db.query(
       `SELECT ${CAMPOS_AGENTE} FROM agentes ORDER BY nome ASC`
     );
-    res.json(rows);
+    res.json(rows.map(decifrarAgente));
   } catch (err) { erroServidor(res, err); }
 });
 
@@ -41,7 +46,8 @@ router.post('/', verificarToken, exigirAdmin, async (req, res) => {
       [
         nome.trim(), matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal',
         usuario?.trim() || null, ativo !== false,
-        cpf?.trim() || null, rg?.trim() || null,
+        cpf?.trim() ? encriptar(cpf.trim()) : null,
+        rg?.trim() ? encriptar(rg.trim()) : null,
         data_nascimento || null, sexo || null,
         lotacao?.trim() || null, turno || null, data_admissao || null,
         email?.trim() || null, telefone?.trim() || null,
@@ -51,7 +57,7 @@ router.post('/', verificarToken, exigirAdmin, async (req, res) => {
       ]
     );
     await auditar(req, 'CRIAR_AGENTE', `${rows[0].nome} (mat. ${rows[0].matricula})`);
-    res.status(201).json(rows[0]);
+    res.status(201).json(decifrarAgente(rows[0]));
   } catch (err) { erroServidor(res, err); }
 });
 
@@ -76,7 +82,8 @@ router.put('/:id', verificarToken, exigirAdmin, async (req, res) => {
       [
         nome.trim(), matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal',
         usuario?.trim() || null, ativo !== false,
-        cpf?.trim() || null, rg?.trim() || null,
+        cpf?.trim() ? encriptar(cpf.trim()) : null,
+        rg?.trim() ? encriptar(rg.trim()) : null,
         data_nascimento || null, sexo || null,
         lotacao?.trim() || null, turno || null, data_admissao || null,
         email?.trim() || null, telefone?.trim() || null,
@@ -88,7 +95,7 @@ router.put('/:id', verificarToken, exigirAdmin, async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Agente não encontrado.' });
     await auditar(req, 'ALTERAR_AGENTE', `${rows[0].nome} (mat. ${rows[0].matricula})`);
-    res.json(rows[0]);
+    res.json(decifrarAgente(rows[0]));
   } catch (err) { erroServidor(res, err); }
 });
 

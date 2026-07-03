@@ -394,7 +394,7 @@
       }
       el.innerHTML = '<div class="hist-list">' + lista.map(d => {
         const icon = DOC_ICON[d.tipo] || '📄';
-        const dataStr = new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR');
+        const dataStr = new Date(String(d.data).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR');
         const destaqueTag = d.destaque_home ? `<span class="badge-destaque">⭐ Home</span>` : '';
         return `<div class="hist-item" onclick="abrirDocDetail(${d.id})">
           <div class="hist-item-icon">${icon}</div>
@@ -422,7 +422,7 @@
       _docDetalhe = todosDocumentos.find(d => d.id === id);
       if (!_docDetalhe) return;
       const d = _docDetalhe;
-      const dataStr = new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR');
+      const dataStr = new Date(String(d.data).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR');
       document.getElementById('docDetailTitle').textContent = d.titulo;
       document.getElementById('docDetailSubtitle').textContent = `${d.tipo} · ${dataStr}`;
       document.getElementById('ddTipo').textContent    = d.tipo;

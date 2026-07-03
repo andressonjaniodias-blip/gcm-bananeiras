@@ -580,7 +580,7 @@
         } else {
           el.innerHTML = lista.map(d => {
             const icon = iconeDoc(d.arquivo_mime, d.arquivo_nome);
-            const data = new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+            const data = new Date(String(d.data).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
             return `
             <div class="pub-item">
               <div class="pub-icon ${icon.cls}">${icon.svg}</div>

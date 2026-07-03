@@ -34,19 +34,12 @@ async function enviarEmail({ to, toName, subject, html }) {
   }
 }
 const {
-  verificarToken, verificarAdmin, registrarAuditoria, extraFromReq, ROLES
+  verificarToken, verificarAdmin, registrarAuditoria, extraFromReq, ipFromReq, ROLES
 } = require('../middleware/auth');
 const { gerarCsrfToken } = require('../middleware/csrf');
+const { validarSenha } = require('../utils/validation');
 
 const INATIVIDADE_MINUTOS = parseInt(process.env.INATIVIDADE_MINUTOS || '30');
-
-function validarSenha(senha) {
-  if (!senha || senha.length < 8) return 'A senha deve ter pelo menos 8 caracteres.';
-  if (!/[A-Z]/.test(senha))       return 'A senha deve conter pelo menos uma letra maiúscula.';
-  if (!/[0-9]/.test(senha))       return 'A senha deve conter pelo menos um número.';
-  if (!/[^A-Za-z0-9]/.test(senha)) return 'A senha deve conter pelo menos um caractere especial (!@#$%...).';
-  return null;
-}
 
 // Login
 router.post('/login', async (req, res) => {
@@ -56,7 +49,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
     }
 
-    const ipTentativa = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+    const ipTentativa = ipFromReq(req);
     const extraTentativa = extraFromReq({ headers: req.headers, usuario: {} });
 
     const { rows } = await db.query('SELECT * FROM usuarios WHERE usuario = $1', [usuario]);
@@ -82,7 +75,7 @@ router.post('/login', async (req, res) => {
     // Registra sessão ativa — invalida qualquer sessão anterior do mesmo usuário
     await db.query('UPDATE usuarios SET sessao_ativa = $1 WHERE usuario = $2', [sessao_id, row.usuario]);
 
-    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+    const ip = ipFromReq(req);
     const extra = extraFromReq({ headers: req.headers, usuario: { sessao_id } });
     await registrarAuditoria(row.usuario, 'LOGIN', null, ip, extra);
 
@@ -118,7 +111,7 @@ router.post('/login', async (req, res) => {
 
 // Logout
 router.post('/logout', verificarToken, async (req, res) => {
-  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+  const ip = ipFromReq(req);
   await registrarAuditoria(req.usuario.usuario, 'LOGOUT', null, ip, extraFromReq(req));
   await db.query('UPDATE usuarios SET sessao_ativa = NULL WHERE usuario = $1', [req.usuario.usuario]);
   res.clearCookie('authToken');
@@ -128,7 +121,7 @@ router.post('/logout', verificarToken, async (req, res) => {
 
 // Logout por inatividade (chamado pelo frontend antes de redirecionar)
 router.post('/logout-inatividade', verificarToken, async (req, res) => {
-  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+  const ip = ipFromReq(req);
   await registrarAuditoria(req.usuario.usuario, 'SESSAO_EXPIRADA', 'Inatividade', ip, extraFromReq(req));
   res.clearCookie('authToken');
   res.clearCookie('csrfToken');
@@ -215,7 +208,7 @@ router.post('/usuarios', verificarToken, verificarAdmin, async (req, res) => {
       'INSERT INTO usuarios (usuario, senha, role, email) VALUES ($1, $2, $3, $4) RETURNING id',
       [usuario, hash, role, email || null]
     );
-    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+    const ip = ipFromReq(req);
     await registrarAuditoria(req.usuario.usuario, 'CRIAR_USUARIO', usuario, ip, extraFromReq(req));
     res.status(201).json({ message: 'Usuário criado com sucesso', id: result.rows[0].id });
   } catch (error) {
@@ -241,7 +234,7 @@ router.delete('/usuarios/:id', verificarToken, verificarAdmin, async (req, res) 
     }
 
     await db.query('DELETE FROM usuarios WHERE id = $1', [id]);
-    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+    const ip = ipFromReq(req);
     await registrarAuditoria(req.usuario.usuario, 'REMOVER_USUARIO', rows[0].usuario, ip, extraFromReq(req));
     res.json({ message: 'Usuário removido com sucesso' });
   } catch (error) {
@@ -264,7 +257,7 @@ router.patch('/usuarios/:id/senha', verificarToken, verificarAdmin, async (req, 
     const hash = await bcrypt.hash(senha, 10);
     await db.query('UPDATE usuarios SET senha = $1 WHERE id = $2', [hash, id]);
 
-    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+    const ip = ipFromReq(req);
     await registrarAuditoria(req.usuario.usuario, 'ADMIN_RESET_SENHA', rows[0].usuario, ip, extraFromReq(req));
     res.json({ message: 'Senha alterada com sucesso' });
   } catch (error) {
@@ -307,7 +300,7 @@ router.put('/usuarios/:id', verificarToken, verificarAdmin, async (req, res) => 
     }
 
     await db.query('UPDATE usuarios SET role = $1 WHERE id = $2', [role, id]);
-    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+    const ip = ipFromReq(req);
     await registrarAuditoria(req.usuario.usuario, 'ALTERAR_ROLE', `${rows[0].usuario} → ${role}`, ip, extraFromReq(req));
     res.json({ message: 'Perfil atualizado com sucesso' });
   } catch (error) {
@@ -342,7 +335,7 @@ router.delete('/retencao/arquivar', verificarToken, verificarAdmin, async (req, 
       `DELETE FROM boletins WHERE data::timestamptz < NOW() - make_interval(years => $1) RETURNING numero`,
       [anos]
     );
-    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+    const ip = ipFromReq(req);
     await registrarAuditoria(req.usuario.usuario, 'ARQUIVAR_BOs', `${rowCount} registros removidos`, ip, extraFromReq(req));
     res.json({ message: `${rowCount} BO(s) arquivado(s)`, arquivados: rows.map(r => r.numero) });
   } catch (error) {
@@ -398,11 +391,12 @@ router.post('/esqueci-senha', async (req, res) => {
     }
 
     const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const expira = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
 
     await db.query(
       'UPDATE usuarios SET reset_token = $1, reset_token_expira = $2 WHERE id = $3',
-      [token, expira, rows[0].id]
+      [tokenHash, expira, rows[0].id]
     );
 
     const baseUrl = process.env.APP_URL || 'http://localhost:3000';
@@ -512,9 +506,10 @@ router.post('/redefinir-senha', async (req, res) => {
     const erroSenha = validarSenha(novaSenha);
     if (erroSenha) return res.status(400).json({ error: erroSenha });
 
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const { rows } = await db.query(
       'SELECT id, usuario, reset_token_expira FROM usuarios WHERE reset_token = $1',
-      [token]
+      [tokenHash]
     );
 
     if (!rows[0] || new Date() > new Date(rows[0].reset_token_expira)) {
@@ -527,8 +522,7 @@ router.post('/redefinir-senha', async (req, res) => {
       [hash, rows[0].id]
     );
 
-    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
-    await registrarAuditoria(rows[0].usuario, 'RESET_SENHA', 'via token de e-mail', ip, extraFromReq({ headers: req.headers, usuario: { sessao_id: null } }));
+    await registrarAuditoria(rows[0].usuario, 'RESET_SENHA', 'via token de e-mail', ipFromReq(req), extraFromReq({ headers: req.headers, usuario: { sessao_id: null } }));
 
     res.json({ message: 'Senha redefinida com sucesso. Faça login com a nova senha.' });
   } catch (error) {
@@ -556,7 +550,7 @@ router.post('/trocar-senha', verificarToken, async (req, res) => {
     const hash = await bcrypt.hash(senhaNova, 10);
     await db.query('UPDATE usuarios SET senha = $1 WHERE usuario = $2', [hash, req.usuario.usuario]);
 
-    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || 'desconhecido';
+    const ip = ipFromReq(req);
     await registrarAuditoria(req.usuario.usuario, 'TROCAR_SENHA', null, ip, extraFromReq(req));
     res.json({ message: 'Senha alterada com sucesso' });
   } catch (error) {

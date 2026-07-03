@@ -6,26 +6,12 @@ const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
 const { cabecalhoPDF, rodapePDF, fmtData, NAVY } = require('../utils/pdfLayout');
 const { quinzenaDe, numeroFolga, diaDoMes } = require('../utils/escalaCalc');
+const { horasDoTipo, valorDoTipo, calcularHoraFim } = require('../utils/extrasCalc');
 
-const VALOR_12H   = 140;   // R$ por 12h (24h = 280)
 const VAGAS_DIA_PADRAO = 4; // padrão de vagas por dia (ajustável por admin/supervisor)
 const LIMITE_HORAS = 96;   // 4 plantões de 24h por quinzena
 
-function horasDoTipo(tipo)  { return String(tipo) === '24' ? 24 : 12; }
-function valorDoTipo(tipo)  { return (horasDoTipo(tipo) / 12) * VALOR_12H; }
 function ehComando(req)      { return ['admin', 'supervisor'].includes(req.usuario?.role); }
-
-// Calcula o horário de término a partir do início + duração em horas (mod 24h)
-function calcularHoraFim(horaInicio, horas) {
-  if (!horaInicio) return null;
-  const m = /^(\d{1,2}):(\d{2})$/.exec(horaInicio);
-  if (!m) return null;
-  const inicioMin = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
-  const fimMin = (inicioMin + horas * 60) % (24 * 60);
-  const hh = String(Math.floor(fimMin / 60)).padStart(2, '0');
-  const mm = String(fimMin % 60).padStart(2, '0');
-  return `${hh}:${mm}`;
-}
 
 async function vagasDoDia(dataStr) {
   const { rows } = await pool.query(`SELECT vagas_total FROM extras_config_dia WHERE data = $1`, [dataStr]);

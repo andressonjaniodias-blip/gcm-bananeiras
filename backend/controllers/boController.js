@@ -1,6 +1,7 @@
 const db = require('../config/db');
-const { registrarAuditoria } = require('../middleware/auth');
+const { registrarAuditoria, ipFromReq } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
+const { encriptar, desencriptarComFallback } = require('../utils/encryption');
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs   = require('fs');
@@ -113,7 +114,7 @@ exports.criarBO = async (req, res) => {
     const { rows: [{ seq }] } = await db.query(`SELECT nextval('bo_seq') AS seq`);
     const ano    = new Date().getFullYear();
     const numero = `BO-GCM-${String(seq).padStart(4, '0')}/${ano}`;
-    const dados = JSON.stringify(req.body);
+    const dados = encriptar(JSON.stringify(req.body));
     const data = new Date().toISOString();
     const criado_por = req.usuario.usuario;
 
@@ -122,7 +123,7 @@ exports.criarBO = async (req, res) => {
       [numero, dados, data, criado_por]
     );
 
-    const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
+    const ip = ipFromReq(req);
     await registrarAuditoria(criado_por, 'CRIAR_BO', numero, ip);
 
     res.status(201).json({ message: 'BO criado com sucesso', id: result.rows[0].id, numero });
@@ -155,7 +156,7 @@ exports.statsGlobais = async (req, res) => {
     const contagem = {};
     bos30.forEach(({ dados }) => {
       try {
-        const d = JSON.parse(dados);
+        const d = JSON.parse(desencriptarComFallback(dados));
         const tip = d.dadosOcorrencia?.tipificacao || d.dadosSolicitacao?.natureza;
         if (tip) contagem[tip] = (contagem[tip] || 0) + 1;
       } catch {}
@@ -187,6 +188,8 @@ exports.listarBOs = async (req, res) => {
       'SELECT COUNT(*) AS count FROM boletins'
     ));
 
+    rows = rows.map(r => ({ ...r, dados: desencriptarComFallback(r.dados) }));
+
     res.json({
       data: rows,
       total: parseInt(totalRows),
@@ -212,10 +215,10 @@ exports.consultarBO = async (req, res) => {
       return res.status(403).json({ error: 'Acesso negado.' });
     }
 
-    const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
+    const ip = ipFromReq(req);
     await registrarAuditoria(usuario, 'ACESSAR_BO', rows[0].numero, ip);
 
-    res.json(rows[0]);
+    res.json({ ...rows[0], dados: desencriptarComFallback(rows[0].dados) });
   } catch (err) {
     erroServidor(res, err);
   }
@@ -235,7 +238,7 @@ exports.excluirBO = async (req, res) => {
 
     await db.query('DELETE FROM boletins WHERE id = $1', [id]);
 
-    const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
+    const ip = ipFromReq(req);
     await registrarAuditoria(usuario, 'EXCLUIR_BO', rows[0].numero, ip);
 
     res.json({ message: 'BO excluído com sucesso', numero: rows[0].numero });
@@ -257,12 +260,12 @@ exports.exportarPDF = async (req, res) => {
       return res.status(403).json({ error: 'Acesso negado.' });
     }
 
-    const ip = req.ip || req.headers['x-forwarded-for'] || 'desconhecido';
+    const ip = ipFromReq(req);
     await registrarAuditoria(usuario, 'EXPORTAR_PDF', rows[0].numero, ip);
 
     const row  = rows[0];
     let dados  = {};
-    try { dados = JSON.parse(row.dados); } catch { dados = {}; }
+    try { dados = JSON.parse(desencriptarComFallback(row.dados)); } catch { dados = {}; }
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${row.numero.replace(/\//g, '-')}.pdf"`);
@@ -492,10 +495,7 @@ exports.exportarPDF = async (req, res) => {
 
       for (const img of imgs) {
         numAnexo++;
-        const filePath = path.join(__dirname, '../uploads/bo', img.nome_arquivo);
-        const fonteImg = img.dados
-          ? Buffer.from(img.dados, 'base64')
-          : (fs.existsSync(filePath) ? filePath : null);
+        const fonteImg = img.dados ? Buffer.from(img.dados, 'base64') : null;
         if (!fonteImg) continue;
         if (numAnexo > 1) doc.addPage();
         else doc.moveDown(0.8);

@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
@@ -65,8 +64,8 @@ app.use(cors({
 // Middlewares
 app.use(cookieParser());
 app.use(csrfMiddleware);
-app.use(bodyParser.json({ limit: '20mb' }));
-app.use(bodyParser.urlencoded({ limit: '20mb', extended: true }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
 // ✅ Servir arquivos estáticos do frontend
 const frontendPath = path.join(__dirname, '../frontend');
@@ -75,10 +74,6 @@ app.use(express.static(frontendPath));
 // ✅ Servir imagens da pasta public
 const publicPath = path.join(__dirname, '../public');
 app.use(express.static(publicPath));
-
-// ✅ Servir arquivos de upload (anexos)
-const uploadsPath = path.join(__dirname, 'uploads');
-app.use('/uploads', require('./middleware/auth').verificarToken, express.static(uploadsPath));
 
 // Rotas da API
 app.use('/api/auth/login',            loginLimiter);

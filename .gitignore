@@ -13,3 +13,5 @@ build/
 .vscode/
 *.swp
 *.swo
+*.db
+backend/uploads/

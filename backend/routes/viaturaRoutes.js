@@ -185,10 +185,7 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
 
       for (const img of imgs) {
         numAnexo++;
-        const filePath = path.join(__dirname, '../uploads/viatura', img.nome_arquivo);
-        const fonteImg = img.dados
-          ? Buffer.from(img.dados, 'base64')
-          : (fs.existsSync(filePath) ? filePath : null);
+        const fonteImg = img.dados ? Buffer.from(img.dados, 'base64') : null;
         if (!fonteImg) continue;
         if (numAnexo > 1) doc.addPage();
         else doc.moveDown(0.8);

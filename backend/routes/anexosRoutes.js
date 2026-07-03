@@ -2,11 +2,8 @@ const express  = require('express');
 const router   = express.Router();
 const multer   = require('multer');
 const path     = require('path');
-const fs       = require('fs');
 const db       = require('../config/db');
 const { verificarToken } = require('../middleware/auth');
-
-const UPLOADS_BASE = path.join(__dirname, '../uploads');
 
 function sanitizarNome(nome) {
   return nome
@@ -28,23 +25,8 @@ const EXTENSOES_ACEITAS = new Set([
   '.pdf','.doc','.docx','.txt',
 ]);
 
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    const tipo = req.params.tipo; // 'bo' ou 'relatorio'
-    const dir  = path.join(UPLOADS_BASE, tipo);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename(req, file, cb) {
-    const tipo = req.params.tipo;
-    const id   = req.params.id;
-    const ext  = path.extname(file.originalname);
-    cb(null, `${tipo}-${id}-${Date.now()}${ext}`);
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB
   fileFilter(req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -77,26 +59,19 @@ router.post('/:tipo/:id', verificarToken, (req, res) => {
       const inseridos = [];
       for (let idx = 0; idx < req.files.length; idx++) {
         const f = req.files[idx];
-        const filePath = path.join(UPLOADS_BASE, tipo, f.filename);
-        let dadosBase64 = null;
-        try { dadosBase64 = fs.readFileSync(filePath).toString('base64'); } catch {}
+        const nomeArquivo = `${tipo}-${id}-${Date.now()}-${idx}${path.extname(f.originalname)}`;
         const titulo  = (titulos[idx]  || '').trim() || null;
         const legenda = (legendas[idx] || '').trim() || null;
         const { rows } = await db.query(
           `INSERT INTO anexos (tipo_ref, ref_id, nome_arquivo, nome_original, mime_type, tamanho, dados, criado_por, titulo, legenda)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-          [tipo, id, f.filename, sanitizarNome(f.originalname), f.mimetype, f.size, dadosBase64, req.usuario?.usuario, titulo, legenda]
+          [tipo, id, nomeArquivo, sanitizarNome(f.originalname), f.mimetype, f.size, f.buffer.toString('base64'), req.usuario?.usuario, titulo, legenda]
         );
         inseridos.push(rows[0]);
       }
       res.status(201).json(inseridos);
     } catch (e) {
-      // Remover todos os arquivos já salvos no disco para evitar arquivos órfãos
-      for (const f of req.files) {
-        const filePath = path.join(UPLOADS_BASE, tipo, f.filename);
-        try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch {}
-      }
-      res.status(500).json({ error: 'Erro ao registrar anexos. Arquivos removidos.' });
+      res.status(500).json({ error: 'Erro ao registrar anexos.' });
     }
   });
 });
@@ -148,9 +123,6 @@ router.delete('/:tipo/:id/:anexoId', verificarToken, async (req, res) => {
       [anexoId, tipo, id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Anexo não encontrado.' });
-
-    const filePath = path.join(UPLOADS_BASE, tipo, rows[0].nome_arquivo);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
     res.json({ ok: true });
   } catch (e) {

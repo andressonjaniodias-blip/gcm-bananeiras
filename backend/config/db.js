@@ -151,6 +151,24 @@ pool.connect()
     await client.query(`
       ALTER TABLE documentos ADD COLUMN IF NOT EXISTS destaque_home BOOLEAN DEFAULT false;
     `);
+
+    // Migração: colunas de data gravadas como TEXT -> TIMESTAMPTZ (evita comparações
+    // frágeis por ordenação lexicográfica). Só reescreve a coluna se ainda não migrada.
+    async function migrarParaTimestamptz(tabela, coluna) {
+      const { rows } = await client.query(
+        `SELECT data_type FROM information_schema.columns WHERE table_name = $1 AND column_name = $2`,
+        [tabela, coluna]
+      );
+      if (rows[0] && rows[0].data_type !== 'timestamp with time zone') {
+        await client.query(
+          `ALTER TABLE ${tabela} ALTER COLUMN ${coluna} TYPE TIMESTAMPTZ USING ${coluna}::timestamptz`
+        );
+      }
+    }
+    await migrarParaTimestamptz('boletins', 'data');
+    await migrarParaTimestamptz('relatorios', 'data');
+    await migrarParaTimestamptz('documentos', 'data');
+
     await client.query(`
       ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS lgpd_aceito BOOLEAN DEFAULT false;
     `);
