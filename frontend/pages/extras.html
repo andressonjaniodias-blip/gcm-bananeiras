@@ -28,6 +28,15 @@
     .vaga-card .vc-btn {
       border:none; border-radius:var(--radius-sm); padding:6px 10px; cursor:pointer; font-size:0.78rem; font-weight:600;
     }
+    .btn-icon {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:30px; height:30px; border-radius:var(--radius-sm);
+      border:none; cursor:pointer; font-size:0.85rem;
+      transition:opacity 0.15s, transform 0.1s; flex-shrink:0;
+    }
+    .btn-icon:hover { opacity:0.82; transform:scale(1.1); }
+    .btn-icon-editar  { background:var(--color-warning-bg); color:var(--color-warning-text); }
+    .btn-icon-excluir { background:var(--color-danger-bg); color:var(--color-danger-text); }
     .vaga-livre { border-style:dashed; color:var(--color-hint); justify-content:center; font-style:italic; }
     .cota-box {
       background:var(--color-bloco-bg); border:1px solid var(--color-border);
@@ -63,16 +72,18 @@
 
     <!-- VAGAS DO DIA -->
     <section id="dia" class="tab-content">
-      <div class="campo-group" style="max-width:260px;">
-        <label class="obrigatorio">Data do plantão</label>
-        <input type="date" id="dataDia" onchange="carregarDia()">
-      </div>
+      <div class="grid-form" style="max-width:420px;margin-bottom:10px;">
+        <div class="campo-group">
+          <label class="obrigatorio">Data do plantão</label>
+          <input type="date" id="dataDia" onchange="carregarDia()">
+        </div>
 
-      <div class="campo-group cmd-only" style="display:none;max-width:260px;margin-bottom:10px;">
-        <label>Vagas disponíveis no dia</label>
-        <div style="display:flex;gap:8px;">
-          <input type="number" id="fVagasTotal" min="1" style="width:90px;">
-          <button onclick="salvarVagasTotal()" style="background:var(--color-primary);">Atualizar</button>
+        <div class="campo-group cmd-only" style="display:none;">
+          <label>Vagas disponíveis no dia</label>
+          <div class="form-row">
+            <input type="number" id="fVagasTotal" min="1">
+            <button onclick="salvarVagasTotal()">Atualizar</button>
+          </div>
         </div>
       </div>
 
@@ -282,6 +293,9 @@
       } catch { msg('Erro de conexão.', false); }
     }
 
+    const SVG_EDIT  = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 3l3 3L6 17H3v-3L14 3z"/></svg>`;
+    const SVG_TRASH = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/></svg>`;
+
     function renderVagas(d) {
       const cont = document.getElementById('listaVagas');
       const vagas = d.vagas || [];
@@ -298,8 +312,8 @@
             <div class="vc-meta">${v.tipo}h · ${v.funcao||'—'} · ${v.hora_inicio||'--'}–${v.hora_fim||'--'} · ${v.telefone||'sem telefone'} · R$ ${Number(v.valor).toFixed(2)}${v.liberado_por?' · <span style="color:#b45309">liberado por '+v.liberado_por+'</span>':''}</div>
           </div>
           <div class="vc-actions">
-            ${podeEditar?`<button class="vc-btn" style="background:var(--color-primary);color:#fff;" onclick="editarVaga(${v.id})">Editar</button>`:''}
-            ${podeRemover?`<button class="vc-btn" style="background:var(--color-danger);color:#fff;" onclick="removerVaga(${v.id})">Remover</button>`:''}
+            ${podeEditar?`<button class="btn-icon btn-icon-editar" title="Editar" onclick="editarVaga(${v.id})">${SVG_EDIT}</button>`:''}
+            ${podeRemover?`<button class="btn-icon btn-icon-excluir" title="Remover" onclick="removerVaga(${v.id})">${SVG_TRASH}</button>`:''}
           </div>
         </div>`;
       });
