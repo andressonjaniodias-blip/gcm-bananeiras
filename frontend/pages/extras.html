@@ -144,6 +144,25 @@
     </section>
   </main>
 
+  <!-- MODAL DE DETALHES DO DIA (HISTÓRICO) -->
+  <div class="detail-overlay" id="extraDetailOverlay" onclick="fecharExtraDetail(event)">
+    <div class="detail-modal" onclick="event.stopPropagation()">
+      <div class="detail-modal-head">
+        <div>
+          <div class="detail-modal-title" id="extraDetailTitle">—</div>
+          <div class="detail-modal-subtitle" id="extraDetailSubtitle">—</div>
+        </div>
+        <button class="detail-modal-close" onclick="fecharExtraDetail()">×</button>
+      </div>
+      <div class="detail-modal-body" id="extraDetailBody">
+        <p style="color:var(--color-hint);">Carregando...</p>
+      </div>
+      <div class="detail-footer">
+        <button class="detail-btn-close" onclick="fecharExtraDetail()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
   <script>
@@ -385,21 +404,47 @@
         const dias = await r.json();
         if (!dias.length) { cont.innerHTML = '<p style="color:var(--color-hint);text-align:center;">Nenhum lançamento.</p>'; return; }
         cont.innerHTML = '<div class="hist-list">' + dias.map(d => {
-          const [y,m,dd] = d.data.slice(0,10).split('-');
-          return `<div class="hist-item" onclick="abrirDia('${d.data.slice(0,10)}')">
+          const data = d.data.slice(0,10);
+          const [y,m,dd] = data.split('-');
+          return `<div class="hist-item" onclick="abrirExtraDetail('${data}')">
             <div class="hist-item-icon">🕐</div>
             <div class="hist-item-body"><div class="hist-item-title">${dd}/${m}/${y}</div>
             <div class="hist-item-meta"><span>${d.qtd} plantão(ões)</span><span>·</span><span>R$ ${Number(d.total).toFixed(2)}</span></div></div>
-            <div class="hist-item-right"><button class="vc-btn" style="background:var(--color-primary);color:#fff;" onclick="event.stopPropagation();baixarPDF('${API_BASE_URL}/api/extras/dia/${d.data.slice(0,10)}/pdf','extras-${d.data.slice(0,10)}.pdf')">PDF</button></div>
+            <div class="hist-item-right"><button class="vc-btn" style="background:var(--color-primary);color:#fff;" onclick="event.stopPropagation();baixarPDF('${API_BASE_URL}/api/extras/dia/${data}/pdf','extras-${data}.pdf')">PDF</button></div>
           </div>`;
         }).join('') + '</div>';
       } catch { cont.innerHTML = '<p style="color:var(--color-danger);text-align:center;">Erro ao carregar.</p>'; }
     }
-    function abrirDia(data) {
-      document.getElementById('dataDia').value = data;
-      showTab('dia');
-      document.querySelector('.tab-btn').classList.add('active');
-      carregarDia();
+
+    async function abrirExtraDetail(data) {
+      const [y,m,dd] = data.split('-');
+      document.getElementById('extraDetailTitle').textContent = `${dd}/${m}/${y}`;
+      document.getElementById('extraDetailSubtitle').textContent = 'Plantões extras do dia';
+      const body = document.getElementById('extraDetailBody');
+      body.innerHTML = '<p style="color:var(--color-hint);">Carregando...</p>';
+      document.getElementById('extraDetailOverlay').classList.add('aberto');
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/extras/dia/${data}`, { credentials:'include' });
+        const d = await r.json();
+        const vagas = d.vagas || [];
+        if (!vagas.length) {
+          body.innerHTML = '<p style="color:var(--color-hint);">Nenhum plantão lançado neste dia.</p>';
+        } else {
+          body.innerHTML = vagas.map(v => `<div class="vaga-card" style="margin-bottom:8px;">
+            <div class="vc-body">
+              <div class="vc-nome">${v.nome} ${v.matricula?'<span style="font-weight:400;color:var(--color-text-muted)">— '+v.matricula+'</span>':''}</div>
+              <div class="vc-meta">${v.tipo}h · ${v.funcao||'—'} · ${v.hora_inicio||'--'}–${v.hora_fim||'--'} · ${v.telefone||'sem telefone'} · R$ ${Number(v.valor).toFixed(2)}</div>
+            </div>
+          </div>`).join('') + `<div style="text-align:right;font-weight:700;color:var(--color-primary);margin-top:8px;">
+            Total: ${vagas.length} plantão(ões) — R$ ${vagas.reduce((a,v)=>a+Number(v.valor),0).toFixed(2)}
+          </div>`;
+        }
+      } catch { body.innerHTML = '<p style="color:var(--color-danger);">Erro ao carregar detalhes.</p>'; }
+    }
+
+    function fecharExtraDetail(e) {
+      if (e && e.target !== document.getElementById('extraDetailOverlay')) return;
+      document.getElementById('extraDetailOverlay').classList.remove('aberto');
     }
 
     async function gerarRelPagamento() {
