@@ -71,14 +71,15 @@
       background: var(--color-row-alt); color: var(--color-text-muted);
       white-space: nowrap;
     }
-    .acao-login    { background: #D1FAE5; color: #065F46; }
-    .acao-logout   { background: #FEE2E2; color: #991B1B; }
-    .acao-criar    { background: #DBEAFE; color: #1E40AF; }
-    .acao-editar   { background: #FEF9C3; color: #854D0E; }
-    .acao-excluir  { background: #FFE4E6; color: #9F1239; }
-    .acao-exportar  { background: #EDE9FE; color: #5B21B6; }
-    .acao-expirada  { background: #FFF3CD; color: #856404; }
-    .acao-senha     { background: #E0E7FF; color: #3730A3; }
+    .acao-login    { background: var(--color-success-bg); color: var(--color-success-text); }
+    .acao-logout   { background: var(--color-row-alt);    color: var(--color-text-muted); }
+    .acao-criar    { background: var(--color-info-bg);    color: var(--color-info-text); }
+    .acao-editar   { background: var(--color-warning-bg); color: var(--color-warning-text); }
+    .acao-excluir  { background: var(--color-danger-bg);  color: var(--color-danger-text); }
+    .acao-exportar { background: var(--color-info-bg);    color: var(--color-info-text); }
+    .acao-expirada { background: var(--color-warning-bg); color: var(--color-warning-text); }
+    .acao-senha    { background: var(--color-info-bg);    color: var(--color-info-text); }
+    .acao-falha    { background: var(--color-danger-bg);  color: var(--color-danger-text); font-weight: 700; }
 
     .disp-tag {
       display:inline-flex; align-items:center; gap:4px;
@@ -106,12 +107,12 @@
 
     /* Exportar CSV */
     .btn-csv {
-      background: #14532D; color: #fff;
+      background: var(--color-success); color: #fff;
       border: none; border-radius: var(--radius-sm);
       padding: 6px 14px; cursor: pointer; font-size: 0.82rem;
       font-weight: 600; transition: background 0.2s;
     }
-    .btn-csv:hover { background: #166534; }
+    .btn-csv:hover { background: var(--color-success-hover); }
 
   </style>
 </head>
@@ -143,14 +144,31 @@
           <label>Tipo de Ação</label>
           <select id="filtroAcao">
             <option value="">Todas as ações</option>
-            <option value="LOGIN">Login</option>
-            <option value="LOGOUT">Logout</option>
-            <option value="SESSAO_EXPIRADA">Sessão expirada</option>
-            <option value="CRIAR">Criar</option>
-            <option value="ALTERAR">Alterar</option>
-            <option value="REMOVER">Remover</option>
-            <option value="TROCAR_SENHA">Troca de senha</option>
-            <option value="ARQUIVAR">Arquivar</option>
+            <optgroup label="Acesso e segurança">
+              <option value="LOGIN">Login</option>
+              <option value="LOGIN_FALHA">Tentativa de login (falha)</option>
+              <option value="LOGOUT">Logout</option>
+              <option value="SESSAO_EXPIRADA">Sessão expirada</option>
+              <option value="SENHA">Senha (troca/reset)</option>
+              <option value="ROLE">Alteração de perfil/permissão</option>
+            </optgroup>
+            <optgroup label="Alterações de dados">
+              <option value="CRIAR">Criar</option>
+              <option value="ALTERAR">Alterar</option>
+              <option value="REMOVER">Remover / Excluir</option>
+              <option value="ARQUIVAR">Arquivar</option>
+            </optgroup>
+            <optgroup label="Áreas do sistema">
+              <option value="AGENTE">Agentes / pessoal</option>
+              <option value="ESCALA">Escala de serviço</option>
+              <option value="EXTRA">Plantões extras</option>
+              <option value="FERIAS">Férias</option>
+              <option value="DOCUMENTO">Documentos</option>
+              <option value="RELATORIO">Relatórios</option>
+              <option value="VIATURA">Viatura / frota</option>
+              <option value="_BO">Boletins (BO)</option>
+              <option value="EXPORTAR">Exportações (PDF)</option>
+            </optgroup>
           </select>
         </div>
         <div class="field">
@@ -192,6 +210,7 @@
       <div class="stats-row" id="statsRow" style="display:none;">
         <div class="stat-pill">Total: <strong id="statTotal">0</strong></div>
         <div class="stat-pill">Logins: <strong id="statLogins">0</strong></div>
+        <div class="stat-pill">⚠ Falhas de login: <strong id="statFalhas">0</strong></div>
         <div class="stat-pill">Sessões expiradas: <strong id="statExpiradas">0</strong></div>
         <div class="stat-pill">Ações críticas: <strong id="statCriticas">0</strong></div>
         <div class="stat-pill">Usuários distintos: <strong id="statUsuarios">0</strong></div>
@@ -295,6 +314,7 @@
       el.style.display = 'flex';
       document.getElementById('statTotal').textContent     = logsFiltrados.length;
       document.getElementById('statLogins').textContent    = logsFiltrados.filter(l => l.acao === 'LOGIN').length;
+      document.getElementById('statFalhas').textContent    = logsFiltrados.filter(l => /FALHA|BLOQUE|NEGAD/.test(l.acao||'')).length;
       document.getElementById('statExpiradas').textContent = logsFiltrados.filter(l => l.acao === 'SESSAO_EXPIRADA').length;
       document.getElementById('statCriticas').textContent  = logsFiltrados.filter(l => /REMOVER|ARQUIVAR|EXCLUIR|DELETAR/.test(l.acao||'')).length;
       document.getElementById('statUsuarios').textContent  = new Set(logsFiltrados.map(l => l.usuario)).size;
@@ -321,10 +341,11 @@
           const acaoClass =
             acao === 'LOGIN'            ? 'acao-login'
           : acao === 'LOGOUT'           ? 'acao-logout'
+          : /FALHA|BLOQUE|NEGAD/.test(acao)       ? 'acao-falha'
           : acao === 'SESSAO_EXPIRADA'  ? 'acao-expirada'
-          : /CRIAR|CADASTR/.test(acao)  ? 'acao-criar'
-          : /ALTERAR|EDITAR/.test(acao) ? 'acao-editar'
-          : /REMOVER|EXCLUIR|ARQUIVAR/.test(acao) ? 'acao-excluir'
+          : /CRIAR|CADASTR|PUBLICAR|REGISTRAR|SALVAR/.test(acao)  ? 'acao-criar'
+          : /ALTERAR|EDITAR|DESTAQUE|ROLE|CONTATO/.test(acao)     ? 'acao-editar'
+          : /REMOVER|EXCLUIR|ARQUIVAR|DELETAR/.test(acao)         ? 'acao-excluir'
           : /EXPORTAR/.test(acao)       ? 'acao-exportar'
           : /SENHA/.test(acao)          ? 'acao-senha'
           : '';
