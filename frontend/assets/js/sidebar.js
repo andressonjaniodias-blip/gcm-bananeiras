@@ -46,48 +46,23 @@
   ];
   const PERFIL_ITEM = { href: '/pages/perfil.html', icon: ICONS.perfil, label: 'Meu Perfil', roles: ['agente', 'supervisor', 'admin'] };
 
-  const CHEVRON = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8l4 4 4-4"/></svg>`;
-
-  function _grpState() { try { return JSON.parse(localStorage.getItem('gcm-sb-grupos') || '{}'); } catch { return {}; } }
-  function _grpSave(s)  { localStorage.setItem('gcm-sb-grupos', JSON.stringify(s)); }
-
   function _linkHTML(item, currentPath) {
     const active = currentPath.includes(item.href.replace('/pages/', '')) ? ' active' : '';
     return `<a href="${item.href}" class="sb-link${active}" onclick="closeSidebar()"><span class="sb-icon">${item.icon}</span><span>${item.label}</span></a>`;
   }
 
-  // Monta o HTML do menu agrupado para um perfil/rota
+  // Monta o HTML do menu em lista única (sem categorias/accordion)
   function renderNav(role, currentPath) {
-    const state = _grpState();
     let html = '';
     NAV.forEach(secao => {
       const itens = secao.items.filter(it => it.roles.includes(role));
-      if (!itens.length) return;
-      const temAtivo   = itens.some(it => currentPath.includes(it.href.replace('/pages/', '')));
-      const collapsed  = temAtivo ? false : (state[secao.group] === true);
-      const linksHTML  = itens.map(it => _linkHTML(it, currentPath)).join('');
-      html += `<div class="sb-group${collapsed ? ' collapsed' : ''}" data-grupo="${secao.group}">
-        <button type="button" class="sb-group-head" onclick="toggleSidebarGroup(this)">
-          <span class="sb-group-title">${secao.group}</span>
-          <span class="sb-group-chev">${CHEVRON}</span>
-        </button>
-        <div class="sb-group-items">${linksHTML}</div>
-      </div>`;
+      html += itens.map(it => _linkHTML(it, currentPath)).join('');
     });
     if (PERFIL_ITEM.roles.includes(role)) {
-      html += `<div class="sb-nav-solo">${_linkHTML(PERFIL_ITEM, currentPath)}</div>`;
+      html += _linkHTML(PERFIL_ITEM, currentPath);
     }
     return html;
   }
-
-  window.toggleSidebarGroup = function (btn) {
-    const g = btn.closest('.sb-group');
-    if (!g) return;
-    const collapsed = g.classList.toggle('collapsed');
-    const s = _grpState();
-    s[g.dataset.grupo] = collapsed;
-    _grpSave(s);
-  };
 
   function buildSidebar() {
     const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
