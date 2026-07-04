@@ -97,7 +97,7 @@ router.post('/', verificarToken, verificarSupervisor, (req, res) => {
           req.file.filename,
           sanitizarNome(req.file.originalname),
           req.file.mimetype,
-          req.usuario,
+          req.usuario.usuario,
           destaqueHome === 'true' || destaqueHome === true,
         ]
       );
