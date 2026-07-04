@@ -70,9 +70,9 @@
 
   <main class="dashboard">
     <div class="tabs-scroll-wrap"><nav class="tabs">
-      <button class="tab-btn active" onclick="showTab('editor',event)">Montar Escala</button>
-      <button class="tab-btn" onclick="showTab('historico',event)">Escalas Salvas</button>
-      <button class="tab-btn" onclick="showTab('postos',event)">Postos</button>
+      <button class="tab-btn active" id="tabBtnEditor" onclick="showTab('editor',event)">Montar Escala</button>
+      <button class="tab-btn" id="tabBtnHistorico" onclick="showTab('historico',event)">Escalas Salvas</button>
+      <button class="tab-btn" id="tabBtnPostos" onclick="showTab('postos',event)">Postos</button>
     </nav></div>
 
     <!-- EDITOR -->
@@ -189,6 +189,17 @@
         PERFIL = await me.json(); sessionStorage.setItem('perfil', JSON.stringify(PERFIL));
         if(typeof updateSidebarUser==='function') updateSidebarUser(PERFIL);
       } catch { window.location.href='/'; return; }
+
+      if (PERFIL.role === 'agente') {
+        // Agente comum: só pode consultar a escala já publicada, não montar/editar.
+        document.getElementById('tabBtnEditor').style.display = 'none';
+        document.getElementById('tabBtnPostos').style.display = 'none';
+        document.getElementById('tabBtnHistorico').classList.add('active');
+        document.getElementById('tabBtnEditor').classList.remove('active');
+        showTab('historico');
+        return;
+      }
+
       await Promise.all([carregarAgentes(), carregarPostos()]);
       montarFerAgente();
       carregarMes();
@@ -347,14 +358,15 @@
         const r=await fetch(`${API_BASE_URL}/api/escala`,{credentials:'include'});
         const l=await r.json();
         if(!l.length){ cont.innerHTML='<p style="color:var(--color-hint);text-align:center;">Nenhuma escala salva.</p>'; return; }
+        const podeGerenciar = PERFIL.role !== 'agente';
         cont.innerHTML='<div class="hist-list">'+l.map(e=>`<div class="hist-item" style="cursor:pointer;" onclick="visualizarEscala(${e.id})" title="Clique para visualizar">
           <div class="hist-item-icon">📅</div>
           <div class="hist-item-body"><div class="hist-item-title">${e.mes_referencia}${e.titulo?' — '+e.titulo:''}</div>
           <div class="hist-item-meta"><span>${e.numero||''}</span><span>·</span><span>por ${e.criado_por||'—'}</span></div></div>
           <div class="hist-item-right" style="display:flex;gap:6px;" onclick="event.stopPropagation()">
-            <button class="add-row" style="width:auto;padding:6px 10px;" onclick="editarEscala('${e.mes_referencia}')">Editar</button>
+            ${podeGerenciar?`<button class="add-row" style="width:auto;padding:6px 10px;" onclick="editarEscala('${e.mes_referencia}')">Editar</button>`:''}
             <button class="add-row" style="width:auto;padding:6px 10px;background:var(--color-primary);" onclick="baixarPDF('${API_BASE_URL}/api/escala/${e.id}/pdf','escala-${e.mes_referencia}.pdf')">PDF</button>
-            <button class="rm" style="width:auto;padding:6px 10px;" onclick="excluirEscala(${e.id})">Excluir</button>
+            ${podeGerenciar?`<button class="rm" style="width:auto;padding:6px 10px;" onclick="excluirEscala(${e.id})">Excluir</button>`:''}
           </div></div>`).join('')+'</div>';
       }catch{ cont.innerHTML='<p style="color:var(--color-danger);text-align:center;">Erro.</p>'; }
     }
