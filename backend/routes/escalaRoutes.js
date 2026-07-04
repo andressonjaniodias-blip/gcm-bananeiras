@@ -5,7 +5,7 @@ const { verificarToken, verificarSupervisor, auditar } = require('../middleware/
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
 const { cabecalhoPDF, rodapePDF, assinaturasPDF, fmtData, NAVY } = require('../utils/pdfLayout');
-const { numeroFolga } = require('../utils/escalaCalc');
+const { numeroFolga, trabalhaNoDia } = require('../utils/escalaCalc');
 const { coletarPdfBuffer } = require('../utils/pdfBuffer');
 const { enviarPdfNotificacao } = require('../utils/email');
 
@@ -49,8 +49,8 @@ router.delete('/postos/:id', verificarToken, verificarSupervisor, async (req, re
 });
 
 // ── Escalas ──────────────────────────────────────────────────────────────────
-// Listar escalas (cabeçalhos)
-router.get('/', verificarToken, verificarSupervisor, async (req, res) => {
+// Listar escalas (cabeçalhos) — leitura aberta a todos; montagem/edição continua restrita
+router.get('/', verificarToken, async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT id, numero, mes_referencia, titulo, criado_por, criado_em, atualizado_em
@@ -60,8 +60,50 @@ router.get('/', verificarToken, verificarSupervisor, async (req, res) => {
   } catch (err) { erroServidor(res, err); }
 });
 
+// Escala de hoje (resumo p/ quadro de avisos): patrulha ativa + bloco ADM se dia útil
+router.get('/hoje', verificarToken, async (req, res) => {
+  try {
+    const dataRef = /^\d{4}-\d{2}-\d{2}$/.test(req.query.data || '')
+      ? req.query.data
+      : new Date().toISOString().slice(0, 10);
+    const mes = dataRef.slice(0, 7);
+    const dia = parseInt(dataRef.slice(8, 10), 10);
+
+    const { rows: escalas } = await pool.query(`SELECT * FROM escalas WHERE mes_referencia = $1`, [mes]);
+    if (!escalas.length) return res.json({ publicado: false });
+    const escala = escalas[0];
+
+    const patrulhaHoje = PATRULHAS.find(p => trabalhaNoDia(p, dia, escala.patrulha_dia1));
+    const { rows: equipe } = await pool.query(
+      `SELECT posto, nome, matricula, regime, turno FROM escala_itens
+       WHERE escala_id = $1 AND patrulha = $2 ORDER BY posto, nome`,
+      [escala.id, patrulhaHoje]
+    );
+
+    const diaSemana = new Date(dataRef + 'T12:00:00').getDay();
+    let administrativo = [];
+    if (diaSemana >= 1 && diaSemana <= 5) {
+      const { rows } = await pool.query(
+        `SELECT posto, nome, matricula, regime, turno FROM escala_itens
+         WHERE escala_id = $1 AND patrulha = 'ADM' ORDER BY posto, nome`,
+        [escala.id]
+      );
+      administrativo = rows;
+    }
+
+    res.json({
+      publicado: true,
+      mes_referencia: escala.mes_referencia,
+      numero: escala.numero,
+      patrulha_hoje: patrulhaHoje || null,
+      equipe,
+      administrativo,
+    });
+  } catch (err) { erroServidor(res, err); }
+});
+
 // Buscar escala por mês (YYYY-MM) com itens
-router.get('/mes/:mes', verificarToken, verificarSupervisor, async (req, res) => {
+router.get('/mes/:mes', verificarToken, async (req, res) => {
   try {
     const { rows } = await pool.query(`SELECT * FROM escalas WHERE mes_referencia = $1`, [req.params.mes]);
     if (!rows.length) return res.json({ escala: null, itens: [] });
@@ -75,7 +117,7 @@ router.get('/mes/:mes', verificarToken, verificarSupervisor, async (req, res) =>
 });
 
 // Buscar escala por id com itens
-router.get('/:id', verificarToken, verificarSupervisor, async (req, res) => {
+router.get('/:id', verificarToken, async (req, res) => {
   try {
     const { rows } = await pool.query(`SELECT * FROM escalas WHERE id = $1`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Escala não encontrada.' });
