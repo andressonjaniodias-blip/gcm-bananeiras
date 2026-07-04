@@ -9,6 +9,114 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css?v=2">
   <script src="assets/js/theme-switcher.js"></script>
+  <style>
+    /* ── Quadro de Avisos: ancorado no canto inferior esquerdo do #app-shell,
+       ocupando 1/4 da área, atrás do menu lateral (z-index: 300) ──────────── */
+    .avisos-floating {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      width: calc(50% - 24px);
+      height: calc(50% - 24px);
+      z-index: 1;
+    }
+    .pub-panel {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--color-bloco-border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .pub-panel-header {
+      padding: 14px 18px;
+      background: linear-gradient(135deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%);
+      border-bottom: 3px solid var(--color-accent);
+      color: #fff;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .pub-panel-header svg { width: 18px; height: 18px; stroke: rgba(255,255,255,0.8); flex-shrink: 0; }
+    .pub-panel-header-title { font-size: 0.95rem; font-weight: 700; }
+    .pub-panel-header-sub   { font-size: 0.72rem; opacity: 0.8; margin-top: 1px; }
+    .pub-list { padding: 0; }
+
+    .pub-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--color-border);
+      transition: background 0.15s;
+    }
+    .pub-item:last-child { border-bottom: none; }
+    .pub-item:hover { background: var(--color-row-alt); }
+
+    .pub-icon {
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .pub-icon svg { width: 18px; height: 18px; }
+    .pub-icon.icon-pdf      { background: var(--color-danger-bg); }
+    .pub-icon.icon-pdf svg  { stroke: var(--color-danger); }
+    .pub-icon.icon-doc      { background: var(--color-info-bg); }
+    .pub-icon.icon-doc svg  { stroke: var(--color-primary); }
+    .pub-icon.icon-img      { background: var(--color-success-bg); }
+    .pub-icon.icon-img svg  { stroke: var(--color-success); }
+    .pub-icon.icon-default  { background: var(--color-primary-light); }
+    .pub-icon.icon-default svg { stroke: var(--color-primary); }
+
+    .pub-info { flex: 1; min-width: 0; }
+    .pub-titulo {
+      font-size: 0.85rem; font-weight: 700; color: var(--color-text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pub-meta {
+      font-size: 0.72rem; color: var(--color-text-muted); margin-top: 2px;
+    }
+    .pub-badge {
+      display: inline-block; padding: 2px 8px;
+      border-radius: var(--radius-pill); font-size: 0.68rem; font-weight: 700;
+      background: var(--color-primary-light); color: var(--color-primary);
+      white-space: nowrap; flex-shrink: 0; align-self: center;
+    }
+    .pub-baixar {
+      font-size: 0.75rem; font-weight: 700; color: var(--color-primary);
+      background: none; border: none; cursor: pointer; padding: 2px 0;
+      text-decoration: underline; white-space: nowrap;
+      align-self: center; flex-shrink: 0;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .pub-baixar svg { width: 13px; height: 13px; stroke: currentColor; }
+    .pub-baixar:hover { opacity: 0.75; }
+
+    .pub-vazio {
+      padding: 28px 16px; text-align: center;
+      color: var(--color-hint); font-size: 0.85rem;
+    }
+    .pub-rodape {
+      padding: 10px 16px; text-align: center;
+      border-top: 1px solid var(--color-border);
+    }
+    .pub-rodape a {
+      font-size: 0.8rem; color: var(--color-primary); font-weight: 600;
+      text-decoration: none; cursor: pointer;
+    }
+    .pub-rodape a:hover { text-decoration: underline; }
+
+    .ac-viewport { overflow: hidden; flex: 1; min-height: 0; }
+    .ac-track { display: flex; height: 100%; transition: transform 0.45s ease; }
+    .ac-slide { flex: 0 0 100%; min-width: 100%; height: 100%; overflow-y: auto; }
+    .ac-dots { display: flex; justify-content: center; gap: 6px; padding: 10px 0; border-top: 1px solid var(--color-border); }
+    .ac-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--color-border); border: none; cursor: pointer; padding: 0;
+      transition: width 0.2s, background 0.2s;
+    }
+    .ac-dot.active { background: var(--color-primary); width: 18px; border-radius: 4px; }
+    .ac-resumo { padding: 14px 16px; }
+    .ac-resumo-titulo { font-weight: 700; font-size: 0.85rem; color: var(--color-text); margin-bottom: 10px; }
+    .ac-resumo-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  </style>
 </head>
 <body class="has-sidebar stage-page">
   <div id="app-shell">
@@ -67,6 +175,54 @@
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M8 13h4M10 11v4"/></svg>
           </button>
         </main>
+      </div>
+    </div>
+
+    <!-- Quadro de Avisos — só aparece após login (ver aposLoginSucesso) -->
+    <div class="pub-panel avisos-floating" id="avisosCarousel" style="display:none"
+         onmouseenter="acPause()" onmouseleave="acResume()">
+      <div class="pub-panel-header">
+        <svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h14M3 10h14M3 15h8"/></svg>
+        <div>
+          <div class="pub-panel-header-title">Quadro de Avisos</div>
+          <div class="pub-panel-header-sub" id="acHeaderSub">Publicações Oficiais</div>
+        </div>
+      </div>
+      <div class="ac-viewport">
+        <div class="ac-track" id="acTrack">
+          <!-- Slide 1: Publicações -->
+          <div class="ac-slide">
+            <div class="pub-list" id="pubList">
+              <div class="pub-vazio">Carregando...</div>
+            </div>
+            <div class="pub-rodape">
+              <a href="/pages/documentos.html" onclick="openPageModal('/pages/documentos.html','Documentos');return false;">Ver todos os documentos →</a>
+            </div>
+          </div>
+          <!-- Slide 2: Extras de hoje -->
+          <div class="ac-slide">
+            <div class="ac-resumo" id="extrasResumo">
+              <div class="pub-vazio">Carregando...</div>
+            </div>
+            <div class="pub-rodape">
+              <a href="/pages/extras.html" onclick="openPageModal('/pages/extras.html','Plantões Extras');return false;">Ver detalhes →</a>
+            </div>
+          </div>
+          <!-- Slide 3: Escala de hoje -->
+          <div class="ac-slide">
+            <div class="ac-resumo" id="escalaResumo">
+              <div class="pub-vazio">Carregando...</div>
+            </div>
+            <div class="pub-rodape">
+              <a href="/pages/escala.html" onclick="openPageModal('/pages/escala.html','Escala de Serviço');return false;">Ver escala completa →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ac-dots" id="acDots">
+        <button class="ac-dot active" onclick="acGoTo(0)" title="Publicações"></button>
+        <button class="ac-dot" onclick="acGoTo(1)" title="Extras de hoje"></button>
+        <button class="ac-dot" onclick="acGoTo(2)" title="Escala de hoje"></button>
       </div>
     </div>
   </div>
@@ -294,7 +450,125 @@
         ? `<img src="${perfil.foto}" alt="Foto de perfil">`
         : (perfil.usuario || '?')[0].toUpperCase();
       buildSidebarNav(role);
+
+      document.getElementById('avisosCarousel').style.display = '';
+      carregarQuadroDeAvisos();
     };
+
+    // ── Quadro de Avisos (carrossel) — só é chamado após login bem-sucedido ──
+    const AC_SUBS = ['Publicações Oficiais', 'Plantões extras de hoje', 'Escala de serviço de hoje'];
+    let acIndex = 0, acTimer = null;
+    function acGoTo(i) {
+      acIndex = i;
+      document.getElementById('acTrack').style.transform = `translateX(-${i * 100}%)`;
+      document.querySelectorAll('#acDots .ac-dot').forEach((d, idx) => d.classList.toggle('active', idx === i));
+      document.getElementById('acHeaderSub').textContent = AC_SUBS[i];
+    }
+    function acNext() { acGoTo((acIndex + 1) % 3); }
+    function acPause() { clearInterval(acTimer); }
+    function acResume() { acTimer = setInterval(acNext, 6000); }
+    acResume();
+
+    const SVG_PDF = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M7 13h2c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1H7v4"/></svg>`;
+    const SVG_DOC = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M7 11h6M7 14h4"/></svg>`;
+    const SVG_IMG = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="1.5"/><circle cx="7.5" cy="8.5" r="1.5"/><path d="M3 14l4-4 3 3 2-2 5 5"/></svg>`;
+    const SVG_FILE= `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/></svg>`;
+
+    function iconeDoc(mime, nome) {
+      if (!mime && nome) mime = nome.endsWith('.pdf') ? 'application/pdf' : '';
+      if (mime?.includes('pdf'))   return { cls: 'icon-pdf',     svg: SVG_PDF };
+      if (mime?.includes('image')) return { cls: 'icon-img',     svg: SVG_IMG };
+      if (mime?.includes('word') || nome?.match(/\.docx?$/i)) return { cls: 'icon-doc', svg: SVG_DOC };
+      return { cls: 'icon-default', svg: SVG_FILE };
+    }
+
+    async function baixarDoc(id, nome) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/documentos/${id}/download`, { credentials: 'include' });
+        if (!res.ok) { showToast('Erro ao baixar arquivo.', 'danger'); return; }
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = nome || `documento_${id}`; a.click();
+        URL.revokeObjectURL(url);
+      } catch { showToast('Erro ao baixar arquivo.', 'danger'); }
+    }
+
+    async function carregarQuadroDeAvisos() {
+      const hoje = new Date().toISOString().slice(0, 10);
+
+      // Publicações em destaque
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/documentos/destaque`, { credentials: 'include' });
+        const lista = r.ok ? await r.json() : [];
+        const el = document.getElementById('pubList');
+        if (!lista.length) {
+          el.innerHTML = '<div class="pub-vazio">Nenhuma publicação disponível no momento.</div>';
+        } else {
+          el.innerHTML = lista.map(d => {
+            const icon = iconeDoc(d.arquivo_mime, d.arquivo_nome);
+            const data = new Date(String(d.data).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+            return `
+            <div class="pub-item">
+              <div class="pub-icon ${icon.cls}">${icon.svg}</div>
+              <div class="pub-info">
+                <div class="pub-titulo" title="${d.titulo}">${d.titulo}</div>
+                <div class="pub-meta">${data} · ${d.publicado_por}</div>
+              </div>
+              <span class="pub-badge">${d.tipo}</span>
+              <button class="pub-baixar" onclick="baixarDoc(${d.id}, '${d.arquivo_nome}')">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v10M6 9l4 4 4-4"/><path d="M4 17h12"/></svg>
+                Baixar
+              </button>
+            </div>`;
+          }).join('');
+        }
+      } catch {}
+
+      // Extras de hoje (resumo — sem valores/telefone, isso fica só em extras.html)
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/extras/dia/${hoje}`, { credentials: 'include' });
+        const el = document.getElementById('extrasResumo');
+        if (r.ok) {
+          const d = await r.json();
+          const nomes = (d.vagas || []).map(v => v.nome);
+          const visiveis = nomes.slice(0, 4);
+          const resto = nomes.length - visiveis.length;
+          el.innerHTML = `
+            <div class="ac-resumo-titulo">${d.vagas.length}/${d.total_vagas} vaga(s) de extra preenchida(s) hoje</div>
+            <div class="ac-resumo-pills">
+              ${visiveis.map(n => `<span class="pub-badge">${n}</span>`).join('') || '<span style="color:var(--color-hint);font-size:0.8rem;">Nenhum plantão lançado hoje.</span>'}
+              ${resto > 0 ? `<span class="pub-badge">+${resto}</span>` : ''}
+            </div>`;
+        } else {
+          el.innerHTML = '<div class="pub-vazio">Não foi possível carregar os extras de hoje.</div>';
+        }
+      } catch { document.getElementById('extrasResumo').innerHTML = '<div class="pub-vazio">Não foi possível carregar os extras de hoje.</div>'; }
+
+      // Escala de hoje (resumo — patrulha ativa + administrativo, nunca o mês inteiro)
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/escala/hoje?data=${hoje}`, { credentials: 'include' });
+        const el = document.getElementById('escalaResumo');
+        if (r.ok) {
+          const d = await r.json();
+          if (!d.publicado) {
+            el.innerHTML = '<div class="pub-vazio">Escala do mês ainda não publicada.</div>';
+          } else {
+            const nomes = [...(d.equipe || []), ...(d.administrativo || [])].map(i => i.nome);
+            const visiveis = nomes.slice(0, 6);
+            const resto = nomes.length - visiveis.length;
+            el.innerHTML = `
+              <div class="ac-resumo-titulo">Patrulha ${d.patrulha_hoje || '—'} de serviço hoje</div>
+              <div class="ac-resumo-pills">
+                ${visiveis.map(n => `<span class="pub-badge">${n}</span>`).join('')}
+                ${resto > 0 ? `<span class="pub-badge">+${resto}</span>` : ''}
+              </div>`;
+          }
+        } else {
+          el.innerHTML = '<div class="pub-vazio">Não foi possível carregar a escala de hoje.</div>';
+        }
+      } catch { document.getElementById('escalaResumo').innerHTML = '<div class="pub-vazio">Não foi possível carregar a escala de hoje.</div>'; }
+    }
 
     document.addEventListener('click', e => {
       const temaWrap = document.getElementById('hdr-tema-wrapper');
