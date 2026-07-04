@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=2">
   <script src="assets/js/theme-switcher.js"></script>
 </head>
 <body class="has-sidebar stage-page">
@@ -18,21 +18,6 @@
         <span class="header-linha-1">PREFEITURA MUNICIPAL DE BANANEIRAS</span>
         <span class="header-linha-2">GUARDA CIVIL MUNICIPAL</span>
         <span class="header-linha-3">Secretaria de Administração Pública Municipal</span>
-      </div>
-      <div class="header-actions-row">
-        <button class="header-icon-btn" id="hdr-btn-menu" title="Menu" onclick="toggleSidebar()">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
-        </button>
-        <div class="header-tema-wrapper" id="hdr-tema-wrapper">
-          <button class="header-icon-btn" id="hdr-btn-tema" title="Tema" onclick="toggleTemaMenu()">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5a7.5 7.5 0 1 0 7.5 7.5c0-1.38-1.12-2.5-2.5-2.5h-1.25c-.69 0-1.25-.56-1.25-1.25V5c0-1.38-1.12-2.5-2.5-2.5z"/><circle cx="6.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="11.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="8.5" r="1" fill="currentColor" stroke="none"/></svg>
-          </button>
-          <div class="header-tema-menu" id="hdr-tema-menu">
-            <button class="sb-tema-item" data-theme="gov-modern"      onclick="aplicarTema('gov-modern')"><span class="sb-tema-dot" style="background:#2171B5"></span>Gov Modern</button>
-            <button class="sb-tema-item" data-theme="dark-command"    onclick="aplicarTema('dark-command')"><span class="sb-tema-dot" style="background:#0d1a2e"></span>Dark Command</button>
-            <button class="sb-tema-item" data-theme="google-material" onclick="aplicarTema('google-material')"><span class="sb-tema-dot" style="background:#1A73E8"></span>Claro Operacional</button>
-          </div>
-        </div>
       </div>
       <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
     </header>
@@ -60,6 +45,23 @@
             <div class="app-stage-bg-layer"></div>
           </div>
           <div class="app-stage-overlay"></div>
+
+          <!-- Botões de menu e tema — canto superior esquerdo, sobre o palco -->
+          <div class="stage-float-btns">
+            <button class="header-icon-btn" id="hdr-btn-menu" title="Menu" onclick="toggleSidebar()">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
+            </button>
+            <div class="header-tema-wrapper" id="hdr-tema-wrapper">
+              <button class="header-icon-btn" id="hdr-btn-tema" title="Tema" onclick="toggleTemaMenu()">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5a7.5 7.5 0 1 0 7.5 7.5c0-1.38-1.12-2.5-2.5-2.5h-1.25c-.69 0-1.25-.56-1.25-1.25V5c0-1.38-1.12-2.5-2.5-2.5z"/><circle cx="6.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="11.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="8.5" r="1" fill="currentColor" stroke="none"/></svg>
+              </button>
+              <div class="header-tema-menu" id="hdr-tema-menu">
+                <button class="sb-tema-item" data-theme="gov-modern"      onclick="aplicarTema('gov-modern')"><span class="sb-tema-dot" style="background:#2171B5"></span>Gov Modern</button>
+                <button class="sb-tema-item" data-theme="dark-command"    onclick="aplicarTema('dark-command')"><span class="sb-tema-dot" style="background:#0d1a2e"></span>Dark Command</button>
+                <button class="sb-tema-item" data-theme="google-material" onclick="aplicarTema('google-material')"><span class="sb-tema-dot" style="background:#1A73E8"></span>Claro Operacional</button>
+              </div>
+            </div>
+          </div>
 
           <button class="app-stage-btn" id="btnNovoBO" style="display:none" title="Criar Boletim de Ocorrência" aria-label="Criar Boletim de Ocorrência" onclick="openPageModal('/pages/dashboard.html','Novo Boletim de Ocorrência')">
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M8 13h4M10 11v4"/></svg>
@@ -173,13 +175,6 @@
       '/pages/logs.html':       `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg>`,
       '/pages/usuarios.html':   `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="3"/><path d="M1 18c0-3.31 2.91-6 6.5-6"/><circle cx="14" cy="8" r="2.5"/><path d="M19 18c0-2.76-2.24-5-5-5"/></svg>`,
     };
-    const GROUP_ICONS = {
-      'Operacional':        `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l6 2.2v4.3c0 3.6-2.5 6.6-6 8-3.5-1.4-6-4.4-6-8V4.7z"/><path d="M7.5 10l1.8 1.8L13 8"/></svg>`,
-      'Escalas & Plantões': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M8 8v9M13 8v9"/><path d="M7 2v3M13 2v3"/></svg>`,
-      'Administração':      `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6.7a3.3 3.3 0 100 6.6 3.3 3.3 0 000-6.6z"/><path d="M16.2 12.1a1.3 1.3 0 00.26 1.43l.05.05a1.6 1.6 0 11-2.26 2.26l-.05-.05a1.3 1.3 0 00-2.2.92V17a1.6 1.6 0 11-3.2 0v-.06a1.3 1.3 0 00-2.2-.92l-.05.05a1.6 1.6 0 11-2.26-2.26l.05-.05A1.3 1.3 0 003.9 12.1H3.8a1.6 1.6 0 110-3.2h.06a1.3 1.3 0 00.92-2.2l-.05-.05A1.6 1.6 0 117 4.4l.05.05a1.3 1.3 0 001.43.26H8.5a1.3 1.3 0 00.8-1.19V3.4a1.6 1.6 0 113.2 0v.06a1.3 1.3 0 00.8 1.19 1.3 1.3 0 001.43-.26l.05-.05a1.6 1.6 0 112.26 2.26l-.05.05a1.3 1.3 0 00-.26 1.43V8.5a1.3 1.3 0 001.19.8h.06a1.6 1.6 0 110 3.2h-.06a1.3 1.3 0 00-1.19.8z"/></svg>`,
-    };
-    const CHEVRON_DOWN = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8l4 4 4-4"/></svg>`;
-
     function openPageModal(href, title, opts) {
       closeSidebar();
       const modal = document.getElementById('pg-modal');
@@ -252,38 +247,16 @@
       document.getElementById('sb-overlay').style.display = 'none';
     }
 
-    function _grpState() { try { return JSON.parse(localStorage.getItem('gcm-sb-grupos') || '{}'); } catch { return {}; } }
-    function _grpSave(s)  { localStorage.setItem('gcm-sb-grupos', JSON.stringify(s)); }
-
-    function toggleSidebarGroup(btn) {
-      const g = btn.closest('.sb-group');
-      if (!g) return;
-      const collapsed = g.classList.toggle('collapsed');
-      const s = _grpState();
-      s[g.dataset.grupo] = collapsed;
-      _grpSave(s);
-    }
-
     function buildSidebarNav(role) {
       const nav = document.getElementById('sbNav');
-      const state = _grpState();
       let html = '';
       MENU.forEach(secao => {
         const itens = secao.items.filter(i => i.roles.includes(role));
-        if (!itens.length) return;
-        const collapsed = state[secao.group] === true;
-        const linksHTML = itens.map(i =>
-          `<a href="${i.href}" class="sb-link" onclick="openPageModal('${i.href}','${i.label}');return false;">
+        itens.forEach(i => {
+          html += `<a href="${i.href}" class="sb-link" onclick="openPageModal('${i.href}','${i.label}');return false;">
             <span class="sb-icon">${NAV_ICONS[i.href] || ''}</span><span>${i.label}</span>
-          </a>`
-        ).join('');
-        html += `<div class="sb-group${collapsed ? ' collapsed' : ''}" data-grupo="${secao.group}">
-          <button type="button" class="sb-group-head" onclick="toggleSidebarGroup(this)">
-            <span class="sb-group-title">${secao.group}</span>
-            <span class="sb-group-chev">${CHEVRON_DOWN}</span>
-          </button>
-          <div class="sb-group-items">${linksHTML}</div>
-        </div>`;
+          </a>`;
+        });
       });
       nav.innerHTML = html;
 
@@ -318,7 +291,10 @@
       const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' }[role] || 'Agente GCM';
       document.getElementById('sbNome').textContent = perfil.usuario || '—';
       document.getElementById('sbRole').textContent = roleLabel;
-      document.getElementById('sbAvatar').textContent = (perfil.usuario || '?')[0].toUpperCase();
+      const sbAvatar = document.getElementById('sbAvatar');
+      sbAvatar.innerHTML = perfil.foto
+        ? `<img src="${perfil.foto}" alt="Foto de perfil">`
+        : (perfil.usuario || '?')[0].toUpperCase();
       buildSidebarNav(role);
     };
 
