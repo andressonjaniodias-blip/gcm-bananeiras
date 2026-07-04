@@ -249,6 +249,7 @@ body {
    APP SHELL — card flutuante centralizado
    ============================================================ */
 #app-shell {
+  position: relative;
   max-width: 1520px;
   width: 100%;
   margin: 0 auto;
