@@ -2701,6 +2701,7 @@ body.stage-page #sidebar {
   width: 260px;
   z-index: 400;
   transform: translateX(-100%) !important;
+  transition: transform 0.28s cubic-bezier(.4,0,.2,1);
   box-shadow: 4px 0 24px rgba(0,0,0,0.45);
 }
 body.stage-page.sb-open #sidebar { transform: translateX(0) !important; }
