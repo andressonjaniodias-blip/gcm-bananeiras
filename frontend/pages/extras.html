@@ -71,6 +71,7 @@
       <nav class="tabs">
         <button class="tab-btn active" onclick="showTab('dia',event)">Vagas do Dia</button>
         <button class="tab-btn" onclick="showTab('historico',event)">Histórico</button>
+        <button class="tab-btn" onclick="showTab('meusExtras',event)">Meus Extras</button>
         <button class="tab-btn cmd-only" onclick="showTab('pagamento',event)" style="display:none">Relatório de Pagamento</button>
       </nav>
     </div>
@@ -138,6 +139,14 @@
     <section id="historico" class="tab-content hidden">
       <h3>Dias com plantões lançados</h3>
       <div id="listaDias" style="margin-top:10px;"><p style="color:var(--color-hint);text-align:center;">Carregando...</p></div>
+    </section>
+
+    <!-- MEUS EXTRAS -->
+    <section id="meusExtras" class="tab-content hidden">
+      <h3>Meus Plantões Extras</h3>
+      <p style="font-size:0.82rem;color:var(--color-hint);margin:0 0 10px;">
+        Histórico dos seus próprios plantões extras, com valores. Os plantões de outros agentes não mostram valor/telefone aqui nem nas outras abas.</p>
+      <div id="listaMeusExtras" style="margin-top:10px;"><p style="color:var(--color-hint);text-align:center;">Carregando...</p></div>
     </section>
 
     <!-- PAGAMENTO -->
@@ -319,6 +328,11 @@
       } catch { msg('Erro de conexão.', false); }
     }
 
+    // valor/telefone vêm null quando o back-end redige dados de outro agente
+    // (o usuário logado não é comando nem dono do lançamento).
+    function fmtValor(v)    { return v.valor    == null ? '<span style="color:var(--color-hint)">valor privado</span>'    : `R$ ${Number(v.valor).toFixed(2)}`; }
+    function fmtTelefone(v) { return v.telefone == null && v.valor == null ? '<span style="color:var(--color-hint)">telefone privado</span>' : (v.telefone || 'sem telefone'); }
+
     const SVG_EDIT  = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 3l3 3L6 17H3v-3L14 3z"/></svg>`;
     const SVG_TRASH = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/></svg>`;
 
@@ -335,7 +349,7 @@
           <div class="vc-num">${i+1}</div>
           <div class="vc-body">
             <div class="vc-nome">${v.nome} ${v.matricula?'<span style="font-weight:400;color:var(--color-text-muted)">— '+v.matricula+'</span>':''}</div>
-            <div class="vc-meta">${v.tipo}h · ${v.funcao||'—'} · ${v.hora_inicio||'--'}–${v.hora_fim||'--'} · ${v.telefone||'sem telefone'} · R$ ${Number(v.valor).toFixed(2)}${v.liberado_por?' · <span style="color:#b45309">liberado por '+v.liberado_por+'</span>':''}</div>
+            <div class="vc-meta">${v.tipo}h · ${v.funcao||'—'} · ${v.hora_inicio||'--'}–${v.hora_fim||'--'} · ${fmtTelefone(v)} · ${fmtValor(v)}${v.liberado_por?' · <span style="color:#b45309">liberado por '+v.liberado_por+'</span>':''}</div>
           </div>
           <div class="vc-actions">
             ${podeEditar?`<button class="btn-icon btn-icon-editar" title="Editar" onclick="editarVaga(${v.id})">${SVG_EDIT}</button>`:''}
@@ -437,6 +451,28 @@
       await baixarPDF(`${API_BASE_URL}/api/extras/dia/${data}/pdf`, `extras-${data}.pdf`);
     }
 
+    async function carregarMeusExtras() {
+      const cont = document.getElementById('listaMeusExtras');
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/extras/meus`, { credentials:'include' });
+        const vagas = await r.json();
+        if (!vagas.length) { cont.innerHTML = '<p style="color:var(--color-hint);text-align:center;">Nenhum plantão extra encontrado.</p>'; return; }
+        const total = vagas.reduce((a,v)=>a+Number(v.valor||0),0);
+        cont.innerHTML = vagas.map(v => {
+          const data = String(v.data).slice(0,10);
+          const [y,m,dd] = data.split('-');
+          return `<div class="vaga-card" style="margin-bottom:8px;">
+            <div class="vc-body">
+              <div class="vc-nome">${dd}/${m}/${y}</div>
+              <div class="vc-meta">${v.tipo}h · ${v.funcao||'—'} · ${v.hora_inicio||'--'}–${v.hora_fim||'--'} · R$ ${Number(v.valor).toFixed(2)}</div>
+            </div>
+          </div>`;
+        }).join('') + `<div style="text-align:right;font-weight:700;color:var(--color-primary);margin-top:8px;">
+          Total: ${vagas.length} plantão(ões) — R$ ${total.toFixed(2)}
+        </div>`;
+      } catch { cont.innerHTML = '<p style="color:var(--color-danger);text-align:center;">Erro ao carregar.</p>'; }
+    }
+
     async function carregarDias() {
       const cont = document.getElementById('listaDias');
       try {
@@ -470,13 +506,14 @@
         if (!vagas.length) {
           body.innerHTML = '<p style="color:var(--color-hint);">Nenhum plantão lançado neste dia.</p>';
         } else {
+          const totalRedigido = vagas.some(v => v.valor == null);
           body.innerHTML = vagas.map(v => `<div class="vaga-card" style="margin-bottom:8px;">
             <div class="vc-body">
               <div class="vc-nome">${v.nome} ${v.matricula?'<span style="font-weight:400;color:var(--color-text-muted)">— '+v.matricula+'</span>':''}</div>
-              <div class="vc-meta">${v.tipo}h · ${v.funcao||'—'} · ${v.hora_inicio||'--'}–${v.hora_fim||'--'} · ${v.telefone||'sem telefone'} · R$ ${Number(v.valor).toFixed(2)}</div>
+              <div class="vc-meta">${v.tipo}h · ${v.funcao||'—'} · ${v.hora_inicio||'--'}–${v.hora_fim||'--'} · ${fmtTelefone(v)} · ${fmtValor(v)}</div>
             </div>
           </div>`).join('') + `<div style="text-align:right;font-weight:700;color:var(--color-primary);margin-top:8px;">
-            Total: ${vagas.length} plantão(ões) — R$ ${vagas.reduce((a,v)=>a+Number(v.valor),0).toFixed(2)}
+            Total: ${vagas.length} plantão(ões)${totalRedigido ? '' : ' — R$ ' + vagas.reduce((a,v)=>a+Number(v.valor),0).toFixed(2)}
           </div>`;
         }
       } catch { body.innerHTML = '<p style="color:var(--color-danger);">Erro ao carregar detalhes.</p>'; }
@@ -526,6 +563,7 @@
       document.getElementById(id).classList.remove('hidden');
       if (ev?.target) ev.target.classList.add('active');
       if (id==='historico') carregarDias();
+      if (id==='meusExtras') carregarMeusExtras();
     };
   </script>
 </body>
