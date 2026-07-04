@@ -15,6 +15,23 @@ const LIMITE_HORAS = 96;   // 4 plantões de 24h por quinzena
 
 function ehComando(req)      { return ['admin', 'supervisor'].includes(req.usuario?.role); }
 
+// Busca o agente_id vinculado ao usuário logado (usuarios.usuario = agentes.usuario)
+async function meuAgenteId(req) {
+  const { rows } = await pool.query(`SELECT id FROM agentes WHERE usuario = $1`, [req.usuario.usuario]);
+  return rows[0]?.id ?? null;
+}
+
+// Remove valor/telefone dos plantões que não pertencem ao requisitante (a não ser
+// que ele seja comando) — a lista de presença continua pública, os dados
+// financeiros/contato de cada um são privados.
+async function redigirSensiveis(vagas, req) {
+  if (ehComando(req)) return vagas;
+  const meuId = await meuAgenteId(req);
+  return vagas.map(v => (v.agente_id === meuId)
+    ? v
+    : { ...v, valor: null, telefone: null });
+}
+
 // Normaliza uma coluna DATE do Postgres (pode vir como Date ou string) para 'YYYY-MM-DD'
 function ymd(d) {
   return d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10);
@@ -89,9 +106,28 @@ router.get('/dia/:data', verificarToken, async (req, res) => {
     const { rows } = await pool.query(
       `SELECT * FROM extras_vagas WHERE data = $1 ORDER BY criado_em`, [req.params.data]
     );
+    const vagas = await redigirSensiveis(rows, req);
     const totalVagas = await vagasDoDia(req.params.data);
     const fechado = await diaFechado(req.params.data);
-    res.json({ data: req.params.data, vagas: rows, total_vagas: totalVagas, livres: Math.max(0, totalVagas - rows.length), fechado });
+    res.json({ data: req.params.data, vagas, total_vagas: totalVagas, livres: Math.max(0, totalVagas - rows.length), fechado });
+  } catch (err) { erroServidor(res, err); }
+});
+
+// Histórico de extras do próprio agente logado (com valor — é o histórico dele mesmo)
+router.get('/meus', verificarToken, async (req, res) => {
+  try {
+    const agenteId = await meuAgenteId(req);
+    if (!agenteId) return res.json([]);
+    const { inicio, fim } = req.query;
+    const { rows } = await pool.query(
+      `SELECT * FROM extras_vagas
+       WHERE agente_id = $1
+         AND ($2::date IS NULL OR data >= $2)
+         AND ($3::date IS NULL OR data <= $3)
+       ORDER BY data DESC`,
+      [agenteId, inicio || null, fim || null]
+    );
+    res.json(rows);
   } catch (err) { erroServidor(res, err); }
 });
 
@@ -254,8 +290,9 @@ router.delete('/:id', verificarToken, async (req, res) => {
   } catch (err) { erroServidor(res, err); }
 });
 
-// Monta o PDF da lista de plantões extras de um dia
-async function construirPdfDia(dataStr, vagas) {
+// Monta o PDF da lista de plantões extras de um dia.
+// `redigido=true` omite o total geral (soma de valores alheios não é exibida).
+async function construirPdfDia(dataStr, vagas, redigido = false) {
   const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 40, right: 40 }, size: 'A4', layout: 'landscape', bufferPages: true });
   const bufferPromise = coletarPdfBuffer(doc);
 
@@ -300,13 +337,18 @@ async function construirPdfDia(dataStr, vagas) {
         drawRow([
           v.nome, v.matricula || '—', v.funcao || '—', `${v.tipo}h`,
           v.hora_inicio || '—', v.hora_fim || '—', v.telefone || '—',
-          `R$ ${Number(v.valor).toFixed(2)}`,
+          v.valor == null ? '—' : `R$ ${Number(v.valor).toFixed(2)}`,
         ], { zebra: idx % 2 === 1 });
       });
-      const total = vagas.reduce((a, v) => a + Number(v.valor), 0);
       doc.moveDown(0.5);
-      doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(10)
-         .text(`Total do dia: ${vagas.length} plantão(ões) — R$ ${total.toFixed(2)}`, margem, y + 8, { width: conteudoW, align: 'right' });
+      if (redigido) {
+        doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(10)
+           .text(`Total do dia: ${vagas.length} plantão(ões)`, margem, y + 8, { width: conteudoW, align: 'right' });
+      } else {
+        const total = vagas.reduce((a, v) => a + Number(v.valor || 0), 0);
+        doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(10)
+           .text(`Total do dia: ${vagas.length} plantão(ões) — R$ ${total.toFixed(2)}`, margem, y + 8, { width: conteudoW, align: 'right' });
+      }
     }
 
     rodapePDF(doc, { info: `Plantões Extras — ${fmtData(dataStr)} — Bananeiras/PB` });
@@ -319,10 +361,11 @@ async function construirPdfDia(dataStr, vagas) {
 // ── PDF: lista de extras de um dia ───────────────────────────────────────────
 router.get('/dia/:data/pdf', verificarToken, async (req, res) => {
   try {
-    const { rows: vagas } = await pool.query(
+    const { rows } = await pool.query(
       `SELECT * FROM extras_vagas WHERE data = $1 ORDER BY criado_em`, [req.params.data]
     );
-    const pdfBuffer = await construirPdfDia(req.params.data, vagas);
+    const vagas = await redigirSensiveis(rows, req);
+    const pdfBuffer = await construirPdfDia(req.params.data, vagas, !ehComando(req));
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="extras-${req.params.data}.pdf"`);
