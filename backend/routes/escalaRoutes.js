@@ -122,7 +122,11 @@ router.get('/:id', verificarToken, async (req, res) => {
     const { rows } = await pool.query(`SELECT * FROM escalas WHERE id = $1`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Escala não encontrada.' });
     const { rows: itens } = await pool.query(
-      `SELECT * FROM escala_itens WHERE escala_id = $1 ORDER BY patrulha, posto, nome`,
+      `SELECT ei.*, COALESCE(NULLIF(a.usuario, ''), ei.nome) AS nome_exibicao
+         FROM escala_itens ei
+         LEFT JOIN agentes a ON a.id = ei.agente_id
+        WHERE ei.escala_id = $1
+        ORDER BY ei.patrulha, ei.posto, ei.nome`,
       [req.params.id]
     );
     res.json({ escala: rows[0], itens });
@@ -213,7 +217,11 @@ router.delete('/:id', verificarToken, verificarSupervisor, async (req, res) => {
 // Monta o PDF da escala mensal (colunas = Patrulhas 1..4 + bloco Seg–Sex)
 async function construirPdfEscala(escala) {
   const { rows: itens } = await pool.query(
-    `SELECT * FROM escala_itens WHERE escala_id = $1 ORDER BY patrulha, posto, nome`,
+    `SELECT ei.*, COALESCE(NULLIF(a.usuario, ''), ei.nome) AS nome_exibicao
+       FROM escala_itens ei
+       LEFT JOIN agentes a ON a.id = ei.agente_id
+      WHERE ei.escala_id = $1
+      ORDER BY ei.patrulha, ei.posto, ei.nome`,
     [escala.id]
   );
 
@@ -266,7 +274,7 @@ async function construirPdfEscala(escala) {
         porPosto[posto].forEach(i => {
           const reg = i.regime === '12x36' ? ` (12x36${i.turno ? '/' + i.turno[0].toUpperCase() : ''})` : '';
           doc.fillColor('#222').fontSize(8).font('Helvetica')
-             .text(`• ${i.nome}${i.matricula ? ' — ' + i.matricula : ''}${reg}`, x + 4, y, { width: colW - 6 });
+             .text(`• ${i.nome_exibicao || i.nome}${reg}`, x + 4, y, { width: colW - 6 });
           y = doc.y + 0.5;
         });
         y += 2;
@@ -287,7 +295,7 @@ async function construirPdfEscala(escala) {
       const porPosto = {};
       adm.forEach(i => { (porPosto[i.posto] = porPosto[i.posto] || []).push(i); });
       Object.keys(porPosto).forEach(posto => {
-        const nomes = porPosto[posto].map(i => `${i.nome}${i.matricula ? ' (' + i.matricula + ')' : ''}`).join(', ');
+        const nomes = porPosto[posto].map(i => i.nome_exibicao || i.nome).join(', ');
         doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text(`${posto}: `, { continued: true })
            .fillColor('#222').font('Helvetica').text(nomes);
       });
