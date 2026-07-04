@@ -554,7 +554,6 @@
             const visiveis = nomes.slice(0, 6);
             const resto = nomes.length - visiveis.length;
             el.innerHTML = `
-              <div class="ac-resumo-titulo">Equipe do dia</div>
               <div class="ac-resumo-pills">
                 ${visiveis.map(n => `<span class="pub-badge">${n}</span>`).join('')}
                 ${resto > 0 ? `<span class="pub-badge">+${resto}</span>` : ''}
