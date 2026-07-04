@@ -104,10 +104,6 @@
           <label class="obrigatorio">Nome</label>
           <input type="text" id="fNome" placeholder="Nome do agente">
         </div>
-        <div class="campo-group" style="flex:0 1 110px;">
-          <label>Matrícula</label>
-          <input type="text" id="fMatricula">
-        </div>
         <div class="campo-group" style="flex:2 1 260px;">
           <label>Função no plantão</label>
           <input type="text" id="fFuncao" placeholder="Ex: Patrulhamento, Base">
@@ -125,10 +121,6 @@
           <label>Horário início</label>
           <input type="time" id="fInicio" onchange="atualizarPreviaFim()">
           <small id="previaFim" style="color:var(--color-text-muted);"></small>
-        </div>
-        <div class="campo-group" style="flex:0 1 190px;">
-          <label>Telefone de contato</label>
-          <input type="text" id="fTelefone" placeholder="(83) 9....">
         </div>
       </div>
       <div class="actions" style="margin-top:2px;margin-bottom:16px;gap:10px;flex-wrap:wrap;">
@@ -236,14 +228,11 @@
     }
 
     function preencherMeusDados() {
-      // Agente comum: trava nos próprios dados
+      // Agente comum: trava no próprio nome (matrícula/telefone vêm da ficha do agente)
       if (!isComando()) {
         const a = MEU_AGENTE;
         document.getElementById('fNome').value = a?.nome || PERFIL.usuario || '';
-        document.getElementById('fMatricula').value = a?.matricula || '';
-        document.getElementById('fTelefone').value = a?.telefone || '';
         document.getElementById('fNome').readOnly = true;
-        document.getElementById('fMatricula').readOnly = true;
       }
     }
 
@@ -252,14 +241,17 @@
       return MEU_AGENTE?.id || null;
     }
 
+    // Objeto completo do agente vinculado à inscrição (fornece matrícula/telefone da ficha)
+    function agenteSelecionado() {
+      const id = agenteSelecionadoId();
+      if (!id) return null;
+      return AGENTES.find(a => String(a.id) === String(id)) || null;
+    }
+
     function onSelAgente() {
       const id = document.getElementById('selAgente').value;
       const a = AGENTES.find(x => String(x.id) === String(id));
-      if (a) {
-        document.getElementById('fNome').value = a.nome || '';
-        document.getElementById('fMatricula').value = a.matricula || '';
-        document.getElementById('fTelefone').value = a.telefone || '';
-      }
+      document.getElementById('fNome').value = a?.nome || '';
       atualizarCota();
     }
 
@@ -383,13 +375,14 @@
       const data = document.getElementById('dataDia').value;
       const nome = document.getElementById('fNome').value.trim();
       if (!data || !nome) { msg('Informe a data e o nome.', false); return; }
+      const agente = agenteSelecionado();
       const payload = {
-        data, agente_id: agenteSelecionadoId() ? Number(agenteSelecionadoId()) : null,
-        nome, matricula: document.getElementById('fMatricula').value.trim(),
+        data, agente_id: agente ? Number(agente.id) : null,
+        nome, matricula: agente?.matricula || '',
         funcao: document.getElementById('fFuncao').value.trim(),
         tipo: document.getElementById('fTipo').value,
         hora_inicio: document.getElementById('fInicio').value,
-        telefone: document.getElementById('fTelefone').value.trim(),
+        telefone: agente?.telefone || '',
         override: !!force,
       };
       try {
@@ -430,11 +423,10 @@
       const funcao = prompt('Função no plantão:', v.funcao||''); if (funcao===null) return;
       const tipo = prompt('Duração (12 ou 24):', v.tipo); if (tipo===null) return;
       const hi = prompt('Início (HH:MM) — término é calculado automaticamente:', v.hora_inicio||''); if (hi===null) return;
-      const tel = prompt('Telefone:', v.telefone||''); if (tel===null) return;
       try {
         const rr = await fetch(`${API_BASE_URL}/api/extras/${id}`, {
           method:'PUT', credentials:'include', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ nome, funcao, tipo, hora_inicio:hi, telefone:tel })
+          body: JSON.stringify({ nome, funcao, tipo, hora_inicio:hi })
         });
         if (rr.ok) carregarDia(); else { const e=await rr.json(); msg(e.error||'Erro.', false); }
       } catch { msg('Erro de conexão.', false); }
