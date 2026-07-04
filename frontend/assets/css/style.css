@@ -1593,7 +1593,11 @@ table button:hover { background: var(--color-primary-hover); }
   border: 3px solid rgba(255,255,255,0.25);
   box-shadow: 0 4px 14px rgba(0,0,0,0.35);
   overflow: hidden;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
 }
+.sb-avatar:hover { opacity: 0.85; transform: scale(1.04); }
 
 .sb-avatar img {
   width: 100%;
@@ -1659,7 +1663,15 @@ table button:hover { background: var(--color-primary-hover); }
   padding: 8px 0;
   display: flex;
   flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.22) transparent;
 }
+.sb-nav::-webkit-scrollbar { width: 5px; }
+.sb-nav::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.22);
+  border-radius: 4px;
+}
+.sb-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.38); }
 
 .sb-link {
   display: flex;
@@ -2670,11 +2682,34 @@ body.stage-page #app-content {
   flex-direction: column;
 }
 
-/* No desktop, #app-content ganha padding-top genérico (para páginas de
-   formulário respirarem abaixo do header) — no palco isso cria um vão
-   entre o header e o carrossel de fotos. Zera aqui para a foto encostar. */
-@media (min-width: 1025px) {
-  body.stage-page #app-content { padding-top: 0; }
+/* #app-content ganha padding genérico em outras telas (para formulários
+   respirarem abaixo do header) — no palco isso cria um vão entre o header
+   e o carrossel de fotos. Zera em qualquer tamanho de tela. */
+body.stage-page #app-content {
+  padding: 0;
+  margin-left: 0;
+}
+
+/* Sidebar do palco: sempre um overlay (nunca reduz a largura da foto),
+   igual em qualquer tamanho de tela — desliza por cima do carrossel. */
+body.stage-page #sidebar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  height: auto;
+  left: 0;
+  width: 260px;
+  z-index: 400;
+  transform: translateX(-100%);
+  box-shadow: 4px 0 24px rgba(0,0,0,0.45);
+}
+body.stage-page.sb-open #sidebar { transform: translateX(0); }
+
+/* No mobile, o header fixo ignora a margem/cantos arredondados do
+   app-shell e "vaza" para fora da caixa. No palco, mantém o header no
+   fluxo normal — ele já fica dentro da caixa por natureza. */
+@media (max-width: 1024px) {
+  body.stage-page .header { position: static; }
 }
 
 /* ── Botões flutuantes de menu e tema — canto superior esquerdo do palco ── */
