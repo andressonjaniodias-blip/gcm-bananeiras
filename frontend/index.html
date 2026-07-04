@@ -16,8 +16,8 @@
       position: absolute;
       left: 24px;
       bottom: 24px;
-      width: calc(50% - 24px);
       height: calc(50% - 24px);
+      aspect-ratio: 1 / 1;
       z-index: 1;
     }
     .pub-panel {
@@ -37,8 +37,7 @@
       display: flex; align-items: center; gap: 10px;
     }
     .pub-panel-header svg { width: 18px; height: 18px; stroke: rgba(255,255,255,0.8); flex-shrink: 0; }
-    .pub-panel-header-title { font-size: 0.95rem; font-weight: 700; }
-    .pub-panel-header-sub   { font-size: 0.72rem; opacity: 0.8; margin-top: 1px; }
+    .pub-panel-header-sub   { font-size: 1.05rem; font-weight: 700; }
     .pub-list { padding: 0; }
 
     .pub-item {
@@ -183,10 +182,7 @@
          onmouseenter="acPause()" onmouseleave="acResume()">
       <div class="pub-panel-header">
         <svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h14M3 10h14M3 15h8"/></svg>
-        <div>
-          <div class="pub-panel-header-title">Quadro de Avisos</div>
-          <div class="pub-panel-header-sub" id="acHeaderSub">Publicações Oficiais</div>
-        </div>
+        <div class="pub-panel-header-sub" id="acHeaderSub">Publicações Oficiais</div>
       </div>
       <div class="ac-viewport">
         <div class="ac-track" id="acTrack">
@@ -558,7 +554,7 @@
             const visiveis = nomes.slice(0, 6);
             const resto = nomes.length - visiveis.length;
             el.innerHTML = `
-              <div class="ac-resumo-titulo">Patrulha ${d.patrulha_hoje || '—'} de serviço hoje</div>
+              <div class="ac-resumo-titulo">Equipe do dia</div>
               <div class="ac-resumo-pills">
                 ${visiveis.map(n => `<span class="pub-badge">${n}</span>`).join('')}
                 ${resto > 0 ? `<span class="pub-badge">+${resto}</span>` : ''}
