@@ -11,18 +11,6 @@
   <script src="../assets/js/theme-switcher.js"></script>
   <script src="../assets/js/sidebar.js?v=2"></script>
   <style>
-    /* ── Boas-vindas ─────────────────────────────────────────────────────────── */
-    .home-welcome {
-      margin-bottom: 24px;
-    }
-    .home-welcome h2 {
-      font-size: 1.25rem; font-weight: 700;
-      color: var(--color-text); margin: 0 0 4px;
-    }
-    .home-welcome p {
-      font-size: 0.85rem; color: var(--color-text-muted); margin: 0;
-    }
-
     /* ── Painel de publicações ───────────────────────────────────────────────── */
     .pub-panel {
       background: var(--bg-card);
@@ -30,6 +18,18 @@
       box-shadow: var(--shadow-card);
       border: 1px solid var(--color-bloco-border);
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Ancoragem no canto inferior esquerdo do #app-shell, ocupando 1/4 da área ── */
+    .avisos-floating {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      width: calc(50% - 24px);
+      height: calc(50% - 24px);
+      z-index: 1; /* fica atrás do menu lateral (z-index: 300) */
     }
     .pub-panel-header {
       padding: 14px 18px;
@@ -106,9 +106,9 @@
     .pub-rodape a:hover { text-decoration: underline; }
 
     /* ── Carrossel do quadro de avisos ───────────────────────────────────────── */
-    .ac-viewport { overflow: hidden; }
-    .ac-track { display: flex; transition: transform 0.45s ease; }
-    .ac-slide { flex: 0 0 100%; min-width: 100%; min-height: 220px; }
+    .ac-viewport { overflow: hidden; flex: 1; min-height: 0; }
+    .ac-track { display: flex; height: 100%; transition: transform 0.45s ease; }
+    .ac-slide { flex: 0 0 100%; min-width: 100%; height: 100%; overflow-y: auto; }
     .ac-dots { display: flex; justify-content: center; gap: 6px; padding: 10px 0; border-top: 1px solid var(--color-border); }
     .ac-dot {
       width: 7px; height: 7px; border-radius: 50%;
@@ -135,14 +135,8 @@
   <main style="padding: 0 clamp(12px,2vw,24px);">
     <div class="home-container" id="homeRoot">
 
-      <!-- Boas-vindas -->
-      <div class="home-welcome">
-        <h2 id="welcomeTitle">Bem-vindo!</h2>
-        <p id="dataHoje"></p>
-      </div>
-
-      <!-- Quadro de avisos (carrossel) -->
-      <div class="pub-panel" id="avisosCarousel"
+      <!-- Quadro de avisos (carrossel) — reancorado no #app-shell via JS -->
+      <div class="pub-panel avisos-floating" id="avisosCarousel"
            onmouseenter="acPause()" onmouseleave="acResume()">
         <div class="pub-panel-header">
           <svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h14M3 10h14M3 15h8"/></svg>
@@ -197,18 +191,7 @@
   <script>
     (async () => {
       const agora = new Date();
-
-      const perfil = JSON.parse(sessionStorage.getItem('perfil') || '{}');
-      const role = perfil.role || 'agente';
-
-      // Personaliza saudação
-      const nomeDisplay = perfil.usuario || 'Agente';
-      const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' }[role] || 'Agente GCM';
-      document.getElementById('welcomeTitle').textContent = `Bem-vindo, ${nomeDisplay}`;
-      document.getElementById('dataHoje').textContent =
-        roleLabel + ' · ' + agora.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-      const hoje = agora.toISOString().slice(0, 10);
+      const hoje  = agora.toISOString().slice(0, 10);
 
       // Publicações em destaque
       try {
@@ -296,6 +279,15 @@
     function acPause() { clearInterval(acTimer); }
     function acResume() { acTimer = setInterval(acNext, 6000); }
     acResume();
+
+    // ── Reancora o Quadro de Avisos como filho direto do #app-shell ────────────
+    // (o #app-shell só existe depois que sidebar.js monta o shell no DOMContentLoaded;
+    // este listener é registrado depois do dele, então roda em seguida)
+    document.addEventListener('DOMContentLoaded', () => {
+      const shell = document.getElementById('app-shell');
+      const painel = document.getElementById('avisosCarousel');
+      if (shell && painel) shell.appendChild(painel);
+    });
 
     const SVG_PDF = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M7 13h2c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1H7v4"/></svg>`;
     const SVG_DOC = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M7 11h6M7 14h4"/></svg>`;
