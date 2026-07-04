@@ -2700,10 +2700,10 @@ body.stage-page #sidebar {
   left: 0;
   width: 260px;
   z-index: 400;
-  transform: translateX(-100%);
+  transform: translateX(-100%) !important;
   box-shadow: 4px 0 24px rgba(0,0,0,0.45);
 }
-body.stage-page.sb-open #sidebar { transform: translateX(0); }
+body.stage-page.sb-open #sidebar { transform: translateX(0) !important; }
 
 /* No mobile, o header fixo ignora a margem/cantos arredondados do
    app-shell e "vaza" para fora da caixa. No palco, mantém o header no
