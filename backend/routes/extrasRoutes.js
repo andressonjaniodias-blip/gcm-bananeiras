@@ -7,15 +7,43 @@ const PDFDocument  = require('pdfkit');
 const { cabecalhoPDF, rodapePDF, fmtData, NAVY } = require('../utils/pdfLayout');
 const { quinzenaDe, numeroFolga, diaDoMes } = require('../utils/escalaCalc');
 const { horasDoTipo, valorDoTipo, calcularHoraFim } = require('../utils/extrasCalc');
+const { coletarPdfBuffer } = require('../utils/pdfBuffer');
+const { enviarPdfNotificacao } = require('../utils/email');
 
 const VAGAS_DIA_PADRAO = 4; // padrão de vagas por dia (ajustável por admin/supervisor)
 const LIMITE_HORAS = 96;   // 4 plantões de 24h por quinzena
 
 function ehComando(req)      { return ['admin', 'supervisor'].includes(req.usuario?.role); }
 
+// Normaliza uma coluna DATE do Postgres (pode vir como Date ou string) para 'YYYY-MM-DD'
+function ymd(d) {
+  return d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10);
+}
+
 async function vagasDoDia(dataStr) {
   const { rows } = await pool.query(`SELECT vagas_total FROM extras_config_dia WHERE data = $1`, [dataStr]);
   return rows.length ? rows[0].vagas_total : VAGAS_DIA_PADRAO;
+}
+
+async function diaFechado(dataStr) {
+  const { rows } = await pool.query(`SELECT fechado FROM extras_config_dia WHERE data = $1`, [dataStr]);
+  return rows.length ? !!rows[0].fechado : false;
+}
+
+// Reenvia por e-mail o PDF atualizado da lista do dia, mas somente se a lista já
+// tiver sido fechada anteriormente (fire-and-forget; nunca deve quebrar a rota chamadora).
+async function reenviarPdfSeFechado(dataStr, motivo, usuarioReq) {
+  if (!(await diaFechado(dataStr))) return;
+  const { rows: vagas } = await pool.query(
+    `SELECT * FROM extras_vagas WHERE data = $1 ORDER BY criado_em`, [dataStr]
+  );
+  const pdfBuffer = await construirPdfDia(dataStr, vagas);
+  enviarPdfNotificacao({
+    subject: `Lista de extras atualizada — ${fmtData(dataStr)}`,
+    html: `<p>A lista de plantões extras de <b>${fmtData(dataStr)}</b>, já fechada, foi atualizada por <b>${usuarioReq}</b> (${motivo}).</p>`,
+    pdfBuffer,
+    filename: `extras-${dataStr}.pdf`,
+  });
 }
 
 // Soma de horas já lançadas para um agente na quinzena de uma data (exclui uma vaga opcional)
@@ -62,7 +90,8 @@ router.get('/dia/:data', verificarToken, async (req, res) => {
       `SELECT * FROM extras_vagas WHERE data = $1 ORDER BY criado_em`, [req.params.data]
     );
     const totalVagas = await vagasDoDia(req.params.data);
-    res.json({ data: req.params.data, vagas: rows, total_vagas: totalVagas, livres: Math.max(0, totalVagas - rows.length) });
+    const fechado = await diaFechado(req.params.data);
+    res.json({ data: req.params.data, vagas: rows, total_vagas: totalVagas, livres: Math.max(0, totalVagas - rows.length), fechado });
   } catch (err) { erroServidor(res, err); }
 });
 
@@ -116,6 +145,10 @@ router.post('/', verificarToken, async (req, res) => {
     if (!data || !nome) return res.status(400).json({ error: 'Data e nome são obrigatórios.' });
     if (!['12', '24'].includes(String(tipo))) return res.status(400).json({ error: 'Tipo deve ser 12 ou 24 horas.' });
 
+    if (!ehComando(req) && await diaFechado(data)) {
+      return res.status(403).json({ error: 'A lista deste dia já foi fechada; apenas o comando pode alterá-la.' });
+    }
+
     // Limite de vagas por dia (configurável por admin/supervisor)
     const vagasTotal = await vagasDoDia(data);
     const { rows: [{ n }] } = await pool.query(`SELECT COUNT(*)::int AS n FROM extras_vagas WHERE data = $1`, [data]);
@@ -167,6 +200,9 @@ router.post('/', verificarToken, async (req, res) => {
 
     const aviso = await avisoFolga(agente_id, data);
     res.status(201).json({ vaga: rows[0], aviso_folga: aviso, liberado: !!liberado_por });
+
+    reenviarPdfSeFechado(data, `inclusão de ${nome}`, req.usuario.usuario)
+      .catch(err => console.error('[Email-PDF] Falha ao reenviar PDF de extras após inclusão:', err.message));
   } catch (err) { erroServidor(res, err); }
 });
 
@@ -190,35 +226,41 @@ router.put('/:id', verificarToken, verificarSupervisor, async (req, res) => {
     );
     await auditar(req, 'ALTERAR_EXTRA', `Plantão extra — ${rows[0].nome} em ${rows[0].data} (${rows[0].tipo}h, R$ ${Number(rows[0].valor).toFixed(2)})`);
     res.json(rows[0]);
+
+    reenviarPdfSeFechado(ymd(rows[0].data), `edição de ${rows[0].nome}`, req.usuario.usuario)
+      .catch(err => console.error('[Email-PDF] Falha ao reenviar PDF de extras após edição:', err.message));
   } catch (err) { erroServidor(res, err); }
 });
 
-// Remover vaga (dono ou comando)
+// Remover vaga (dono ou comando; se a lista do dia já estiver fechada, só o comando pode remover)
 router.delete('/:id', verificarToken, async (req, res) => {
   try {
     const { rows } = await pool.query(`SELECT * FROM extras_vagas WHERE id = $1`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Vaga não encontrada.' });
     const v = rows[0];
+    const dataStr = ymd(v.data);
     const dono = v.criado_por === req.usuario.usuario;
-    if (!ehComando(req) && !dono) return res.status(403).json({ error: 'Sem permissão para remover esta vaga.' });
+    const fechado = await diaFechado(dataStr);
+    if (fechado && !ehComando(req)) {
+      return res.status(403).json({ error: 'A lista deste dia já foi fechada; apenas o comando pode alterá-la.' });
+    }
+    if (!fechado && !ehComando(req) && !dono) return res.status(403).json({ error: 'Sem permissão para remover esta vaga.' });
     await pool.query(`DELETE FROM extras_vagas WHERE id = $1`, [req.params.id]);
     await auditar(req, 'REMOVER_EXTRA', `Plantão extra — ${v.nome} em ${v.data} (${v.tipo}h, R$ ${Number(v.valor).toFixed(2)})`);
     res.json({ ok: true });
+
+    reenviarPdfSeFechado(dataStr, `remoção de ${v.nome}`, req.usuario.usuario)
+      .catch(err => console.error('[Email-PDF] Falha ao reenviar PDF de extras após remoção:', err.message));
   } catch (err) { erroServidor(res, err); }
 });
 
-// ── PDF: lista de extras de um dia ───────────────────────────────────────────
-router.get('/dia/:data/pdf', verificarToken, async (req, res) => {
-  try {
-    const { rows: vagas } = await pool.query(
-      `SELECT * FROM extras_vagas WHERE data = $1 ORDER BY criado_em`, [req.params.data]
-    );
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="extras-${req.params.data}.pdf"`);
+// Monta o PDF da lista de plantões extras de um dia
+async function construirPdfDia(dataStr, vagas) {
+  const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 40, right: 40 }, size: 'A4', layout: 'landscape', bufferPages: true });
+  const bufferPromise = coletarPdfBuffer(doc);
 
-    const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 40, right: 40 }, size: 'A4', layout: 'landscape', bufferPages: true });
-    doc.pipe(res);
-    const margem = cabecalhoPDF(doc, { titulo: 'Lista de Plantões Extras', subtitulo: `Data: ${fmtData(req.params.data)}` });
+  {
+    const margem = cabecalhoPDF(doc, { titulo: 'Lista de Plantões Extras', subtitulo: `Data: ${fmtData(dataStr)}` });
     const pageW  = doc.page.width;
     const conteudoW = pageW - margem * 2;
 
@@ -267,8 +309,51 @@ router.get('/dia/:data/pdf', verificarToken, async (req, res) => {
          .text(`Total do dia: ${vagas.length} plantão(ões) — R$ ${total.toFixed(2)}`, margem, y + 8, { width: conteudoW, align: 'right' });
     }
 
-    rodapePDF(doc, { info: `Plantões Extras — ${fmtData(req.params.data)} — Bananeiras/PB` });
+    rodapePDF(doc, { info: `Plantões Extras — ${fmtData(dataStr)} — Bananeiras/PB` });
     doc.end();
+  }
+
+  return bufferPromise;
+}
+
+// ── PDF: lista de extras de um dia ───────────────────────────────────────────
+router.get('/dia/:data/pdf', verificarToken, async (req, res) => {
+  try {
+    const { rows: vagas } = await pool.query(
+      `SELECT * FROM extras_vagas WHERE data = $1 ORDER BY criado_em`, [req.params.data]
+    );
+    const pdfBuffer = await construirPdfDia(req.params.data, vagas);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="extras-${req.params.data}.pdf"`);
+    res.end(pdfBuffer);
+  } catch (err) { erroServidor(res, err); }
+});
+
+// Fechar a lista do dia (comando): trava novas remoções por não-comando e envia o PDF por e-mail
+router.post('/dia/:data/fechar', verificarToken, verificarSupervisor, async (req, res) => {
+  try {
+    const { data } = req.params;
+    await pool.query(
+      `INSERT INTO extras_config_dia (data, vagas_total, fechado, fechado_por, fechado_em)
+       VALUES ($1, $2, true, $3, NOW())
+       ON CONFLICT (data) DO UPDATE SET fechado = true, fechado_por = $3, fechado_em = NOW()`,
+      [data, VAGAS_DIA_PADRAO, req.usuario.usuario]
+    );
+    const { rows: vagas } = await pool.query(
+      `SELECT * FROM extras_vagas WHERE data = $1 ORDER BY criado_em`, [data]
+    );
+    await auditar(req, 'FECHAR_LISTA_EXTRA', `Lista de extras de ${fmtData(data)} fechada (${vagas.length} lançamento(s))`);
+    res.json({ ok: true, data, total_vagas: vagas.length });
+
+    construirPdfDia(data, vagas)
+      .then(pdfBuffer => enviarPdfNotificacao({
+        subject: `Lista de plantões extras fechada — ${fmtData(data)}`,
+        html: `<p>A lista de plantões extras de <b>${fmtData(data)}</b> foi fechada por <b>${req.usuario.usuario}</b>, com ${vagas.length} lançamento(s).</p>`,
+        pdfBuffer,
+        filename: `extras-${data}.pdf`,
+      }))
+      .catch(err => console.error('[Email-PDF] Falha ao gerar PDF de fechamento de extras:', err.message));
   } catch (err) { erroServidor(res, err); }
 });
 
