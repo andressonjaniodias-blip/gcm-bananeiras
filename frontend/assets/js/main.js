@@ -42,17 +42,46 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Restaurar rascunho
-  const rascunho = localStorage.getItem('boTemp');
-  if (rascunho) {
-    try {
-      const dados = JSON.parse(rascunho);
-      restaurarRascunho(dados);
-    } catch {}
-  }
+  // Restaurar rascunho (com expiração e confirmação explícita)
+  await _checarRascunhoBO();
 
   _renderMobileNav();
 });
+
+// ── Rascunho do BO: expiração + confirmação ─────────────────────────────────
+const RASCUNHO_TTL_MS = 12 * 60 * 60 * 1000; // 12h
+
+function _rascunhoTemConteudo(dados) {
+  return Object.values(dados).some(v => {
+    if (v && typeof v === 'object') return Object.values(v).some(x => String(x || '').trim().length > 0);
+    return v && typeof v === 'string' && v.trim().length > 0;
+  });
+}
+
+async function _checarRascunhoBO() {
+  const raw = localStorage.getItem('boTemp');
+  if (!raw) return;
+  let dados;
+  try { dados = JSON.parse(raw); } catch { localStorage.removeItem('boTemp'); return; }
+
+  const expirado = !dados._ts || (Date.now() - dados._ts) > RASCUNHO_TTL_MS;
+  if (expirado || !_rascunhoTemConteudo(dados)) {
+    localStorage.removeItem('boTemp');
+    return;
+  }
+
+  const hora = new Date(dados._ts).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const restaurar = await confirmar(
+    `Encontramos um rascunho de Boletim de Ocorrência salvo às ${hora}. Deseja restaurar os dados preenchidos ou descartá-los?`,
+    'Rascunho encontrado',
+    { textoSim: 'Restaurar', textoNao: 'Descartar' }
+  );
+  if (restaurar) {
+    restaurarRascunho(dados);
+  } else {
+    localStorage.removeItem('boTemp');
+  }
+}
 
 // ── Navegação de abas ────────────────────────────────────────────────────────
 const TAB_ORDER = ['solicitacao','ocorrencia','vitima','suspeito','relato','anexos','objetos','autoridade'];
@@ -100,7 +129,8 @@ function showToast(msg, tipo = 'danger') {
 }
 
 // Modal de confirmação — retorna Promise<boolean>
-function confirmar(mensagem, titulo = 'Confirmar') {
+function confirmar(mensagem, titulo = 'Confirmar', opts = {}) {
+  const { textoSim = 'Confirmar', textoNao = 'Cancelar' } = opts;
   return new Promise(resolve => {
     document.getElementById('_confirm-modal')?.remove();
     const overlay = document.createElement('div');
@@ -119,12 +149,12 @@ function confirmar(mensagem, titulo = 'Confirmar') {
           <button id="_confirm-no"
             style="padding:8px 20px;border-radius:var(--radius);border:1px solid var(--color-border,#ccc);
                    background:transparent;cursor:pointer;font-size:0.9rem;color:var(--color-text,#111)">
-            Cancelar
+            ${textoNao}
           </button>
           <button id="_confirm-yes"
             style="padding:8px 20px;border-radius:var(--radius);border:none;
                    background:var(--color-danger);color:#fff;cursor:pointer;font-size:0.9rem;font-weight:600">
-            Confirmar
+            ${textoSim}
           </button>
         </div>
       </div>`;
@@ -434,7 +464,7 @@ let _autosaveTimer = null;
 function _autosave() {
   clearTimeout(_autosaveTimer);
   _autosaveTimer = setTimeout(() => {
-    localStorage.setItem('boTemp', JSON.stringify(coletarDadosBO()));
+    localStorage.setItem('boTemp', JSON.stringify({ ...coletarDadosBO(), _ts: Date.now() }));
   }, 800);
 }
 
@@ -451,10 +481,7 @@ function iniciarAutosave() {
     if (!rascunho) return;
     try {
       const dados = JSON.parse(rascunho);
-      const temConteudo = Object.values(dados).some(v =>
-        v && typeof v === 'string' && v.trim().length > 0
-      );
-      if (!temConteudo) return;
+      if (!_rascunhoTemConteudo(dados)) return;
     } catch { return; }
     e.preventDefault();
     e.returnValue = '';
