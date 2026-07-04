@@ -5,6 +5,8 @@ const { encriptar, desencriptarComFallback } = require('../utils/encryption');
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs   = require('fs');
+const { coletarPdfBuffer } = require('../utils/pdfBuffer');
+const { enviarPdfNotificacao } = require('../utils/email');
 
 const brasaoGCM        = path.join(__dirname, '../../public/brasao-gcm.png');
 const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.png');
@@ -127,6 +129,15 @@ exports.criarBO = async (req, res) => {
     await registrarAuditoria(criado_por, 'CRIAR_BO', numero, ip);
 
     res.status(201).json({ message: 'BO criado com sucesso', id: result.rows[0].id, numero });
+
+    construirPdfBO({ id: result.rows[0].id, numero, dados, data, criado_por })
+      .then(pdfBuffer => enviarPdfNotificacao({
+        subject: `Novo BO registrado — ${numero}`,
+        html: `<p>Boletim de Ocorrência <b>${numero}</b> foi registrado por <b>${criado_por}</b>.</p>`,
+        pdfBuffer,
+        filename: `${numero.replace(/\//g, '-')}.pdf`,
+      }))
+      .catch(err => console.error('[Email-PDF] Falha ao gerar PDF do BO para envio:', err.message));
   } catch (err) {
     erroServidor(res, err);
   }
@@ -247,32 +258,15 @@ exports.excluirBO = async (req, res) => {
   }
 };
 
-exports.exportarPDF = async (req, res) => {
-  const { id } = req.params;
-  if (!id) return res.status(400).json({ error: 'ID do BO é obrigatório' });
+async function construirPdfBO(row) {
+  const id = row.id;
+  let dados = {};
+  try { dados = JSON.parse(desencriptarComFallback(row.dados)); } catch { dados = {}; }
 
-  try {
-    const { rows } = await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
-    if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
+  const doc = new PDFDocument({ margins: { top: 50, bottom: 65, left: 50, right: 50 }, size: 'A4', bufferPages: true });
+  const bufferPromise = coletarPdfBuffer(doc);
 
-    const { usuario, role } = req.usuario;
-    if (role === 'agente') {
-      return res.status(403).json({ error: 'Acesso negado.' });
-    }
-
-    const ip = ipFromReq(req);
-    await registrarAuditoria(usuario, 'EXPORTAR_PDF', rows[0].numero, ip);
-
-    const row  = rows[0];
-    let dados  = {};
-    try { dados = JSON.parse(desencriptarComFallback(row.dados)); } catch { dados = {}; }
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${row.numero.replace(/\//g, '-')}.pdf"`);
-
-    const doc = new PDFDocument({ margins: { top: 50, bottom: 65, left: 50, right: 50 }, size: 'A4', bufferPages: true });
-    doc.pipe(res);
-
+  {
     const pageW  = doc.page.width;
     const pageH  = doc.page.height;
     const margem = 50;
@@ -563,6 +557,33 @@ exports.exportarPDF = async (req, res) => {
 
     doc.flushPages();
     doc.end();
+  }
+
+  return bufferPromise;
+}
+
+exports.exportarPDF = async (req, res) => {
+  const { id } = req.params;
+  if (!id) return res.status(400).json({ error: 'ID do BO é obrigatório' });
+
+  try {
+    const { rows } = await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
+    if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
+
+    const { usuario, role } = req.usuario;
+    if (role === 'agente') {
+      return res.status(403).json({ error: 'Acesso negado.' });
+    }
+
+    const ip = ipFromReq(req);
+    await registrarAuditoria(usuario, 'EXPORTAR_PDF', rows[0].numero, ip);
+
+    const row = rows[0];
+    const pdfBuffer = await construirPdfBO(row);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${row.numero.replace(/\//g, '-')}.pdf"`);
+    res.end(pdfBuffer);
   } catch (err) {
     console.error('Erro ao gerar PDF do BO:', err);
     if (!res.headersSent) erroServidor(res, err);
