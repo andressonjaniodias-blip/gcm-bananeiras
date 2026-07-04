@@ -5,11 +5,24 @@ const { verificarToken, verificarSupervisor, auditar } = require('../middleware/
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
 const { cabecalhoPDF, rodapePDF, fmtData, NAVY } = require('../utils/pdfLayout');
+const { coletarPdfBuffer } = require('../utils/pdfBuffer');
+const { enviarPdfNotificacao } = require('../utils/email');
 
 function nomeMes(mesRef) {
   const [ano, mes] = String(mesRef).split('-');
   const nomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   return `${nomes[parseInt(mes, 10) - 1] || mes}/${ano}`;
+}
+
+async function feriasDoMes(mes) {
+  const inicioMes = `${mes}-01`;
+  const [ano, m] = mes.split('-');
+  const fimMes = `${mes}-${String(new Date(parseInt(ano), parseInt(m), 0).getDate()).padStart(2, '0')}`;
+  const { rows } = await pool.query(
+    `SELECT * FROM ferias WHERE data_inicio <= $2 AND data_fim >= $1 ORDER BY data_inicio, nome`,
+    [inicioMes, fimMes]
+  );
+  return rows;
 }
 
 // Listar férias (opcional ?mes=YYYY-MM = períodos que tocam o mês)
@@ -45,6 +58,17 @@ router.post('/', verificarToken, verificarSupervisor, async (req, res) => {
     );
     await auditar(req, 'CRIAR_FERIAS', `${nome} — ${data_inicio} a ${data_fim}`);
     res.status(201).json(rows[0]);
+
+    const mesRef = String(data_inicio).slice(0, 7);
+    feriasDoMes(mesRef)
+      .then(rowsDoMes => construirPdfFerias(rowsDoMes, `Referência: ${nomeMes(mesRef)}`))
+      .then(pdfBuffer => enviarPdfNotificacao({
+        subject: `Férias cadastradas — ${nome} (${nomeMes(mesRef)})`,
+        html: `<p>Férias de <b>${nome}</b> cadastradas por <b>${req.usuario.usuario}</b>: ${fmtData(data_inicio)} a ${fmtData(data_fim)}.</p>`,
+        pdfBuffer,
+        filename: `ferias-${mesRef}.pdf`,
+      }))
+      .catch(err => console.error('[Email-PDF] Falha ao gerar PDF de férias para envio:', err.message));
   } catch (err) { erroServidor(res, err); }
 });
 
@@ -76,38 +100,11 @@ router.delete('/:id', verificarToken, verificarSupervisor, async (req, res) => {
   } catch (err) { erroServidor(res, err); }
 });
 
-// PDF (por mês, ou período)
-router.get('/pdf', verificarToken, verificarSupervisor, async (req, res) => {
-  try {
-    const { mes, inicio, fim } = req.query;
-    let rows, subtitulo, arq;
-    if (mes && /^\d{4}-\d{2}$/.test(mes)) {
-      const inicioMes = `${mes}-01`;
-      const [ano, m] = mes.split('-');
-      const fimMes = `${mes}-${String(new Date(parseInt(ano), parseInt(m), 0).getDate()).padStart(2, '0')}`;
-      ({ rows } = await pool.query(
-        `SELECT * FROM ferias WHERE data_inicio <= $2 AND data_fim >= $1 ORDER BY data_inicio, nome`,
-        [inicioMes, fimMes]
-      ));
-      subtitulo = `Referência: ${nomeMes(mes)}`;
-      arq = `ferias-${mes}.pdf`;
-    } else if (inicio && fim) {
-      ({ rows } = await pool.query(
-        `SELECT * FROM ferias WHERE data_inicio <= $2 AND data_fim >= $1 ORDER BY data_inicio, nome`,
-        [inicio, fim]
-      ));
-      subtitulo = `Período: ${fmtData(inicio)} a ${fmtData(fim)}`;
-      arq = `ferias-${inicio}_a_${fim}.pdf`;
-    } else {
-      ({ rows } = await pool.query(`SELECT * FROM ferias ORDER BY data_inicio DESC, nome`));
-      subtitulo = 'Todos os registros';
-      arq = 'ferias.pdf';
-    }
+async function construirPdfFerias(rows, subtitulo) {
+  const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 45, right: 45 }, size: 'A4', bufferPages: true });
+  const bufferPromise = coletarPdfBuffer(doc);
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${arq}"`);
-    const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 45, right: 45 }, size: 'A4', bufferPages: true });
-    doc.pipe(res);
+  {
     const margem = cabecalhoPDF(doc, { titulo: 'Escala de Férias', subtitulo });
     const pageW = doc.page.width;
     const conteudoW = pageW - margem * 2;
@@ -148,6 +145,38 @@ router.get('/pdf', verificarToken, verificarSupervisor, async (req, res) => {
 
     rodapePDF(doc, { info: `Escala de Férias — Bananeiras/PB` });
     doc.end();
+  }
+
+  return bufferPromise;
+}
+
+// PDF (por mês, ou período)
+router.get('/pdf', verificarToken, verificarSupervisor, async (req, res) => {
+  try {
+    const { mes, inicio, fim } = req.query;
+    let rows, subtitulo, arq;
+    if (mes && /^\d{4}-\d{2}$/.test(mes)) {
+      rows = await feriasDoMes(mes);
+      subtitulo = `Referência: ${nomeMes(mes)}`;
+      arq = `ferias-${mes}.pdf`;
+    } else if (inicio && fim) {
+      ({ rows } = await pool.query(
+        `SELECT * FROM ferias WHERE data_inicio <= $2 AND data_fim >= $1 ORDER BY data_inicio, nome`,
+        [inicio, fim]
+      ));
+      subtitulo = `Período: ${fmtData(inicio)} a ${fmtData(fim)}`;
+      arq = `ferias-${inicio}_a_${fim}.pdf`;
+    } else {
+      ({ rows } = await pool.query(`SELECT * FROM ferias ORDER BY data_inicio DESC, nome`));
+      subtitulo = 'Todos os registros';
+      arq = 'ferias.pdf';
+    }
+
+    const pdfBuffer = await construirPdfFerias(rows, subtitulo);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${arq}"`);
+    res.end(pdfBuffer);
   } catch (err) { erroServidor(res, err); }
 });
 
