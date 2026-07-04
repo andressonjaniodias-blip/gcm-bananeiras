@@ -267,6 +267,21 @@
     }
     .pub-rodape a:hover { text-decoration: underline; }
 
+    /* ── Carrossel do quadro de avisos ───────────────────────────────────────── */
+    .ac-viewport { overflow: hidden; }
+    .ac-track { display: flex; transition: transform 0.45s ease; }
+    .ac-slide { flex: 0 0 100%; min-width: 100%; min-height: 220px; }
+    .ac-dots { display: flex; justify-content: center; gap: 6px; padding: 10px 0; border-top: 1px solid var(--color-border); }
+    .ac-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--color-border); border: none; cursor: pointer; padding: 0;
+      transition: width 0.2s, background 0.2s;
+    }
+    .ac-dot.active { background: var(--color-primary); width: 18px; border-radius: 4px; }
+    .ac-resumo { padding: 14px 16px; }
+    .ac-resumo-titulo { font-weight: 700; font-size: 0.85rem; color: var(--color-text); margin-bottom: 10px; }
+    .ac-resumo-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+
     /* ── Visibilidade por role (gerenciada via JS) ───────────────────────────── */
     .role-hidden { display: none !important; }
   </style>
@@ -316,6 +331,10 @@
             <a href="/pages/documentos.html" class="quick-action-btn">
               <div class="qa-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/></svg></div>
               Documentos
+            </a>
+            <a href="/pages/escala.html" class="quick-action-btn">
+              <div class="qa-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="16" height="7" rx="1.5"/><path d="M4 8l2-4h8l2 4"/><circle cx="6" cy="15" r="1.5"/><circle cx="14" cy="15" r="1.5"/></svg></div>
+              Escala
             </a>
             <a href="/pages/relatorio.html" class="quick-action-btn" data-role-min="supervisor">
               <div class="qa-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="1.5"/><path d="M7 13v-3M10 13V7M13 13v-5"/></svg></div>
@@ -443,21 +462,52 @@
 
         </div>
 
-        <!-- Coluna lateral: publicações -->
+        <!-- Coluna lateral: quadro de avisos (carrossel) -->
         <div>
-          <div class="pub-panel">
+          <div class="pub-panel" id="avisosCarousel"
+               onmouseenter="acPause()" onmouseleave="acResume()">
             <div class="pub-panel-header">
               <svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h14M3 10h14M3 15h8"/></svg>
               <div>
-                <div class="pub-panel-header-title">Publicações Oficiais</div>
-                <div class="pub-panel-header-sub">Documentos disponibilizados pela chefia</div>
+                <div class="pub-panel-header-title">Quadro de Avisos</div>
+                <div class="pub-panel-header-sub" id="acHeaderSub">Publicações Oficiais</div>
               </div>
             </div>
-            <div class="pub-list" id="pubList">
-              <div class="pub-vazio">Carregando...</div>
+            <div class="ac-viewport">
+              <div class="ac-track" id="acTrack">
+                <!-- Slide 1: Publicações -->
+                <div class="ac-slide">
+                  <div class="pub-list" id="pubList">
+                    <div class="pub-vazio">Carregando...</div>
+                  </div>
+                  <div class="pub-rodape">
+                    <a href="/pages/documentos.html">Ver todos os documentos →</a>
+                  </div>
+                </div>
+                <!-- Slide 2: Extras de hoje -->
+                <div class="ac-slide">
+                  <div class="ac-resumo" id="extrasResumo">
+                    <div class="pub-vazio">Carregando...</div>
+                  </div>
+                  <div class="pub-rodape">
+                    <a href="/pages/extras.html">Ver detalhes →</a>
+                  </div>
+                </div>
+                <!-- Slide 3: Escala de hoje -->
+                <div class="ac-slide">
+                  <div class="ac-resumo" id="escalaResumo">
+                    <div class="pub-vazio">Carregando...</div>
+                  </div>
+                  <div class="pub-rodape">
+                    <a href="/pages/escala.html">Ver escala completa →</a>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="pub-rodape">
-              <a href="/pages/documentos.html">Ver todos os documentos →</a>
+            <div class="ac-dots" id="acDots">
+              <button class="ac-dot active" onclick="acGoTo(0)" title="Publicações"></button>
+              <button class="ac-dot" onclick="acGoTo(1)" title="Extras de hoje"></button>
+              <button class="ac-dot" onclick="acGoTo(2)" title="Escala de hoje"></button>
             </div>
           </div>
         </div>
@@ -597,7 +647,65 @@
           }).join('');
         }
       } catch {}
+
+      // Extras de hoje (resumo — sem valores/telefone, isso fica só em extras.html)
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/extras/dia/${hoje}`, { credentials: 'include' });
+        const el = document.getElementById('extrasResumo');
+        if (r.ok) {
+          const d = await r.json();
+          const nomes = (d.vagas || []).map(v => v.nome);
+          const visiveis = nomes.slice(0, 4);
+          const resto = nomes.length - visiveis.length;
+          el.innerHTML = `
+            <div class="ac-resumo-titulo">${d.vagas.length}/${d.total_vagas} vaga(s) de extra preenchida(s) hoje</div>
+            <div class="ac-resumo-pills">
+              ${visiveis.map(n => `<span class="pub-badge">${n}</span>`).join('') || '<span style="color:var(--color-hint);font-size:0.8rem;">Nenhum plantão lançado hoje.</span>'}
+              ${resto > 0 ? `<span class="pub-badge">+${resto}</span>` : ''}
+            </div>`;
+        } else {
+          el.innerHTML = '<div class="pub-vazio">Não foi possível carregar os extras de hoje.</div>';
+        }
+      } catch { document.getElementById('extrasResumo').innerHTML = '<div class="pub-vazio">Não foi possível carregar os extras de hoje.</div>'; }
+
+      // Escala de hoje (resumo — patrulha ativa + administrativo, nunca o mês inteiro)
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/escala/hoje?data=${hoje}`, { credentials: 'include' });
+        const el = document.getElementById('escalaResumo');
+        if (r.ok) {
+          const d = await r.json();
+          if (!d.publicado) {
+            el.innerHTML = '<div class="pub-vazio">Escala do mês ainda não publicada.</div>';
+          } else {
+            const nomes = [...(d.equipe || []), ...(d.administrativo || [])].map(i => i.nome);
+            const visiveis = nomes.slice(0, 6);
+            const resto = nomes.length - visiveis.length;
+            el.innerHTML = `
+              <div class="ac-resumo-titulo">Patrulha ${d.patrulha_hoje || '—'} de serviço hoje</div>
+              <div class="ac-resumo-pills">
+                ${visiveis.map(n => `<span class="pub-badge">${n}</span>`).join('')}
+                ${resto > 0 ? `<span class="pub-badge">+${resto}</span>` : ''}
+              </div>`;
+          }
+        } else {
+          el.innerHTML = '<div class="pub-vazio">Não foi possível carregar a escala de hoje.</div>';
+        }
+      } catch { document.getElementById('escalaResumo').innerHTML = '<div class="pub-vazio">Não foi possível carregar a escala de hoje.</div>'; }
     })();
+
+    // ── Carrossel do quadro de avisos ─────────────────────────────────────────
+    const AC_SUBS = ['Publicações Oficiais', 'Plantões extras de hoje', 'Escala de serviço de hoje'];
+    let acIndex = 0, acTimer = null;
+    function acGoTo(i) {
+      acIndex = i;
+      document.getElementById('acTrack').style.transform = `translateX(-${i * 100}%)`;
+      document.querySelectorAll('#acDots .ac-dot').forEach((d, idx) => d.classList.toggle('active', idx === i));
+      document.getElementById('acHeaderSub').textContent = AC_SUBS[i];
+    }
+    function acNext() { acGoTo((acIndex + 1) % 3); }
+    function acPause() { clearInterval(acTimer); }
+    function acResume() { acTimer = setInterval(acNext, 6000); }
+    acResume();
 
     const SVG_PDF = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M7 13h2c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1H7v4"/></svg>`;
     const SVG_DOC = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M7 11h6M7 14h4"/></svg>`;
