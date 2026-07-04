@@ -2670,6 +2670,25 @@ body.stage-page #app-content {
   flex-direction: column;
 }
 
+/* No desktop, #app-content ganha padding-top genérico (para páginas de
+   formulário respirarem abaixo do header) — no palco isso cria um vão
+   entre o header e o carrossel de fotos. Zera aqui para a foto encostar. */
+@media (min-width: 1025px) {
+  body.stage-page #app-content { padding-top: 0; }
+}
+
+/* ── Botões flutuantes de menu e tema — canto superior esquerdo do palco ── */
+.stage-float-btns {
+  position: absolute;
+  z-index: 2;
+  top: clamp(16px, 3vw, 28px);
+  left: clamp(16px, 3vw, 28px);
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: flex-start;
+}
+
 /* Fundo dinâmico — camadas que alternam em crossfade (controlado via JS) */
 .app-stage-bg {
   position: absolute;
