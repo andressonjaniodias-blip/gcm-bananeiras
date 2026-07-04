@@ -6,33 +6,7 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const db = require('../config/db');
-
-async function enviarEmail({ to, toName, subject, html }) {
-  const apiKey = process.env.BREVO_API_KEY;
-  const from   = process.env.SMTP_FROM || 'GCM Bananeiras <noreply@gcm-bananeiras.onrender.com>';
-  const [fromName, fromEmail] = from.includes('<')
-    ? [from.split('<')[0].trim(), from.split('<')[1].replace('>', '').trim()]
-    : ['GCM Bananeiras', from];
-
-  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': apiKey,
-    },
-    body: JSON.stringify({
-      sender: { name: fromName, email: fromEmail },
-      to: [{ email: to, name: toName || to }],
-      subject,
-      htmlContent: html,
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Brevo API error: ${err}`);
-  }
-}
+const { enviarEmail } = require('../utils/email');
 const {
   verificarToken, verificarAdmin, registrarAuditoria, extraFromReq, ipFromReq, ROLES
 } = require('../middleware/auth');
