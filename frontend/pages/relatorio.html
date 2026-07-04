@@ -283,6 +283,7 @@
 
     let todosRelatorios = [];
     const RASCUNHO_KEY = 'gcm_relatorio_rascunho';
+    const RASCUNHO_TTL_MS = 12 * 60 * 60 * 1000; // 12h
     let _autoSaveTimer = null;
 
     const CAMPOS_RASCUNHO = [
@@ -301,19 +302,35 @@
       if (info) info.textContent = 'Rascunho salvo localmente às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     }
 
-    function restaurarRascunhoLocal() {
+    async function restaurarRascunhoLocal() {
       const raw = localStorage.getItem(RASCUNHO_KEY);
       if (!raw) return;
-      try {
-        const dados = JSON.parse(raw);
-        CAMPOS_RASCUNHO.forEach(id => {
-          const el = document.getElementById(id);
-          if (el && dados[id] !== undefined) el.value = dados[id];
-        });
-        const info = document.getElementById('autoSaveInfo');
-        const hora = new Date(dados.ts).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-        if (info) info.textContent = `Rascunho restaurado de ${hora}`;
-      } catch {}
+      let dados;
+      try { dados = JSON.parse(raw); } catch { localStorage.removeItem(RASCUNHO_KEY); return; }
+
+      const expirado = !dados.ts || (Date.now() - dados.ts) > RASCUNHO_TTL_MS;
+      const temConteudo = CAMPOS_RASCUNHO.some(id => id !== 'dataRelatorio' && String(dados[id] || '').trim().length > 0);
+      if (expirado || !temConteudo) {
+        localStorage.removeItem(RASCUNHO_KEY);
+        return;
+      }
+
+      const hora = new Date(dados.ts).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const restaurar = await confirmar(
+        `Encontramos um rascunho de relatório salvo às ${hora}. Deseja restaurar os dados preenchidos ou descartá-los?`,
+        'Rascunho encontrado',
+        { textoSim: 'Restaurar', textoNao: 'Descartar' }
+      );
+      if (!restaurar) {
+        localStorage.removeItem(RASCUNHO_KEY);
+        return;
+      }
+      CAMPOS_RASCUNHO.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && dados[id] !== undefined) el.value = dados[id];
+      });
+      const info = document.getElementById('autoSaveInfo');
+      if (info) info.textContent = `Rascunho restaurado de ${hora}`;
     }
 
     function agendarAutoSave() {
@@ -343,7 +360,7 @@
       } catch { window.location.href = '/'; return; }
 
       // Restaura rascunho local se existir
-      restaurarRascunhoLocal();
+      await restaurarRascunhoLocal();
 
       // Escuta alterações nos campos para autosave
       CAMPOS_RASCUNHO.forEach(id => {
