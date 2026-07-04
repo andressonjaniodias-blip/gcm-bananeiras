@@ -28,7 +28,7 @@
   // para o perfil. "Meu Perfil" fica fora dos grupos, ao final.
   const NAV = [
     { group: 'Operacional', items: [
-      { href: '/pages/home.html',      icon: ICONS.home,      label: 'Início',              roles: ['agente', 'supervisor', 'admin'] },
+      { href: '/',                     icon: ICONS.home,      label: 'Início',              roles: ['agente', 'supervisor', 'admin'] },
       { href: '/pages/dashboard.html', icon: ICONS.novobo,    label: 'Novo BO',             roles: ['agente', 'supervisor', 'admin'] },
       { href: '/pages/consulta.html',  icon: ICONS.historico, label: 'Histórico de BOs',    roles: ['supervisor', 'admin'] },
       { href: '/pages/relatorio.html', icon: ICONS.relatorio, label: 'Relatório Interno',   roles: ['agente', 'supervisor', 'admin'] },
@@ -47,8 +47,10 @@
   const PERFIL_ITEM = { href: '/pages/perfil.html', icon: ICONS.perfil, label: 'Meu Perfil', roles: ['agente', 'supervisor', 'admin'] };
 
   function _linkHTML(item, currentPath) {
-    const active = currentPath.includes(item.href.replace('/pages/', '')) ? ' active' : '';
-    return `<a href="${item.href}" class="sb-link${active}" onclick="closeSidebar()"><span class="sb-icon">${item.icon}</span><span>${item.label}</span></a>`;
+    const isActive = item.href === '/'
+      ? currentPath === '/'
+      : currentPath.includes(item.href.replace('/pages/', ''));
+    return `<a href="${item.href}" class="sb-link${isActive ? ' active' : ''}" onclick="closeSidebar()"><span class="sb-icon">${item.icon}</span><span>${item.label}</span></a>`;
   }
 
   // Monta o HTML do menu em lista única (sem categorias/accordion)
@@ -263,10 +265,12 @@
     overlay.querySelector('.pg-modal-frame').src = 'about:blank';
   };
 
-  // Intercepta links internos para abrir como modal flutuante (exceto Início)
+  // Intercepta links internos para abrir como modal flutuante
+  // (o link "Início" aponta para "/", que não bate no seletor abaixo,
+  // então continua sendo navegação normal de página)
   document.addEventListener('click', function (e) {
     const a = e.target.closest('a[href^="/pages/"]');
-    if (!a || a.target === '_blank' || a.href.endsWith('home.html')) return;
+    if (!a || a.target === '_blank') return;
     e.preventDefault();
     window.openPageModal(a.getAttribute('href'), a.textContent.trim());
   });
