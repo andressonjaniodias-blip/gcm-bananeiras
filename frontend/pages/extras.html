@@ -134,7 +134,9 @@
       <div class="actions" style="margin-top:2px;margin-bottom:16px;gap:10px;flex-wrap:wrap;">
         <button class="btn-ok" onclick="salvarVaga()">Confirmar Inscrição</button>
         <button onclick="baixarPdfDia()" style="background:var(--color-primary);">Gerar PDF do Dia</button>
+        <button id="btnFecharLista" class="cmd-only" style="display:none;background:var(--color-warning-bg);color:var(--color-warning-text);" onclick="fecharListaDia()">Fechar Lista do Dia</button>
       </div>
+      <div id="statusFechamento"></div>
       <p id="msgDia" class="msg"></p>
 
       <div id="listaVagas" style="margin:10px 0 18px;"></div>
@@ -270,8 +272,31 @@
         const r = await fetch(`${API_BASE_URL}/api/extras/dia/${data}`, { credentials:'include' });
         const d = await r.json();
         renderVagas(d);
+        atualizarStatusFechamento(d.fechado);
       } catch { cont.innerHTML = '<p style="color:var(--color-danger);">Erro ao carregar.</p>'; }
       atualizarCota();
+    }
+
+    function atualizarStatusFechamento(fechado) {
+      const box = document.getElementById('statusFechamento');
+      const btn = document.getElementById('btnFecharLista');
+      box.innerHTML = fechado
+        ? '<div class="aviso-folga">🔒 Lista deste dia já foi fechada e enviada por e-mail. Novas alterações reenviam o PDF atualizado.</div>'
+        : '';
+      if (btn) btn.textContent = fechado ? 'Reenviar / Fechar Novamente' : 'Fechar Lista do Dia';
+    }
+
+    async function fecharListaDia() {
+      const data = document.getElementById('dataDia').value;
+      if (!data) { msg('Selecione a data.', false); return; }
+      if (!confirm(`Fechar a lista de plantões extras de ${data}? O PDF será enviado por e-mail.`)) return;
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/extras/dia/${data}/fechar`, { method:'POST', credentials:'include' });
+        const d = await r.json();
+        if (!r.ok) { msg(d.error || 'Erro ao fechar lista.', false); return; }
+        msg('Lista fechada e enviada por e-mail!', true);
+        carregarDia();
+      } catch { msg('Erro de conexão.', false); }
     }
 
     function atualizarPreviaFim() {
