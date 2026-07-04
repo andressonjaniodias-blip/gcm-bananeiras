@@ -30,7 +30,7 @@
     }
     .btn-icon {
       display:inline-flex; align-items:center; justify-content:center;
-      width:30px; height:30px; border-radius:var(--radius-sm);
+      width:var(--icon-btn-sm); height:var(--icon-btn-sm); border-radius:var(--radius-sm);
       border:none; cursor:pointer; font-size:0.85rem;
       transition:opacity 0.15s, transform 0.1s; flex-shrink:0;
     }
@@ -151,7 +151,7 @@
         <button onclick="gerarRelPagamento()">Consultar</button>
         <button onclick="baixarPdfPagamento()" style="background:var(--color-primary);">Gerar PDF</button>
       </div>
-      <div id="tabelaPagamento" style="margin-top:14px;"></div>
+      <div id="tabelaPagamento" class="table-wrap" style="margin-top:14px;"></div>
     </section>
   </main>
 
@@ -494,7 +494,7 @@
       const d = await r.json();
       const cont = document.getElementById('tabelaPagamento');
       if (!d.linhas || !d.linhas.length) { cont.innerHTML = '<p style="color:var(--color-hint);">Nenhum plantão no período.</p>'; return; }
-      cont.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+      cont.innerHTML = `<table style="width:100%;min-width:480px;border-collapse:collapse;font-size:0.85rem;">
         <thead><tr style="background:var(--color-primary);color:#fff;">
           <th style="padding:8px;text-align:left;">Agente</th><th>Matrícula</th><th>12h</th><th>24h</th><th>Horas</th><th style="text-align:right;padding-right:8px;">Valor</th>
         </tr></thead><tbody>${d.linhas.map(l=>`<tr style="border-bottom:1px solid var(--color-border);">
