@@ -645,7 +645,7 @@
         if (!res.ok) { window.location.href = '/'; return; }
         const perfil = await res.json();
         meUsuario = perfil.usuario;
-        if (perfil.role !== 'admin') { window.location.href = '/pages/home.html'; return; }
+        if (perfil.role !== 'admin') { window.location.href = '/'; return; }
         document.getElementById('cardListaUsuarios').style.display = '';
         document.getElementById('cardRetencao').style.display = '';
         carregarUsuarios();
