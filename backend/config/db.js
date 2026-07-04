@@ -281,6 +281,11 @@ pool.connect()
         atualizado_em TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+    // Fechamento da lista diária de extras: uma vez fechada, só comando (admin/supervisor)
+    // pode alterá-la, e cada alteração reenvia o PDF atualizado por e-mail.
+    await client.query(`ALTER TABLE extras_config_dia ADD COLUMN IF NOT EXISTS fechado     BOOLEAN DEFAULT false;`);
+    await client.query(`ALTER TABLE extras_config_dia ADD COLUMN IF NOT EXISTS fechado_por TEXT;`);
+    await client.query(`ALTER TABLE extras_config_dia ADD COLUMN IF NOT EXISTS fechado_em  TIMESTAMPTZ;`);
 
     // Férias
     await client.query(`
