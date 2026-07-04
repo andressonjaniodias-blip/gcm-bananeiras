@@ -80,7 +80,7 @@
     aside.id = 'sidebar';
     aside.innerHTML = `
       <div class="sb-user">
-        <div class="sb-avatar" id="sbAvatar">${avatarContent}</div>
+        <a class="sb-avatar" id="sbAvatar" href="/pages/perfil.html" title="Alterar foto de perfil">${avatarContent}</a>
         <div class="sb-user-info">
           <span class="sb-user-name" id="sbNome">${perfil.usuario || '—'}</span>
           <span class="sb-user-role" id="sbRole">${roleLabel}</span>
