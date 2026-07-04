@@ -6,6 +6,8 @@ const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
 const { cabecalhoPDF, rodapePDF, assinaturasPDF, fmtData, NAVY } = require('../utils/pdfLayout');
 const { numeroFolga } = require('../utils/escalaCalc');
+const { coletarPdfBuffer } = require('../utils/pdfBuffer');
+const { enviarPdfNotificacao } = require('../utils/email');
 
 const PATRULHAS = ['1', '2', '3', '4'];
 
@@ -138,6 +140,15 @@ router.post('/', verificarToken, verificarSupervisor, async (req, res) => {
     const qtdItens = (itens || []).filter(it => it.patrulha && it.posto && it.nome).length;
     await auditar(req, acaoEscala, `${numero} — ${mes_referencia} (${qtdItens} lançamentos)`);
     res.status(201).json({ id: escalaId, numero });
+
+    construirPdfEscala({ id: escalaId, numero, mes_referencia, titulo: titulo || null, obs: obs || null })
+      .then(pdfBuffer => enviarPdfNotificacao({
+        subject: `Escala ${existente.length ? 'atualizada' : 'publicada'} — ${nomeMes(mes_referencia)}`,
+        html: `<p>A escala de serviço de <b>${nomeMes(mes_referencia)}</b> (${numero}) foi ${existente.length ? 'atualizada' : 'publicada'} por <b>${req.usuario.usuario}</b>.</p>`,
+        pdfBuffer,
+        filename: `escala-${mes_referencia}.pdf`,
+      }))
+      .catch(err => console.error('[Email-PDF] Falha ao gerar PDF da escala para envio:', err.message));
   } catch (err) {
     await client.query('ROLLBACK');
     erroServidor(res, err);
@@ -157,32 +168,26 @@ router.delete('/:id', verificarToken, verificarSupervisor, async (req, res) => {
   } catch (err) { erroServidor(res, err); }
 });
 
-// ── PDF da escala (colunas = Patrulhas 1..4 + bloco Seg–Sex) ─────────────────
-router.get('/:id/pdf', verificarToken, verificarSupervisor, async (req, res) => {
-  try {
-    const { rows } = await pool.query(`SELECT * FROM escalas WHERE id = $1`, [req.params.id]);
-    if (!rows.length) return res.status(404).json({ error: 'Escala não encontrada.' });
-    const escala = rows[0];
-    const { rows: itens } = await pool.query(
-      `SELECT * FROM escala_itens WHERE escala_id = $1 ORDER BY patrulha, posto, nome`,
-      [escala.id]
-    );
+// Monta o PDF da escala mensal (colunas = Patrulhas 1..4 + bloco Seg–Sex)
+async function construirPdfEscala(escala) {
+  const { rows: itens } = await pool.query(
+    `SELECT * FROM escala_itens WHERE escala_id = $1 ORDER BY patrulha, posto, nome`,
+    [escala.id]
+  );
 
-    const mes = escala.mes_referencia;
-    const inicioMes = `${mes}-01`;
-    const [anoFer, mesFer] = mes.split('-');
-    const fimMes = `${mes}-${String(new Date(parseInt(anoFer, 10), parseInt(mesFer, 10), 0).getDate()).padStart(2, '0')}`;
-    const { rows: ferias } = await pool.query(
-      `SELECT * FROM ferias WHERE data_inicio <= $2 AND data_fim >= $1 ORDER BY data_inicio, nome`,
-      [inicioMes, fimMes]
-    );
+  const mes = escala.mes_referencia;
+  const inicioMes = `${mes}-01`;
+  const [anoFer, mesFer] = mes.split('-');
+  const fimMes = `${mes}-${String(new Date(parseInt(anoFer, 10), parseInt(mesFer, 10), 0).getDate()).padStart(2, '0')}`;
+  const { rows: ferias } = await pool.query(
+    `SELECT * FROM ferias WHERE data_inicio <= $2 AND data_fim >= $1 ORDER BY data_inicio, nome`,
+    [inicioMes, fimMes]
+  );
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="escala-${escala.mes_referencia}.pdf"`);
+  const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 40, right: 40 }, size: 'A4', layout: 'landscape', bufferPages: true });
+  const bufferPromise = coletarPdfBuffer(doc);
 
-    const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 40, right: 40 }, size: 'A4', layout: 'landscape', bufferPages: true });
-    doc.pipe(res);
-
+  {
     const margem = cabecalhoPDF(doc, { titulo: `Escala de Serviço — ${nomeMes(escala.mes_referencia)}`, subtitulo: escala.titulo || 'Guarda Civil Municipal de Bananeiras/PB' });
     const pageW  = doc.page.width;
     const conteudoW = pageW - margem * 2;
@@ -273,6 +278,23 @@ router.get('/:id/pdf', verificarToken, verificarSupervisor, async (req, res) => 
 
     rodapePDF(doc, { info: `Escala ${escala.numero || ''} — ${nomeMes(escala.mes_referencia)} — Bananeiras/PB` });
     doc.end();
+  }
+
+  return bufferPromise;
+}
+
+// ── PDF da escala (colunas = Patrulhas 1..4 + bloco Seg–Sex) ─────────────────
+router.get('/:id/pdf', verificarToken, verificarSupervisor, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`SELECT * FROM escalas WHERE id = $1`, [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Escala não encontrada.' });
+    const escala = rows[0];
+
+    const pdfBuffer = await construirPdfEscala(escala);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="escala-${escala.mes_referencia}.pdf"`);
+    res.end(pdfBuffer);
   } catch (err) { erroServidor(res, err); }
 });
 
