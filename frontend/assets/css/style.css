@@ -1857,6 +1857,9 @@ table button:hover { background: var(--color-primary-hover); }
     top: 0;
     left: 0;
     height: 100vh;
+    height: 100dvh; /* 100vh inclui a área atrás da barra do navegador no
+       mobile — o rodapé (botão "Sair") acaba renderizado fora da tela
+       visível. 100dvh acompanha a altura real da viewport visível. */
     width: 260px;
     z-index: 400;
     transform: translateX(-100%);
