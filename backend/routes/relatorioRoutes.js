@@ -4,6 +4,14 @@ const pool    = require('../config/db');
 const { verificarToken, verificarSupervisor, auditar } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument = require('pdfkit');
+const path = require('path');
+const fs   = require('fs');
+const { coletarPdfBuffer } = require('../utils/pdfBuffer');
+const { enviarPdfNotificacao } = require('../utils/email');
+
+const brasaoGCM        = path.join(__dirname, '../../public/brasao-gcm.png');
+const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.png');
+const NAVY = '#0e2a52';
 
 const TIPO_ABREV_REL = {
   'Relatório de Ronda':       'RONDA',
@@ -69,40 +77,30 @@ router.post('/', verificarToken, async (req, res) => {
 
     const { rows } = await pool.query(
       `INSERT INTO relatorios (numero, tipo, titulo, data, local, equipe, conteudo, obs, status, criado_por)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, numero`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
       [numero, tipo, titulo, data, local || null, equipe || null, conteudo || null, obs || null, status || 'rascunho', req.usuario.usuario]
     );
     await auditar(req, 'CRIAR_RELATORIO', `${rows[0].numero} — ${titulo}`);
     res.status(201).json(rows[0]);
+
+    construirPdfRelatorio(rows[0])
+      .then(pdfBuffer => enviarPdfNotificacao({
+        subject: `Novo relatório — ${rows[0].numero}`,
+        html: `<p>Relatório <b>${rows[0].numero}</b> — "${titulo}" foi criado por <b>${req.usuario.usuario}</b>.</p>`,
+        pdfBuffer,
+        filename: `${rows[0].numero.replace(/\//g, '-')}.pdf`,
+      }))
+      .catch(err => console.error('[Email-PDF] Falha ao gerar PDF de relatório para envio:', err.message));
   } catch (err) {
     erroServidor(res, err);
   }
 });
 
-// Exportar PDF
-router.get('/:id/pdf', verificarToken, async (req, res) => {
-  try {
-    const { rows } = await pool.query(`SELECT * FROM relatorios WHERE id=$1`, [req.params.id]);
-    if (!rows.length) return res.status(404).json({ error: 'Relatório não encontrado.' });
-    const r = rows[0];
+async function construirPdfRelatorio(r) {
+  const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 55, right: 55 }, size: 'A4', bufferPages: true });
+  const bufferPromise = coletarPdfBuffer(doc);
 
-    const { usuario, role } = req.usuario;
-    if (role === 'agente' && r.criado_por !== usuario) {
-      return res.status(403).json({ error: 'Acesso negado a este relatório.' });
-    }
-
-    const path = require('path');
-    const fs   = require('fs');
-    const brasaoGCM        = path.join(__dirname, '../../public/brasao-gcm.png');
-    const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.png');
-    const NAVY = '#0e2a52';
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${r.numero.replace(/\//g, '-')}.pdf"`);
-
-    const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 55, right: 55 }, size: 'A4', bufferPages: true });
-    doc.pipe(res);
-
+  {
     const pageW     = doc.page.width;
     const margem    = 55;
     const conteudoW = pageW - margem * 2;
@@ -199,7 +197,7 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
     // ── Anexos em nova página após a assinatura ───────────────────────────────
     const { rows: anexos } = await pool.query(
       `SELECT * FROM anexos WHERE tipo_ref='relatorio' AND ref_id=$1 ORDER BY criado_em ASC`,
-      [req.params.id]
+      [r.id]
     );
     const PDF_IMG_MIMES = new Set(['image/jpeg', 'image/png']);
     const ALL_IMG_MIMES = new Set(['image/jpeg','image/png','image/gif','image/webp','image/bmp','image/tiff']);
@@ -287,6 +285,28 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
 
     doc.flushPages();
     doc.end();
+  }
+
+  return bufferPromise;
+}
+
+// Exportar PDF
+router.get('/:id/pdf', verificarToken, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`SELECT * FROM relatorios WHERE id=$1`, [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Relatório não encontrado.' });
+    const r = rows[0];
+
+    const { usuario, role } = req.usuario;
+    if (role === 'agente' && r.criado_por !== usuario) {
+      return res.status(403).json({ error: 'Acesso negado a este relatório.' });
+    }
+
+    const pdfBuffer = await construirPdfRelatorio(r);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${r.numero.replace(/\//g, '-')}.pdf"`);
+    res.end(pdfBuffer);
   } catch (err) {
     erroServidor(res, err);
   }
