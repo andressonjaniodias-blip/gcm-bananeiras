@@ -190,6 +190,8 @@
         if(typeof updateSidebarUser==='function') updateSidebarUser(PERFIL);
       } catch { window.location.href='/'; return; }
 
+      const verHoje = paramVer() === 'hoje';
+
       if (PERFIL.role === 'agente') {
         // Agente comum: só pode consultar a escala já publicada, não montar/editar.
         document.getElementById('tabBtnEditor').style.display = 'none';
@@ -197,13 +199,26 @@
         document.getElementById('tabBtnHistorico').classList.add('active');
         document.getElementById('tabBtnEditor').classList.remove('active');
         showTab('historico');
+        if (verHoje) abrirEscalaAtualSeExistir();
         return;
       }
 
       await Promise.all([carregarAgentes(), carregarPostos()]);
       montarFerAgente();
       carregarMes();
+      if (verHoje) abrirEscalaAtualSeExistir();
     });
+
+    function paramVer(){ return new URLSearchParams(window.location.search).get('ver'); }
+
+    async function abrirEscalaAtualSeExistir(){
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/escala/mes/${mesAtual()}`,{credentials:'include'});
+        if(!r.ok) return;
+        const d = await r.json();
+        if(d.escala) visualizarEscala(d.escala.id);
+      } catch {}
+    }
 
     async function carregarAgentes(){ try{ const r=await fetch(`${API_BASE_URL}/api/agentes`,{credentials:'include'}); if(r.ok) AGENTES=await r.json(); }catch{} }
     function montarFerAgente(){
@@ -389,7 +404,7 @@
           postos.forEach(posto=>{
             colBody+=`<div class="view-posto">${posto}</div>`;
             byPosto[posto].forEach(i=>{ const reg=i.regime==='12x36'?` <span style="color:var(--color-hint)">(12x36${i.turno?'/'+i.turno[0].toUpperCase():''})</span>`:'';
-              colBody+=`<div class="view-agente">• ${i.nome}${i.matricula?' — '+i.matricula:''}${reg}</div>`; });
+              colBody+=`<div class="view-agente">• ${i.nome_exibicao||i.nome}${reg}</div>`; });
           });
           html+=`<div class="view-col"><div class="view-col-head">Patrulha ${p}${p===dia1View?' (dia 1)':''}</div><div class="view-col-body">${colBody}</div></div>`;
         });
@@ -398,7 +413,7 @@
         if(adm.length){
           const byPosto={}; adm.forEach(i=>{(byPosto[i.posto]=byPosto[i.posto]||[]).push(i);});
           html+='<div class="view-obs"><div class="view-posto">Administrativo — Segunda a Sexta</div>';
-          Object.keys(byPosto).forEach(posto=>{ html+=`<div class="view-agente"><strong>${posto}:</strong> ${byPosto[posto].map(i=>i.nome+(i.matricula?' ('+i.matricula+')':'')).join(', ')}</div>`; });
+          Object.keys(byPosto).forEach(posto=>{ html+=`<div class="view-agente"><strong>${posto}:</strong> ${byPosto[posto].map(i=>i.nome_exibicao||i.nome).join(', ')}</div>`; });
           html+='</div>';
         }
         // Férias do mês na visualização
