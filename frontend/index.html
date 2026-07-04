@@ -9,90 +9,67 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
   <script src="assets/js/theme-switcher.js"></script>
-  <style>
-    /* ── Submenus do menu ☰ (mesmo visual redondo + cascata navItemDrop) ── */
-    .nav-group { display: flex; flex-direction: column; gap: 8px; }
-    .nav-subitems { display: none; flex-direction: column; gap: 8px; padding-left: 16px; }
-    .nav-group.open .nav-subitems { display: flex; }
-
-    /* Seta indicadora no botão de grupo (aparece ao expandir, como o label) */
-    .nav-group-chev {
-      margin-left: auto; padding-right: 16px; display: flex; align-items: center;
-      opacity: 0; transform: translateX(-6px);
-      transition: opacity .22s ease .12s, transform .22s ease .12s;
-      pointer-events: none;
-    }
-    .nav-group-chev svg { width: 15px; height: 15px; stroke: #fff; fill: none; transition: transform .25s ease; }
-    .header-nav-item:hover .nav-group-chev { opacity: 1; transform: translateX(0); }
-    .nav-group.open .nav-group-chev svg { transform: rotate(180deg); }
-
-    /* Subitens: tom levemente diferente para distinguir do grupo */
-    .nav-subitems .header-nav-item {
-      background: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.16);
-    }
-
-    /* Cascata dos subitens ao expandir o grupo */
-    .nav-group.open .nav-subitems .header-nav-item {
-      animation: navItemDrop 0.30s cubic-bezier(0.34, 1.25, 0.64, 1) both;
-    }
-    .nav-group.open .nav-subitems .header-nav-item:nth-child(1) { animation-delay:   0ms; }
-    .nav-group.open .nav-subitems .header-nav-item:nth-child(2) { animation-delay:  50ms; }
-    .nav-group.open .nav-subitems .header-nav-item:nth-child(3) { animation-delay: 100ms; }
-    .nav-group.open .nav-subitems .header-nav-item:nth-child(4) { animation-delay: 150ms; }
-
-    /* Cascata do nível superior (grupos + Sair) */
-    .header-nav-menu.open > .nav-group:nth-child(1) .nav-group-btn { animation-delay:   0ms; }
-    .header-nav-menu.open > .nav-group:nth-child(2) .nav-group-btn { animation-delay:  60ms; }
-    .header-nav-menu.open > .nav-group:nth-child(3) .nav-group-btn { animation-delay: 120ms; }
-    .header-nav-menu.open > .nav-item-sair { animation-delay: 180ms; }
-  </style>
 </head>
-<body>
+<body class="has-sidebar stage-page">
   <div id="app-shell">
-  <header class="header">
-    <img src="/brasao-gcm.png" alt="Brasão GCM" class="logo">
-    <div class="header-titulo">
-      <span class="header-linha-1">PREFEITURA MUNICIPAL DE BANANEIRAS</span>
-      <span class="header-linha-2">GUARDA CIVIL MUNICIPAL</span>
-      <span class="header-linha-3">Secretaria de Administração Pública Municipal</span>
-    </div>
-    <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
-  </header>
-
-  <!-- Box fixa: enquanto não logado fica só com o fundo; após login mostra a ação central -->
-  <main class="app-stage" id="appStage">
-    <div class="app-stage-bg" id="appStageBg">
-      <div class="app-stage-bg-layer"></div>
-      <div class="app-stage-bg-layer"></div>
-    </div>
-    <div class="app-stage-overlay"></div>
-
-    <!-- Botões flutuantes: menu e tema — canto superior esquerdo -->
-    <div class="stage-float-btns">
-      <div class="header-nav-wrapper" id="hdr-nav-wrapper">
-        <button class="stage-fab stage-fab--menu" id="hdr-btn-menu" title="Menu" onclick="toggleNavMenu()">
+    <header class="header">
+      <img src="/brasao-gcm.png" alt="Brasão GCM" class="logo">
+      <div class="header-titulo">
+        <span class="header-linha-1">PREFEITURA MUNICIPAL DE BANANEIRAS</span>
+        <span class="header-linha-2">GUARDA CIVIL MUNICIPAL</span>
+        <span class="header-linha-3">Secretaria de Administração Pública Municipal</span>
+      </div>
+      <div class="header-actions-row">
+        <button class="header-icon-btn" id="hdr-btn-menu" title="Menu" onclick="toggleSidebar()">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
         </button>
-        <div class="header-nav-menu" id="hdr-nav-menu"></div>
-      </div>
-      <div class="header-tema-wrapper" id="hdr-tema-wrapper">
-        <button class="stage-fab stage-fab--tema" id="hdr-btn-tema" title="Tema" onclick="toggleTemaMenu()">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5a7.5 7.5 0 1 0 7.5 7.5c0-1.38-1.12-2.5-2.5-2.5h-1.25c-.69 0-1.25-.56-1.25-1.25V5c0-1.38-1.12-2.5-2.5-2.5z"/><circle cx="6.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="11.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="8.5" r="1" fill="currentColor" stroke="none"/></svg>
-        </button>
-        <div class="header-tema-menu" id="hdr-tema-menu">
-          <button class="sb-tema-item" data-theme="gov-modern"      onclick="aplicarTema('gov-modern')"><span class="sb-tema-dot" style="background:#2171B5"></span>Gov Modern</button>
-          <button class="sb-tema-item" data-theme="dark-command"    onclick="aplicarTema('dark-command')"><span class="sb-tema-dot" style="background:#0d1a2e"></span>Dark Command</button>
-          <button class="sb-tema-item" data-theme="google-material" onclick="aplicarTema('google-material')"><span class="sb-tema-dot" style="background:#1A73E8"></span>Claro Operacional</button>
+        <div class="header-tema-wrapper" id="hdr-tema-wrapper">
+          <button class="header-icon-btn" id="hdr-btn-tema" title="Tema" onclick="toggleTemaMenu()">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5a7.5 7.5 0 1 0 7.5 7.5c0-1.38-1.12-2.5-2.5-2.5h-1.25c-.69 0-1.25-.56-1.25-1.25V5c0-1.38-1.12-2.5-2.5-2.5z"/><circle cx="6.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="11.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="8.5" r="1" fill="currentColor" stroke="none"/></svg>
+          </button>
+          <div class="header-tema-menu" id="hdr-tema-menu">
+            <button class="sb-tema-item" data-theme="gov-modern"      onclick="aplicarTema('gov-modern')"><span class="sb-tema-dot" style="background:#2171B5"></span>Gov Modern</button>
+            <button class="sb-tema-item" data-theme="dark-command"    onclick="aplicarTema('dark-command')"><span class="sb-tema-dot" style="background:#0d1a2e"></span>Dark Command</button>
+            <button class="sb-tema-item" data-theme="google-material" onclick="aplicarTema('google-material')"><span class="sb-tema-dot" style="background:#1A73E8"></span>Claro Operacional</button>
+          </div>
         </div>
       </div>
-    </div>
+      <img src="/brasao-prefeitura.png" alt="Brasão Prefeitura" class="logo">
+    </header>
 
-    <button class="app-stage-btn" id="btnNovoBO" style="display:none" title="Criar Boletim de Ocorrência" aria-label="Criar Boletim de Ocorrência" onclick="openPageModal('/pages/dashboard.html','Novo Boletim de Ocorrência')">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M8 13h4M10 11v4"/></svg>
-    </button>
-  </main>
+    <div id="shell-body">
+      <aside id="sidebar">
+        <div class="sb-user" id="sbUserBlock" style="display:none;">
+          <div class="sb-avatar" id="sbAvatar">?</div>
+          <div class="sb-user-info">
+            <span class="sb-user-name" id="sbNome">—</span>
+            <span class="sb-user-role" id="sbRole">—</span>
+          </div>
+        </div>
+        <nav class="sb-nav" id="sbNav"></nav>
+        <div class="sb-footer" id="sbFooter" style="display:none;">
+          <button class="sb-btn-sair" onclick="logout()">Sair do Sistema</button>
+        </div>
+      </aside>
+
+      <div id="app-content">
+        <!-- Box fixa: enquanto não logado fica só com o fundo; após login mostra a ação central -->
+        <main class="app-stage" id="appStage">
+          <div class="app-stage-bg" id="appStageBg">
+            <div class="app-stage-bg-layer"></div>
+            <div class="app-stage-bg-layer"></div>
+          </div>
+          <div class="app-stage-overlay"></div>
+
+          <button class="app-stage-btn" id="btnNovoBO" style="display:none" title="Criar Boletim de Ocorrência" aria-label="Criar Boletim de Ocorrência" onclick="openPageModal('/pages/dashboard.html','Novo Boletim de Ocorrência')">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M8 13h4M10 11v4"/></svg>
+          </button>
+        </main>
+      </div>
+    </div>
   </div>
+
+  <div id="sb-overlay" onclick="closeSidebar()"></div>
 
   <!-- Modal flutuante único — usado para o login e para todos os formulários do menu -->
   <div class="pg-overlay" id="pg-overlay">
@@ -162,8 +139,9 @@
       }, 6000);
     })();
 
-    // Menu principal (dropdown ☰) agrupado por seção. Cada grupo só aparece
-    // se tiver itens visíveis para o perfil.
+    // Menu principal, agrupado por seção. Cada grupo só aparece se tiver
+    // itens visíveis para o perfil — abre as páginas na sidebar deslizante,
+    // que reaproveita o mesmo visual usado nas páginas internas.
     const MENU = [
       { group: 'Operacional', items: [
         { href: '/pages/dashboard.html', label: 'Novo BO',             roles: ['agente', 'supervisor', 'admin'] },
@@ -183,8 +161,27 @@
       ] },
     ];
 
+    const NAV_ICONS = {
+      '/pages/dashboard.html':  `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M8 13h4M10 11v4"/></svg>`,
+      '/pages/consulta.html':   `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.5 2.5"/></svg>`,
+      '/pages/relatorio.html':  `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="1.5"/><path d="M7 13v-3M10 13V7M13 13v-5"/></svg>`,
+      '/pages/viatura.html':    `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="16" height="7" rx="1.5"/><path d="M4 8l2-4h8l2 4"/><circle cx="6" cy="15" r="1.5"/><circle cx="14" cy="15" r="1.5"/></svg>`,
+      '/pages/extras.html':     `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="11" r="6"/><path d="M10 11V8"/><path d="M8 2.5h4"/><path d="M10 2.5v2"/></svg>`,
+      '/pages/escala.html':     `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M8 8v9M13 8v9M3 12.5h14"/><path d="M7 2v3M13 2v3"/></svg>`,
+      '/pages/documentos.html': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h7l4 4v11a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M12 3v5h5"/><path d="M7 10h6M7 13h4"/></svg>`,
+      '/pages/perfil.html':     `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg>`,
+      '/pages/logs.html':       `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg>`,
+      '/pages/usuarios.html':   `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="3"/><path d="M1 18c0-3.31 2.91-6 6.5-6"/><circle cx="14" cy="8" r="2.5"/><path d="M19 18c0-2.76-2.24-5-5-5"/></svg>`,
+    };
+    const GROUP_ICONS = {
+      'Operacional':        `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l6 2.2v4.3c0 3.6-2.5 6.6-6 8-3.5-1.4-6-4.4-6-8V4.7z"/><path d="M7.5 10l1.8 1.8L13 8"/></svg>`,
+      'Escalas & Plantões': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M8 8v9M13 8v9"/><path d="M7 2v3M13 2v3"/></svg>`,
+      'Administração':      `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6.7a3.3 3.3 0 100 6.6 3.3 3.3 0 000-6.6z"/><path d="M16.2 12.1a1.3 1.3 0 00.26 1.43l.05.05a1.6 1.6 0 11-2.26 2.26l-.05-.05a1.3 1.3 0 00-2.2.92V17a1.6 1.6 0 11-3.2 0v-.06a1.3 1.3 0 00-2.2-.92l-.05.05a1.6 1.6 0 11-2.26-2.26l.05-.05A1.3 1.3 0 003.9 12.1H3.8a1.6 1.6 0 110-3.2h.06a1.3 1.3 0 00.92-2.2l-.05-.05A1.6 1.6 0 117 4.4l.05.05a1.3 1.3 0 001.43.26H8.5a1.3 1.3 0 00.8-1.19V3.4a1.6 1.6 0 113.2 0v.06a1.3 1.3 0 00.8 1.19 1.3 1.3 0 001.43-.26l.05-.05a1.6 1.6 0 112.26 2.26l-.05.05a1.3 1.3 0 00-.26 1.43V8.5a1.3 1.3 0 001.19.8h.06a1.6 1.6 0 110 3.2h-.06a1.3 1.3 0 00-1.19.8z"/></svg>`,
+    };
+    const CHEVRON_DOWN = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8l4 4 4-4"/></svg>`;
+
     function openPageModal(href, title, opts) {
-      closeNavMenu();
+      closeSidebar();
       const modal = document.getElementById('pg-modal');
       const body  = document.getElementById('pg-modal-body');
       document.getElementById('pg-modal-title').textContent = title || '';
@@ -197,6 +194,9 @@
       iframe.src = href;
       body.appendChild(iframe);
       document.getElementById('pg-overlay').classList.add('aberto');
+      document.querySelectorAll('.sb-link').forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === href);
+      });
     }
 
     function openLoginModal() {
@@ -219,6 +219,11 @@
       }
     }
 
+    function closePageModal() {
+      document.getElementById('pg-overlay').classList.remove('aberto');
+      document.getElementById('pg-modal-body').innerHTML = '';
+    }
+
     const ICON_EYE = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10s2.7-5 8-5 8 5 8 5-2.7 5-8 5-8-5-8-5z"/><circle cx="10" cy="10" r="2.2"/></svg>`;
     const ICON_EYE_OFF = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10s2.7-5 8-5 8 5 8 5-2.7 5-8 5-8-5-8-5z"/><circle cx="10" cy="10" r="2.2"/><path d="M3 3l14 14"/></svg>`;
 
@@ -232,31 +237,69 @@
       btn.title = mostrando ? 'Mostrar senha' : 'Ocultar senha';
     }
 
-    function closePageModal() {
-      document.getElementById('pg-overlay').classList.remove('aberto');
-      document.getElementById('pg-modal-body').innerHTML = '';
+    // ── Sidebar deslizante (mesmo componente visual das páginas internas) ──
+    function toggleSidebar() {
+      if (window.matchMedia('(min-width:1025px)').matches) {
+        document.body.classList.toggle('sb-collapsed');
+        return;
+      }
+      const open = document.body.classList.toggle('sb-open');
+      document.getElementById('sb-overlay').style.display = open ? 'block' : 'none';
     }
 
-    function _positionMenu(menu, btn) {
-      const r = btn.getBoundingClientRect();
-      menu.style.top  = (r.bottom + 10) + 'px';
-      menu.style.left = r.left + 'px';
+    function closeSidebar() {
+      document.body.classList.remove('sb-open');
+      document.getElementById('sb-overlay').style.display = 'none';
     }
-    function toggleNavMenu() {
-      const menu = document.getElementById('hdr-nav-menu');
-      const btn  = document.getElementById('hdr-btn-menu');
-      if (!menu.classList.contains('open')) {
-        // Ao abrir, recolhe todos os grupos para o menu ficar compacto
-        menu.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open'));
-        _positionMenu(menu, btn);
-      }
-      menu.classList.toggle('open');
+
+    function _grpState() { try { return JSON.parse(localStorage.getItem('gcm-sb-grupos') || '{}'); } catch { return {}; } }
+    function _grpSave(s)  { localStorage.setItem('gcm-sb-grupos', JSON.stringify(s)); }
+
+    function toggleSidebarGroup(btn) {
+      const g = btn.closest('.sb-group');
+      if (!g) return;
+      const collapsed = g.classList.toggle('collapsed');
+      const s = _grpState();
+      s[g.dataset.grupo] = collapsed;
+      _grpSave(s);
     }
-    function closeNavMenu()  { document.getElementById('hdr-nav-menu').classList.remove('open'); }
+
+    function buildSidebarNav(role) {
+      const nav = document.getElementById('sbNav');
+      const state = _grpState();
+      let html = '';
+      MENU.forEach(secao => {
+        const itens = secao.items.filter(i => i.roles.includes(role));
+        if (!itens.length) return;
+        const collapsed = state[secao.group] === true;
+        const linksHTML = itens.map(i =>
+          `<a href="${i.href}" class="sb-link" onclick="openPageModal('${i.href}','${i.label}');return false;">
+            <span class="sb-icon">${NAV_ICONS[i.href] || ''}</span><span>${i.label}</span>
+          </a>`
+        ).join('');
+        html += `<div class="sb-group${collapsed ? ' collapsed' : ''}" data-grupo="${secao.group}">
+          <button type="button" class="sb-group-head" onclick="toggleSidebarGroup(this)">
+            <span class="sb-group-title">${secao.group}</span>
+            <span class="sb-group-chev">${CHEVRON_DOWN}</span>
+          </button>
+          <div class="sb-group-items">${linksHTML}</div>
+        </div>`;
+      });
+      nav.innerHTML = html;
+
+      const logado = !!role;
+      document.getElementById('sbFooter').style.display = logado ? '' : 'none';
+      document.getElementById('sbUserBlock').style.display = logado ? '' : 'none';
+    }
+
     function toggleTemaMenu() {
       const menu = document.getElementById('hdr-tema-menu');
       const btn  = document.getElementById('hdr-btn-tema');
-      if (!menu.classList.contains('open')) _positionMenu(menu, btn);
+      if (!menu.classList.contains('open')) {
+        const r = btn.getBoundingClientRect();
+        menu.style.top  = (r.bottom + 10) + 'px';
+        menu.style.left = r.left + 'px';
+      }
       menu.classList.toggle('open');
     }
 
@@ -267,74 +310,19 @@
       document.getElementById('hdr-tema-menu').classList.remove('open');
     }
 
-    const NAV_ICONS = {
-      '/pages/dashboard.html':  `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M11 3v5h5"/><path d="M8 13h4M10 11v4"/></svg>`,
-      '/pages/consulta.html':   `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.5 2.5"/></svg>`,
-      '/pages/relatorio.html':  `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h2v-6H3zM8 17h2v-9H8zM13 17h2V7h-2z"/></svg>`,
-      '/pages/viatura.html':    `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="16" height="7" rx="1.5"/><path d="M5 9l2-4h6l2 4"/><circle cx="5.5" cy="16" r="1.5"/><circle cx="14.5" cy="16" r="1.5"/></svg>`,
-      '/pages/extras.html':     `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="11" r="6"/><path d="M10 11V8"/><path d="M8 2.5h4"/><path d="M10 2.5v2"/></svg>`,
-      '/pages/escala.html':     `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M8 8v9M13 8v9M3 12.5h14"/><path d="M7 2v3M13 2v3"/></svg>`,
-      '/pages/documentos.html': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h7l4 4v11a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M12 3v5h5"/><path d="M7 10h6M7 13h4"/></svg>`,
-      '/pages/perfil.html':     `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg>`,
-      '/pages/logs.html':       `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2l2 5h5l-4 3 1.5 5L10 12l-4.5 3L7 10 3 7h5z"/></svg>`,
-      '/pages/usuarios.html':   `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="3"/><path d="M1 18c0-3.31 2.91-6 6.5-6"/><circle cx="14" cy="7" r="2.5"/><path d="M19 18c0-2.76-2.24-5-5-5"/></svg>`,
-    };
-    const ICON_SAIR = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3H4a1 1 0 00-1 1v12a1 1 0 001 1h3M13 14l4-4-4-4M17 10H7"/></svg>`;
-
-    const GROUP_ICONS = {
-      'Operacional':        `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l6 2.2v4.3c0 3.6-2.5 6.6-6 8-3.5-1.4-6-4.4-6-8V4.7z"/><path d="M7.5 10l1.8 1.8L13 8"/></svg>`,
-      'Escalas & Plantões': `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M8 8v9M13 8v9"/><path d="M7 2v3M13 2v3"/></svg>`,
-      'Administração':      `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6.7a3.3 3.3 0 100 6.6 3.3 3.3 0 000-6.6z"/><path d="M16.2 12.1a1.3 1.3 0 00.26 1.43l.05.05a1.6 1.6 0 11-2.26 2.26l-.05-.05a1.3 1.3 0 00-2.2.92V17a1.6 1.6 0 11-3.2 0v-.06a1.3 1.3 0 00-2.2-.92l-.05.05a1.6 1.6 0 11-2.26-2.26l.05-.05A1.3 1.3 0 003.9 12.1H3.8a1.6 1.6 0 110-3.2h.06a1.3 1.3 0 00.92-2.2l-.05-.05A1.6 1.6 0 117 4.4l.05.05a1.3 1.3 0 001.43.26H8.5a1.3 1.3 0 00.8-1.19V3.4a1.6 1.6 0 113.2 0v.06a1.3 1.3 0 00.8 1.19 1.3 1.3 0 001.43-.26l.05-.05a1.6 1.6 0 112.26 2.26l-.05.05a1.3 1.3 0 00-.26 1.43V8.5a1.3 1.3 0 001.19.8h.06a1.6 1.6 0 110 3.2h-.06a1.3 1.3 0 00-1.19.8z"/></svg>`,
-    };
-    const CHEVRON_DOWN = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8l4 4 4-4"/></svg>`;
-
-    function buildNavMenu(role) {
-      const nav = document.getElementById('hdr-nav-menu');
-      let html = '';
-      MENU.forEach(secao => {
-        const itens = secao.items.filter(i => i.roles.includes(role));
-        if (!itens.length) return;
-        const sub = itens.map(i =>
-          `<a href="#" class="header-nav-item nav-subitem" onclick="openPageModal('${i.href}','${i.label}');return false;">
-            <span class="nav-item-icon">${NAV_ICONS[i.href] || ''}</span>
-            <span class="nav-item-label">${i.label}</span>
-          </a>`
-        ).join('');
-        html += `<div class="nav-group" data-grupo="${secao.group}">
-          <button type="button" class="header-nav-item nav-group-btn" onclick="toggleNavGroup(this)">
-            <span class="nav-item-icon">${GROUP_ICONS[secao.group] || ''}</span>
-            <span class="nav-item-label">${secao.group}</span>
-            <span class="nav-group-chev">${CHEVRON_DOWN}</span>
-          </button>
-          <div class="nav-subitems">${sub}</div>
-        </div>`;
-      });
-      nav.innerHTML = html +
-        `<a href="#" class="header-nav-item nav-item-sair" onclick="logout();return false;">
-          <span class="nav-item-icon">${ICON_SAIR}</span>
-          <span class="nav-item-label">Sair do Sistema</span>
-        </a>`;
-    }
-
-    // Abre/fecha um grupo (accordion: só um aberto por vez)
-    function toggleNavGroup(btn) {
-      const grp = btn.closest('.nav-group');
-      if (!grp) return;
-      const jaAberto = grp.classList.contains('open');
-      document.querySelectorAll('#hdr-nav-menu .nav-group.open').forEach(g => g.classList.remove('open'));
-      if (!jaAberto) grp.classList.add('open');
-    }
-
     // Hook chamado por login() (assets/js/main.js) após autenticação bem-sucedida
     window.aposLoginSucesso = function (perfil) {
       closePageModal();
       document.getElementById('btnNovoBO').style.display = '';
-      buildNavMenu(perfil.role || 'agente');
+      const role = perfil.role || 'agente';
+      const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' }[role] || 'Agente GCM';
+      document.getElementById('sbNome').textContent = perfil.usuario || '—';
+      document.getElementById('sbRole').textContent = roleLabel;
+      document.getElementById('sbAvatar').textContent = (perfil.usuario || '?')[0].toUpperCase();
+      buildSidebarNav(role);
     };
 
     document.addEventListener('click', e => {
-      const navWrap = document.getElementById('hdr-nav-wrapper');
-      if (navWrap && !navWrap.contains(e.target)) closeNavMenu();
       const temaWrap = document.getElementById('hdr-tema-wrapper');
       if (temaWrap && !temaWrap.contains(e.target)) document.getElementById('hdr-tema-menu').classList.remove('open');
       const overlay = document.getElementById('pg-overlay');
@@ -352,12 +340,11 @@
         if (res.ok) {
           const perfil = await res.json();
           sessionStorage.setItem('perfil', JSON.stringify(perfil));
-          document.getElementById('btnNovoBO').style.display = '';
-          buildNavMenu(perfil.role || 'agente');
+          window.aposLoginSucesso(perfil);
           return;
         }
       } catch {}
-      buildNavMenu('');
+      buildSidebarNav('');
       openLoginModal();
     })();
   </script>
