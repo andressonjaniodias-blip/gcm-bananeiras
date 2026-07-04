@@ -790,7 +790,7 @@ async function login() {
       } else if (typeof window.aposLoginSucesso === 'function') {
         window.aposLoginSucesso(perfil);
       } else {
-        window.location.href = 'pages/home.html';
+        window.location.href = '/';
       }
     } else {
       showToast(result.error || 'Erro ao fazer login', 'danger');
