@@ -6,6 +6,8 @@ const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
 const path         = require('path');
 const fs           = require('fs');
+const { coletarPdfBuffer } = require('../utils/pdfBuffer');
+const { enviarPdfNotificacao } = require('../utils/email');
 
 const brasaoGCM        = path.join(__dirname, '../../public/brasao-gcm.png');
 const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.png');
@@ -38,33 +40,34 @@ router.post('/', verificarToken, async (req, res) => {
     const numero = `VTR-GCM-${String(seq).padStart(4, '0')}/${ano}`;
     const { rows } = await pool.query(
       `INSERT INTO controle_viatura (tipo, codigo, data_hora, km, responsavel, dados, obs, criado_por, numero)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, numero`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
       [tipo, codigo, dataHora, km, responsavel || req.usuario?.usuario, JSON.stringify(dados || {}), obs || null, req.usuario?.usuario, numero]
     );
     await auditar(req, 'REGISTRAR_VIATURA', `${rows[0].numero} — ${String(codigo).toUpperCase()} (${TIPO_LABEL[tipo] || tipo})`);
     res.status(201).json(rows[0]);
+
+    construirPdfViatura(rows[0])
+      .then(pdfBuffer => enviarPdfNotificacao({
+        subject: `Registro de viatura — ${rows[0].numero}`,
+        html: `<p>Registro de <b>${TIPO_LABEL[tipo] || tipo}</b> da viatura <b>${String(codigo).toUpperCase()}</b> (${rows[0].numero}) lançado por <b>${req.usuario?.usuario}</b>.</p>`,
+        pdfBuffer,
+        filename: `${rows[0].numero.replace(/\//g, '-')}.pdf`,
+      }))
+      .catch(err => console.error('[Email-PDF] Falha ao gerar PDF de viatura para envio:', err.message));
   } catch (err) {
     erroServidor(res, err);
   }
 });
 
-// Exportar PDF de um registro de viatura
-router.get('/:id/pdf', verificarToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { rows } = await pool.query(`SELECT * FROM controle_viatura WHERE id=$1`, [id]);
-    if (!rows.length) return res.status(404).json({ error: 'Registro não encontrado.' });
-    const r = rows[0];
+async function construirPdfViatura(r) {
+  const id = r.id;
+  const dados = typeof r.dados === 'string' ? JSON.parse(r.dados) : (r.dados || {});
+  const nomeRegistro = r.numero || `VTR-GCM-${String(r.id).padStart(4, '0')}`;
 
-    const dados = typeof r.dados === 'string' ? JSON.parse(r.dados) : (r.dados || {});
-    const nomeRegistro = r.numero || `VTR-GCM-${String(r.id).padStart(4, '0')}`;
+  const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 55, right: 55 }, size: 'A4', bufferPages: true });
+  const bufferPromise = coletarPdfBuffer(doc);
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${nomeRegistro.replace(/\//g, '-')}.pdf"`);
-
-    const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 55, right: 55 }, size: 'A4', bufferPages: true });
-    doc.pipe(res);
-
+  {
     const pageW     = doc.page.width;
     const margem    = 55;
     const conteudoW = pageW - margem * 2;
@@ -242,6 +245,24 @@ router.get('/:id/pdf', verificarToken, async (req, res) => {
 
     doc.flushPages();
     doc.end();
+  }
+
+  return bufferPromise;
+}
+
+// Exportar PDF de um registro de viatura
+router.get('/:id/pdf', verificarToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await pool.query(`SELECT * FROM controle_viatura WHERE id=$1`, [id]);
+    if (!rows.length) return res.status(404).json({ error: 'Registro não encontrado.' });
+
+    const pdfBuffer = await construirPdfViatura(rows[0]);
+    const nomeRegistro = rows[0].numero || `VTR-GCM-${String(rows[0].id).padStart(4, '0')}`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${nomeRegistro.replace(/\//g, '-')}.pdf"`);
+    res.end(pdfBuffer);
   } catch (err) {
     erroServidor(res, err);
   }
