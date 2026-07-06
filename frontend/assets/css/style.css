@@ -1326,6 +1326,10 @@ table button:hover { background: var(--color-primary-hover); }
 /* ============================================================
    FIELD — campo de formulário padrão
    ============================================================ */
+.field {
+  min-width: 0;
+}
+
 .field label {
   display: block;
   font-size: 0.78rem;
@@ -1377,12 +1381,13 @@ table button:hover { background: var(--color-primary-hover); }
 .btn-primary {
   background: var(--color-primary);
   color: #fff;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding: 10px 24px;
   cursor: pointer;
   font-size: 0.92rem;
   font-weight: 600;
+  line-height: 1.2;
   transition: background 0.2s;
 }
 .btn-primary:hover { background: var(--color-primary-hover); }
@@ -1395,6 +1400,7 @@ table button:hover { background: var(--color-primary-hover); }
   padding: 10px 20px;
   cursor: pointer;
   font-size: 0.9rem;
+  line-height: 1.2;
   font-weight: 500;
   transition: all 0.2s;
 }
