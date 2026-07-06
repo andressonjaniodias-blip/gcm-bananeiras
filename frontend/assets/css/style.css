@@ -1856,13 +1856,12 @@ table button:hover { background: var(--color-primary-hover); }
     position: fixed;
     top: 0;
     left: 0;
-    height: 100vh;
-    height: 100svh; /* 100vh inclui a área atrás da barra do navegador no
-       mobile — o rodapé (botão "Sair") acaba renderizado fora da tela
-       visível. 100svh usa a menor altura possível (barra do navegador
-       sempre visível), garantia mais conservadora que 100dvh em
-       navegadores com suporte inconsistente a viewport dinâmico. */
+    height: 100vh;  /* fallback: navegadores sem viewport dinâmico */
     height: 100dvh;
+    height: 100svh; /* vence onde suportado — menor altura possível (barra de
+       endereço do Chrome sempre contada). 100vh inclui a área atrás da barra
+       e empurraria o rodapé (botão "Sair") para fora da tela visível. svh
+       garante que o drawer nunca exceda a área sempre-visível. */
     width: 260px;
     z-index: 400;
     transform: translateX(-100%);
@@ -2133,7 +2132,11 @@ body.has-sidebar .header {
 
   #app-shell {
     border-radius: 12px;
-    height: calc(100vh - 16px);
+    height: calc(100vh - 16px);   /* fallback: navegadores sem viewport dinâmico */
+    height: calc(100dvh - 16px);
+    height: calc(100svh - 16px);  /* vence onde suportado — menor viewport (barra
+       de endereço do Chrome sempre contada), garante que o card nunca fique
+       mais alto que a área visível e recorte o fundo do conteúdo no Android. */
     min-height: unset;
     margin: 0 auto;
     box-shadow: 0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05);
