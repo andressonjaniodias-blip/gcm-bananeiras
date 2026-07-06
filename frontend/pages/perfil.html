@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Meu Perfil - GCM Bananeiras</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -400,11 +400,10 @@
         badge.textContent = roleLabel[perfil.role] || perfil.role;
         badge.className   = `perfil-role-badge ${badgeClass[perfil.role] || 'badge-agente'}`;
 
-        // Carrega dados do agente vinculado
-        const resA = await fetch(`${API_BASE_URL}/api/agentes`, { credentials: 'include' });
+        // Carrega dados do próprio agente vinculado
+        const resA = await fetch(`${API_BASE_URL}/api/agentes/meu`, { credentials: 'include' });
         if (resA.ok) {
-          const agentes = await resA.json();
-          const ag = agentes.find(a => a.usuario === perfil.usuario);
+          const ag = await resA.json();
           if (ag) {
             const nomeExibir = ag.nome || perfil.usuario;
             document.getElementById('perfilNome').textContent  = nomeExibir;

@@ -431,10 +431,9 @@
 
   async function verificarAtualizacaoDados(usuarioLogado) {
     try {
-      const res = await fetch(`${window.API_BASE_URL || ''}/api/agentes`, { credentials: 'include' });
+      const res = await fetch(`${window.API_BASE_URL || ''}/api/agentes/meu`, { credentials: 'include' });
       if (!res.ok) return;
-      const agentes = await res.json();
-      const ag = agentes.find(a => a.usuario === usuarioLogado);
+      const ag = await res.json();
       if (!ag) return;
 
       const referencia = ag.atualizado_em || ag.criado_em;
@@ -547,9 +546,11 @@
   // ─────────────────────────────────────────────────────────────────────────
 
   if (inIframe) {
-    // Injeta estilo imediatamente (antes do body estar disponível) para ocultar o header e liberar scroll
+    // Injeta estilo imediatamente (antes do body estar disponível) para ocultar
+    // o header e o título interno da página — ambos redundantes, pois o modal
+    // (janela de cima) já mostra o mesmo título na sua própria barra — e liberar scroll
     const _s = document.createElement('style');
-    _s.textContent = '.header { display: none !important; } html, body { overflow: auto !important; height: auto !important; }';
+    _s.textContent = '.header, .page-title { display: none !important; } html, body { overflow: auto !important; height: auto !important; }';
     (document.head || document.documentElement).appendChild(_s);
     if (document.body) {
       document.body.classList.add('in-page-modal');

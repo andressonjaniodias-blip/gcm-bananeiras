@@ -5,6 +5,7 @@ const { verificarToken, verificarAdmin, auditar } = require('../middleware/auth'
 const exigirAdmin = verificarAdmin;
 const erroServidor = require('../utils/erroServidor');
 const { encriptar, desencriptarComFallback } = require('../utils/encryption');
+const { validarEmail } = require('../utils/validation');
 
 function decifrarAgente(a) {
   return { ...a, cpf: desencriptarComFallback(a.cpf), rg: desencriptarComFallback(a.rg) };
@@ -16,13 +17,38 @@ const CAMPOS_AGENTE = `
   email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf, foto
 `;
 
-// Listar agentes
+// Campos operacionais, sem dados pessoais sensíveis (CPF, RG, endereço, contato, foto) —
+// usados nas telas de autocomplete/seleção de agente, abertas a qualquer autenticado.
+const CAMPOS_AGENTE_RESUMO = `id, nome, matricula, cargo, lotacao, turno, ativo, usuario`;
+
+// Listar agentes — versão resumida (sem PII), aberta a qualquer autenticado
 router.get('/', verificarToken, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT ${CAMPOS_AGENTE_RESUMO} FROM agentes ORDER BY nome ASC`
+    );
+    res.json(rows);
+  } catch (err) { erroServidor(res, err); }
+});
+
+// Listar agentes — versão completa (com CPF/RG/endereço/contato/foto), só admin
+router.get('/completo', verificarToken, exigirAdmin, async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT ${CAMPOS_AGENTE} FROM agentes ORDER BY nome ASC`
     );
     res.json(rows.map(decifrarAgente));
+  } catch (err) { erroServidor(res, err); }
+});
+
+// Dados completos do próprio agente vinculado ao usuário logado
+router.get('/meu', verificarToken, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT ${CAMPOS_AGENTE} FROM agentes WHERE usuario = $1`, [req.usuario?.usuario]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Agente vinculado ao usuário não encontrado.' });
+    res.json(decifrarAgente(rows[0]));
   } catch (err) { erroServidor(res, err); }
 });
 
@@ -35,6 +61,7 @@ router.post('/', verificarToken, exigirAdmin, async (req, res) => {
       email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf
     } = req.body;
     if (!nome || !matricula) return res.status(400).json({ error: 'Nome e matrícula são obrigatórios.' });
+    if (email?.trim() && !validarEmail(email.trim())) return res.status(400).json({ error: 'E-mail inválido.' });
     const { rows } = await db.query(
       `INSERT INTO agentes
         (nome, matricula, cargo, usuario, ativo,
@@ -70,6 +97,7 @@ router.put('/:id', verificarToken, exigirAdmin, async (req, res) => {
       email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf
     } = req.body;
     if (!nome || !matricula) return res.status(400).json({ error: 'Nome e matrícula são obrigatórios.' });
+    if (email?.trim() && !validarEmail(email.trim())) return res.status(400).json({ error: 'E-mail inválido.' });
     const { rows } = await db.query(
       `UPDATE agentes SET
         nome=$1, matricula=$2, cargo=$3, usuario=$4, ativo=$5,
@@ -104,6 +132,7 @@ router.patch('/meu-contato', verificarToken, async (req, res) => {
   try {
     const usuario = req.usuario?.usuario;
     const { telefone, email, cep, logradouro, numero_end, complemento, bairro, cidade, uf } = req.body;
+    if (email?.trim() && !validarEmail(email.trim())) return res.status(400).json({ error: 'E-mail inválido.' });
     const { rows } = await db.query(
       `UPDATE agentes
        SET telefone=$1, email=$2, cep=$3, logradouro=$4,

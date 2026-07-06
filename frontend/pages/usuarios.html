@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Gerenciamento - GCM Bananeiras</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -657,7 +657,7 @@
       try {
         const [resU, resA] = await Promise.all([
           fetch(`${API_BASE_URL}/api/auth/usuarios`, { credentials: 'include' }),
-          fetch(`${API_BASE_URL}/api/agentes`,        { credentials: 'include' }),
+          fetch(`${API_BASE_URL}/api/agentes/completo`, { credentials: 'include' }),
         ]);
         const lista   = await resU.json();
         const agentes = resA.ok ? await resA.json() : [];
@@ -800,7 +800,7 @@
 
       // Carrega dados do agente vinculado
       try {
-        const res = await fetch(`${API_BASE_URL}/api/agentes`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE_URL}/api/agentes/completo`, { credentials: 'include' });
         if (res.ok) {
           const agentes = await res.json();
           const ag = agentes.find(a => a.usuario === usuario);

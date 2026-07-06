@@ -6,6 +6,10 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
+// Erros em clientes ociosos do pool (ex.: conexão derrubada pelo banco) emitem
+// 'error' de forma assíncrona; sem este listener o processo Node encerra.
+pool.on('error', err => console.error('Erro inesperado no pool do banco:', err.message));
+
 pool.connect()
   .then(async client => {
     console.log('Conectado ao banco PostgreSQL.');

@@ -1,6 +1,5 @@
 // Sessão controlada por cookie httpOnly — o token não fica exposto no JS
 // Os dados do usuário logado são guardados em sessionStorage apenas para exibição na UI
-let authToken = null; // mantido para compatibilidade com código legado
 
 window.addEventListener('DOMContentLoaded', async () => {
   const isLoginPage = window.location.pathname === '/' ||
@@ -47,6 +46,14 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   _renderMobileNav();
 });
+
+// Escapa texto dinâmico antes de inserir via innerHTML (nomes de arquivo são
+// controláveis pelo usuário que escolhe o arquivo no seletor do SO)
+function escHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
 
 // ── Rascunho do BO: expiração + confirmação ─────────────────────────────────
 const RASCUNHO_TTL_MS = 12 * 60 * 60 * 1000; // 12h
@@ -522,7 +529,6 @@ async function finalizarBO() {
       if (_anexosBO.length) {
         await enviarAnexosBO(result.id);
       }
-      _boIdAtual   = result.id;
       _pdfBOId     = result.id;
       _pdfBONumero = result.numero;
       document.getElementById('modal-bo-numero').textContent = result.numero;
@@ -560,7 +566,6 @@ function restaurarRascunho(dados) {
 
 // ── Anexos do BO ─────────────────────────────────────────────────────────────
 let _anexosBO    = [];   // {file, titulo, legenda}[] pendentes (antes de criar o BO)
-let _boIdAtual   = null; // ID do BO após criação (para upload real)
 
 function adicionarAnexosBO(files) {
   for (const f of Array.from(files)) {
@@ -593,16 +598,16 @@ function renderizarAnexosBO() {
       <div style="display:flex;align-items:center;gap:10px;">
         ${thumb}
         <div class="anexo-info">
-          <div class="anexo-nome">${f.name}</div>
-          <div class="anexo-meta">${f.type || 'arquivo'} — ${kb} KB</div>
+          <div class="anexo-nome">${escHtml(f.name)}</div>
+          <div class="anexo-meta">${escHtml(f.type) || 'arquivo'} — ${kb} KB</div>
         </div>
         <button class="btn-rm-anexo" onclick="removerAnexoBO(${i})">Remover</button>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;padding-left:4px;">
-        <input type="text" placeholder="Título (opcional — ABNT)" value="${titulo}"
+        <input type="text" placeholder="Título (opcional — ABNT)" value="${escHtml(titulo)}"
                oninput="atualizarMetaAnexoBO(${i},'titulo',this.value)"
                style="flex:1;min-width:140px;padding:4px 8px;border:1px solid var(--color-border);border-radius:var(--radius-sm);font-size:0.85rem;">
-        <input type="text" placeholder="Legenda (opcional)" value="${legenda}"
+        <input type="text" placeholder="Legenda (opcional)" value="${escHtml(legenda)}"
                oninput="atualizarMetaAnexoBO(${i},'legenda',this.value)"
                style="flex:2;min-width:180px;padding:4px 8px;border:1px solid var(--color-border);border-radius:var(--radius-sm);font-size:0.85rem;">
       </div>

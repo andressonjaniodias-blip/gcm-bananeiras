@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Sistema de Registro de BO</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,6 +19,28 @@
       height: calc(50% - 24px);
       aspect-ratio: 1 / 1;
       z-index: 1;
+    }
+    /* Mobile: o quadrado 1:1 baseado em 50% da altura fica mais largo que a
+       tela em telas estreitas (ex.: iPhone SE) e é cortado pelo overflow:clip
+       do #app-shell. Em telas pequenas, abandona o aspect-ratio fixo e usa
+       largura quase total com altura proporcional à viewport — fica mais
+       achatado, mas nunca estoura ou corta. */
+    @media (max-width: 768px) {
+      .avisos-floating {
+        left: 12px;
+        bottom: 12px;
+        width: calc(100% - 24px);
+        aspect-ratio: auto;
+        height: clamp(160px, 32vh, 260px);
+      }
+    }
+    @media (max-width: 480px) {
+      .avisos-floating {
+        left: 8px;
+        bottom: 8px;
+        width: calc(100% - 16px);
+        height: clamp(140px, 28vh, 220px);
+      }
     }
     .pub-panel {
       background: var(--bg-card);

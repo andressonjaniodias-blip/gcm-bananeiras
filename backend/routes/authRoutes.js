@@ -11,7 +11,7 @@ const {
   verificarToken, verificarAdmin, registrarAuditoria, extraFromReq, ipFromReq, ROLES
 } = require('../middleware/auth');
 const { gerarCsrfToken } = require('../middleware/csrf');
-const { validarSenha } = require('../utils/validation');
+const { validarSenha, validarEmail } = require('../utils/validation');
 
 const INATIVIDADE_MINUTOS = parseInt(process.env.INATIVIDADE_MINUTOS || '30');
 
@@ -176,6 +176,7 @@ router.post('/usuarios', verificarToken, verificarAdmin, async (req, res) => {
     if (!ROLES.includes(role)) {
       return res.status(400).json({ error: `Role inválido. Valores aceitos: ${ROLES.join(', ')}` });
     }
+    if (email?.trim() && !validarEmail(email.trim())) return res.status(400).json({ error: 'E-mail inválido.' });
     const erroSenha = validarSenha(senha);
     if (erroSenha) return res.status(400).json({ error: erroSenha });
     const hash = await bcrypt.hash(senha, 10);
@@ -245,6 +246,7 @@ router.patch('/usuarios/:id/email', verificarToken, verificarAdmin, async (req, 
   try {
     const { id } = req.params;
     const { email } = req.body;
+    if (email?.trim() && !validarEmail(email.trim())) return res.status(400).json({ error: 'E-mail inválido.' });
     const { rows } = await db.query('SELECT usuario FROM usuarios WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'Usuário não encontrado' });
 

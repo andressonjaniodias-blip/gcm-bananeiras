@@ -176,34 +176,61 @@ router.get('/cota/:agenteId/:data', verificarToken, async (req, res) => {
 
 // Criar vaga
 router.post('/', verificarToken, async (req, res) => {
-  try {
-    const { data, agente_id, nome, matricula, funcao, tipo, hora_inicio, telefone, override } = req.body;
-    if (!data || !nome) return res.status(400).json({ error: 'Data e nome são obrigatórios.' });
-    if (!['12', '24'].includes(String(tipo))) return res.status(400).json({ error: 'Tipo deve ser 12 ou 24 horas.' });
+  const { data, agente_id, nome, matricula, funcao, tipo, hora_inicio, telefone, override } = req.body;
+  if (!data || !nome) return res.status(400).json({ error: 'Data e nome são obrigatórios.' });
+  if (!['12', '24'].includes(String(tipo))) return res.status(400).json({ error: 'Tipo deve ser 12 ou 24 horas.' });
 
-    if (!ehComando(req) && await diaFechado(data)) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Serializa por dia: requisições concorrentes para o mesmo dia esperam
+    // a vez, evitando que duas passem na checagem de vagas/duplicidade antes
+    // de qualquer uma delas inserir (overbooking / mesmo agente 2x no dia).
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [data]);
+
+    const { rows: cfgRows } = await client.query(
+      `SELECT vagas_total, fechado FROM extras_config_dia WHERE data = $1`, [data]
+    );
+    const fechado    = cfgRows.length ? !!cfgRows[0].fechado : false;
+    const vagasTotal = cfgRows.length ? cfgRows[0].vagas_total : VAGAS_DIA_PADRAO;
+
+    if (!ehComando(req) && fechado) {
+      await client.query('ROLLBACK');
       return res.status(403).json({ error: 'A lista deste dia já foi fechada; apenas o comando pode alterá-la.' });
     }
 
-    // Limite de vagas por dia (configurável por admin/supervisor)
-    const vagasTotal = await vagasDoDia(data);
-    const { rows: [{ n }] } = await pool.query(`SELECT COUNT(*)::int AS n FROM extras_vagas WHERE data = $1`, [data]);
-    if (n >= vagasTotal) return res.status(409).json({ error: `As ${vagasTotal} vagas deste dia já foram preenchidas.` });
+    const { rows: [{ n }] } = await client.query(`SELECT COUNT(*)::int AS n FROM extras_vagas WHERE data = $1`, [data]);
+    if (n >= vagasTotal) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: `As ${vagasTotal} vagas deste dia já foram preenchidas.` });
+    }
 
     // Agente não pode se lançar duas vezes no mesmo dia
     if (agente_id) {
-      const { rows: dup } = await pool.query(
+      const { rows: dup } = await client.query(
         `SELECT 1 FROM extras_vagas WHERE data = $1 AND agente_id = $2`, [data, agente_id]
       );
-      if (dup.length) return res.status(409).json({ error: 'Este agente já está lançado neste dia.' });
+      if (dup.length) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ error: 'Este agente já está lançado neste dia.' });
+      }
     }
 
     // Controle de cota quinzenal
-    const usadas = await horasNaQuinzena(agente_id, data);
-    const novas  = horasDoTipo(tipo);
+    let usadas = 0;
+    if (agente_id) {
+      const q = quinzenaDe(data);
+      const { rows: horasRows } = await client.query(
+        `SELECT tipo FROM extras_vagas WHERE agente_id = $1 AND data BETWEEN $2 AND $3`,
+        [agente_id, q.inicio, q.fim]
+      );
+      usadas = horasRows.reduce((acc, r) => acc + horasDoTipo(r.tipo), 0);
+    }
+    const novas = horasDoTipo(tipo);
     let liberado_por = null;
     if (agente_id && usadas + novas > LIMITE_HORAS) {
       if (!ehComando(req)) {
+        await client.query('ROLLBACK');
         return res.status(403).json({
           error: 'Limite de plantões extras da quinzena atingido.',
           codigo: 'COTA_EXCEDIDA',
@@ -211,6 +238,7 @@ router.post('/', verificarToken, async (req, res) => {
         });
       }
       if (!override) {
+        await client.query('ROLLBACK');
         return res.status(409).json({
           error: 'Limite de cota excedido. Confirme a liberação pelo comando.',
           codigo: 'CONFIRMAR_LIBERACAO',
@@ -222,12 +250,14 @@ router.post('/', verificarToken, async (req, res) => {
 
     const valor = valorDoTipo(tipo);
     const horaFim = calcularHoraFim(hora_inicio, horasDoTipo(tipo));
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       `INSERT INTO extras_vagas (data, agente_id, nome, matricula, funcao, tipo, hora_inicio, hora_fim, telefone, valor, liberado_por, criado_por)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
       [data, agente_id || null, nome, matricula || null, funcao || null, String(tipo),
        hora_inicio || null, horaFim, telefone || null, valor, liberado_por, req.usuario.usuario]
     );
+
+    await client.query('COMMIT');
 
     const acaoExtra = liberado_por
       ? `Plantão extra ${tipo}h — ${nome} em ${data} (R$ ${valor.toFixed(2)}) — COTA LIBERADA por ${liberado_por}`
@@ -239,7 +269,12 @@ router.post('/', verificarToken, async (req, res) => {
 
     reenviarPdfSeFechado(data, `inclusão de ${nome}`, req.usuario.usuario)
       .catch(err => console.error('[Email-PDF] Falha ao reenviar PDF de extras após inclusão:', err.message));
-  } catch (err) { erroServidor(res, err); }
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    erroServidor(res, err);
+  } finally {
+    client.release();
+  }
 });
 
 // Editar vaga (comando)
