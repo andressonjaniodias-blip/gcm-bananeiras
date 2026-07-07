@@ -156,6 +156,12 @@ pool.connect()
       ALTER TABLE documentos ADD COLUMN IF NOT EXISTS destaque_home BOOLEAN DEFAULT false;
     `);
 
+    // Conteúdo binário do documento em base64 (garante persistência no Render.com,
+    // onde o filesystem é efêmero — mesmo padrão já usado na tabela anexos).
+    await client.query(`
+      ALTER TABLE documentos ADD COLUMN IF NOT EXISTS arquivo_dados TEXT;
+    `);
+
     // Migração: colunas de data gravadas como TEXT -> TIMESTAMPTZ (evita comparações
     // frágeis por ordenação lexicográfica). Só reescreve a coluna se ainda não migrada.
     async function migrarParaTimestamptz(tabela, coluna) {
