@@ -232,7 +232,9 @@
           <p style="color:var(--color-text-muted);font-size:0.88rem;margin-bottom:16px;">Selecione uma ação para este documento.</p>
           <div style="display:flex;flex-direction:row;justify-content:center;align-items:center;gap:10px;">
             <button id="ddBtnDl" class="detail-icon-btn detail-icon-btn--dl" title="Baixar Arquivo"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10 3v10M6 9l4 4 4-4"/><path d="M4 17h12"/></svg></button>
+            <button id="ddBtnShare" class="detail-icon-btn detail-icon-btn--share detail-icon-btn--loading" title="Compartilhar"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="15" cy="4.5" r="2.2"/><circle cx="5" cy="10" r="2.2"/><circle cx="15" cy="15.5" r="2.2"/><path d="M6.9 8.9l6.2-3.3M6.9 11.1l6.2 3.3"/></svg></button>
             <button id="ddBtnDest" class="detail-icon-btn detail-icon-btn--star" title="Destacar na Home"><svg id="ddBtnDestIcon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polygon points="10,2 12.5,7.5 18,8.2 14,12 15.3,17.5 10,14.5 4.7,17.5 6,12 2,8.2 7.5,7.5"/></svg></button>
+            <button id="ddBtnDel" class="detail-icon-btn detail-icon-btn--del" title="Excluir Documento" style="display:none"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="3 6 5 6 17 6"/><path d="M8 6V4h4v2"/><path d="M6 6l1 11h6l1-11"/><line x1="10" y1="10" x2="10" y2="15"/><line x1="8" y1="10" x2="8.3" y2="15"/><line x1="12" y1="10" x2="11.7" y2="15"/></svg></button>
           </div>
         </div>
       </div>
@@ -434,6 +436,14 @@
       const btnDL = document.getElementById('ddBtnDl');
       btnDL.onclick = () => baixarDoc(d.id, d.arquivo_nome);
 
+      const btnShare = document.getElementById('ddBtnShare');
+      btnShare.onclick = () => compartilharDoc(d.id, d.arquivo_nome, d.titulo);
+      _prepararShareDoc(d.id, d.arquivo_nome);
+
+      const btnDel = document.getElementById('ddBtnDel');
+      btnDel.style.display = podePublicar ? '' : 'none';
+      if (podePublicar) btnDel.onclick = () => excluirDoc(d.id, d.titulo);
+
       const btnDest = document.getElementById('ddBtnDest');
       const SVG_STAR_FILLED = `<svg viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polygon points="10,2 12.5,7.5 18,8.2 14,12 15.3,17.5 10,14.5 4.7,17.5 6,12 2,8.2 7.5,7.5"/></svg>`;
       const SVG_STAR_EMPTY  = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polygon points="10,2 12.5,7.5 18,8.2 14,12 15.3,17.5 10,14.5 4.7,17.5 6,12 2,8.2 7.5,7.5"/></svg>`;
@@ -513,6 +523,63 @@
         a.click();
         URL.revokeObjectURL(url);
       } catch { showToast('Erro ao baixar arquivo.', 'danger'); }
+    }
+
+    // Cache do arquivo pronto para compartilhar (evita await após o gesto do clique).
+    let _shareFileDoc = null, _shareFileDocId = null;
+    async function _prepararShareDoc(id, nomeArq) {
+      _shareFileDoc = null; _shareFileDocId = null;
+      const btn = document.getElementById('ddBtnShare');
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/documentos/${id}/download`, { credentials: 'include' });
+        if (!res.ok) { if (btn) btn.classList.remove('detail-icon-btn--loading'); return; }
+        const blob = await res.blob();
+        const mime = blob.type || 'application/octet-stream';
+        _shareFileDoc   = new File([blob], nomeArq || `documento_${id}`, { type: mime });
+        _shareFileDocId = id;
+      } catch {}
+      if (btn) btn.classList.remove('detail-icon-btn--loading');
+    }
+
+    function compartilharDoc(id, nomeArq, titulo) {
+      const tituloShare = `Documento GCM - ${titulo || nomeArq || id}`;
+      const texto = `Documento da GCM Bananeiras${titulo ? `\n${titulo}` : ''}`;
+
+      if (!navigator.share) {
+        showToast('Compartilhamento não suportado neste navegador. Use "Baixar Arquivo".', 'info');
+        return;
+      }
+      if (!_shareFileDoc || _shareFileDocId !== id) return;
+
+      const arquivo = _shareFileDoc;
+      if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+        navigator.share({ files: [arquivo], title: tituloShare, text: texto })
+          .catch(err => {
+            if (err?.name === 'AbortError') return;
+            showToast('Erro ao compartilhar arquivo.', 'danger');
+          });
+      } else {
+        showToast('Seu dispositivo não suporta envio de arquivo por este método. Use "Baixar Arquivo" e envie manualmente.', 'info');
+      }
+    }
+
+    async function excluirDoc(id, titulo) {
+      const ok = await confirmar(
+        `Tem certeza que deseja excluir o documento "${titulo}"? Esta ação não pode ser desfeita.`,
+        'Excluir Documento?'
+      );
+      if (!ok) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/documentos/${id}`, { method: 'DELETE', credentials: 'include' });
+        if (res.ok) {
+          fecharDocDetail();
+          await carregarDocumentos();
+          showToast('Documento excluído com sucesso.', 'success');
+        } else {
+          const data = await res.json().catch(() => ({}));
+          showToast(data.error || 'Erro ao excluir documento.', 'danger');
+        }
+      } catch { showToast('Erro de conexão ao tentar excluir.', 'danger'); }
     }
 
     function limparFormDoc() {
