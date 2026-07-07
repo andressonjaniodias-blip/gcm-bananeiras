@@ -150,4 +150,21 @@ router.get('/:id/download', verificarToken, async (req, res) => {
   }
 });
 
+// Excluir documento (supervisor e admin apenas)
+router.delete('/:id', verificarToken, verificarSupervisor, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`SELECT arquivo, titulo FROM documentos WHERE id=$1`, [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Documento não encontrado.' });
+
+    const { arquivo, titulo } = rows[0];
+    await pool.query(`DELETE FROM documentos WHERE id=$1`, [req.params.id]);
+    if (arquivo) fs.unlink(path.join(UPLOADS_DIR, arquivo), () => {});
+
+    await auditar(req, 'EXCLUIR_DOCUMENTO', titulo);
+    res.json({ ok: true });
+  } catch (err) {
+    erroServidor(res, err);
+  }
+});
+
 module.exports = router;
