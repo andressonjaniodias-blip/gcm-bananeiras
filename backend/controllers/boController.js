@@ -2,6 +2,7 @@ const db = require('../config/db');
 const { registrarAuditoria, ipFromReq } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
 const { encriptar, desencriptarComFallback } = require('../utils/encryption');
+const { ehOcorrenciaSensivel, censurarBOParaAgente } = require('../utils/boSensivel');
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs   = require('fs');
@@ -105,6 +106,12 @@ function rotulo(chave) {
   return LABELS[chave] || chave;
 }
 
+// Só o agente tem os dados pessoais censurados; supervisor/admin veem o BO
+// completo. A censura acontece apenas em BOs marcados como sensíveis.
+function deveCensurar(row, role) {
+  return !!row.sensivel && role === 'agente';
+}
+
 // ── Exports ──────────────────────────────────────────────────────────────────
 
 exports.criarBO = async (req, res) => {
@@ -119,14 +126,17 @@ exports.criarBO = async (req, res) => {
     const dados = encriptar(JSON.stringify(req.body));
     const data = new Date().toISOString();
     const criado_por = req.usuario.usuario;
+    // Detecção automática: natureza/tipificação sensível → dados pessoais restritos
+    // ao comando (o agente vê o BO, mas com os dados pessoais censurados).
+    const sensivel = ehOcorrenciaSensivel(req.body);
 
     const result = await db.query(
-      'INSERT INTO boletins (numero, dados, data, criado_por) VALUES ($1, $2, $3, $4) RETURNING id',
-      [numero, dados, data, criado_por]
+      'INSERT INTO boletins (numero, dados, data, criado_por, sensivel) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [numero, dados, data, criado_por, sensivel]
     );
 
     const ip = ipFromReq(req);
-    await registrarAuditoria(criado_por, 'CRIAR_BO', numero, ip);
+    await registrarAuditoria(criado_por, sensivel ? 'CRIAR_BO_SENSIVEL' : 'CRIAR_BO', numero, ip);
 
     res.status(201).json({ message: 'BO criado com sucesso', id: result.rows[0].id, numero });
 
@@ -204,7 +214,14 @@ exports.listarBOs = async (req, res) => {
       ));
     }
 
-    rows = rows.map(r => ({ ...r, dados: desencriptarComFallback(r.dados) }));
+    rows = rows.map(r => {
+      let dados = desencriptarComFallback(r.dados);
+      if (deveCensurar(r, role)) {
+        try { dados = JSON.stringify(censurarBOParaAgente(JSON.parse(dados))); }
+        catch { /* dado ilegível — mantém como veio */ }
+      }
+      return { ...r, dados };
+    });
 
     res.json({
       data: rows,
@@ -231,10 +248,23 @@ exports.consultarBO = async (req, res) => {
       : await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
 
-    const ip = ipFromReq(req);
-    await registrarAuditoria(usuario, 'ACESSAR_BO', rows[0].numero, ip);
+    const row = rows[0];
+    let dados = desencriptarComFallback(row.dados);
+    const censurar = deveCensurar(row, role);
+    if (censurar) {
+      try { dados = JSON.stringify(censurarBOParaAgente(JSON.parse(dados))); }
+      catch { /* dado ilegível — mantém como veio */ }
+    }
 
-    res.json({ ...rows[0], dados: desencriptarComFallback(rows[0].dados) });
+    const ip = ipFromReq(req);
+    // Trilha LGPD: distingue quem viu os dados protegidos (comando) de quem
+    // recebeu a versão censurada (agente).
+    const acao = row.sensivel
+      ? (censurar ? 'ACESSAR_BO_RESTRITO' : 'ACESSAR_BO_SENSIVEL')
+      : 'ACESSAR_BO';
+    await registrarAuditoria(usuario, acao, row.numero, ip);
+
+    res.json({ ...row, dados });
   } catch (err) {
     erroServidor(res, err);
   }
@@ -266,10 +296,13 @@ exports.excluirBO = async (req, res) => {
   }
 };
 
-async function construirPdfBO(row) {
+async function construirPdfBO(row, opts = {}) {
   const id = row.id;
   let dados = {};
   try { dados = JSON.parse(desencriptarComFallback(row.dados)); } catch { dados = {}; }
+  // Quando exportado por um agente em BO sensível, os dados pessoais saem
+  // censurados também no PDF.
+  if (opts.censurar) dados = censurarBOParaAgente(dados);
 
   const doc = new PDFDocument({ margins: { top: 50, bottom: 65, left: 50, right: 50 }, size: 'A4', bufferPages: true });
   const bufferPromise = coletarPdfBuffer(doc);
@@ -582,11 +615,16 @@ exports.exportarPDF = async (req, res) => {
       : await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
 
-    const ip = ipFromReq(req);
-    await registrarAuditoria(usuario, 'EXPORTAR_PDF', rows[0].numero, ip);
-
     const row = rows[0];
-    const pdfBuffer = await construirPdfBO(row);
+    const censurar = deveCensurar(row, role);
+
+    const ip = ipFromReq(req);
+    const acao = row.sensivel
+      ? (censurar ? 'EXPORTAR_PDF_RESTRITO' : 'EXPORTAR_PDF_SENSIVEL')
+      : 'EXPORTAR_PDF';
+    await registrarAuditoria(usuario, acao, row.numero, ip);
+
+    const pdfBuffer = await construirPdfBO(row, { censurar });
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${row.numero.replace(/\//g, '-')}.pdf"`);

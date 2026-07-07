@@ -1,6 +1,7 @@
 // backend/config/db.js
 const { Pool } = require('pg');
-const { encriptar, desencriptar } = require('../utils/encryption');
+const { encriptar, desencriptar, desencriptarComFallback } = require('../utils/encryption');
+const { ehOcorrenciaSensivel } = require('../utils/boSensivel');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -44,6 +45,11 @@ pool.connect()
     `);
     await client.query(`
       ALTER TABLE boletins ADD COLUMN IF NOT EXISTS criado_por TEXT;
+    `);
+    // Marca ocorrências sensíveis: dados pessoais restritos ao comando (o agente
+    // vê o BO, mas com os dados pessoais censurados). Ver backend/utils/boSensivel.js.
+    await client.query(`
+      ALTER TABLE boletins ADD COLUMN IF NOT EXISTS sensivel BOOLEAN DEFAULT false;
     `);
     await client.query(`
       CREATE TABLE IF NOT EXISTS relatorios (
@@ -426,6 +432,37 @@ pool.connect()
       }
     } catch (e) {
       console.error('[schema] Falha ao verificar canário de criptografia:', e.message);
+    }
+
+    // ── Backfill único: marca BOs sensíveis já existentes ────────────────────
+    // A detecção de sensibilidade passou a existir depois que BOs já haviam sido
+    // criados. Roda uma única vez (guardado por sys_meta) para proteger também o
+    // acervo antigo. Falha por linha é tolerada (não bloqueia o start).
+    try {
+      const { rows: doneRows } = await client.query(
+        `SELECT valor FROM sys_meta WHERE chave = 'bo_sensivel_backfill'`
+      );
+      if (!doneRows.length) {
+        const { rows: todosBOs } = await client.query('SELECT id, dados FROM boletins');
+        let marcados = 0;
+        for (const bo of todosBOs) {
+          try {
+            const dados = JSON.parse(desencriptarComFallback(bo.dados));
+            if (ehOcorrenciaSensivel(dados)) {
+              await client.query('UPDATE boletins SET sensivel = true WHERE id = $1', [bo.id]);
+              marcados++;
+            }
+          } catch { /* linha ilegível — ignora */ }
+        }
+        await client.query(
+          `INSERT INTO sys_meta (chave, valor) VALUES ('bo_sensivel_backfill', $1)
+           ON CONFLICT (chave) DO NOTHING`,
+          [new Date().toISOString()]
+        );
+        if (marcados) console.log(`[schema] Backfill de BOs sensíveis: ${marcados} marcado(s).`);
+      }
+    } catch (e) {
+      console.error('[schema] Falha no backfill de BOs sensíveis:', e.message);
     }
 
     client.release();

@@ -130,6 +130,16 @@
     .badge-vitima   { background: var(--color-warning-bg); color: var(--color-warning-text); }
     .badge-suspeito { background: var(--color-danger-bg); color: var(--color-danger-text); }
     .badge-zero     { color: var(--color-hint); }
+    .badge-sensivel {
+      display: inline-block; padding: 2px 8px; margin-left: 4px;
+      border-radius: var(--radius-pill); font-size: 0.72rem; font-weight: 700;
+      background: var(--color-danger-bg); color: var(--color-danger-text); white-space: nowrap;
+    }
+    .aviso-sensivel {
+      margin: 4px 0 12px; padding: 8px 12px; border-radius: var(--radius);
+      background: var(--color-warning-bg); color: var(--color-warning-text);
+      font-size: 0.82rem; font-weight: 600;
+    }
 
     mark {
       background: #FEF08A; color: #713F12;
@@ -331,6 +341,7 @@
         <button class="detail-modal-close" onclick="fecharBODetail()">×</button>
       </div>
       <div class="detail-modal-body">
+        <div id="bdAvisoSensivel" class="aviso-sensivel" style="display:none;"></div>
         <!-- Ocorrência -->
         <div id="boDetailOcorrencia">
           <div class="detail-grid-2">
@@ -577,9 +588,13 @@
         const vitimas   = (d.vitimas   || []).filter(v => v.nome);
         const suspeitos = (d.suspeitos || []).filter(s => s.nome);
         const tip   = oc.tipificacao || sol.natureza || '—';
-        const local = [oc.rua, oc.complemento].filter(Boolean).join(', ') || '—';
+        // Em BO sensível o local vem censurado (placeholder repetido) — dedupe.
+        const local = [...new Set([oc.rua, oc.complemento].filter(Boolean))].join(', ') || '—';
         const dataOc  = dataOcorrencia(d);
         const dataStr = dataOc ? new Date(dataOc + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+        const sensBadge = bo.sensivel
+          ? '<span class="badge-sensivel" title="Ocorrência sensível — dados pessoais restritos ao comando">🔒 Sensível</span>'
+          : '';
         const envBadges = [
           vitimas.length   ? `<span class="badge-count badge-vitima">${vitimas.length} vít.</span>`     : '',
           suspeitos.length ? `<span class="badge-count badge-suspeito">${suspeitos.length} susp.</span>` : '',
@@ -587,7 +602,7 @@
         return `<div class="hist-item" onclick="abrirBODetail(${bo.id})">
           <div class="hist-item-icon">🚨</div>
           <div class="hist-item-body">
-            <div class="hist-item-title">${bo.numero} — ${tip}</div>
+            <div class="hist-item-title">${bo.numero} — ${tip}${sensBadge}</div>
             <div class="hist-item-meta">
               <span>${dataStr}</span>
               <span>·</span>
@@ -620,15 +635,27 @@
       const dataStr = dataOc ? new Date(dataOc + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
       const tip = oc.tipificacao || sol.natureza || '—';
 
-      document.getElementById('boDetailTitle').textContent    = `${bo.numero} — ${tip}`;
+      const sens = !!bo.sensivel;
+      document.getElementById('boDetailTitle').textContent    = `${bo.numero} — ${tip}${sens ? ' 🔒' : ''}`;
       document.getElementById('boDetailSubtitle').textContent = `Registrado por: ${bo.criado_por || '—'} · ${dataStr}`;
+
+      const aviso = document.getElementById('bdAvisoSensivel');
+      if (sens) {
+        aviso.style.display = 'block';
+        aviso.textContent = (perfilRole === 'agente')
+          ? '🔒 Ocorrência sensível — informações pessoais restritas ao comando (supervisores e administradores).'
+          : '🔒 Ocorrência sensível — dados pessoais protegidos; acesso registrado em log.';
+      } else {
+        aviso.style.display = 'none';
+        aviso.textContent = '';
+      }
       document.getElementById('bdNumero').textContent     = bo.numero;
       document.getElementById('bdData').textContent       = dataStr;
       document.getElementById('bdTipificacao').textContent = tip;
       document.getElementById('bdCanal').textContent      = sol.canal || '—';
       document.getElementById('bdViatura').textContent    = oc.viatura || '—';
       document.getElementById('bdRegistrado').textContent = bo.criado_por || '—';
-      document.getElementById('bdLocal').textContent      = [oc.rua, oc.complemento, oc.cidade].filter(Boolean).join(', ') || '—';
+      document.getElementById('bdLocal').textContent      = [...new Set([oc.rua, oc.complemento, oc.cidade].filter(Boolean))].join(', ') || '—';
       const equipe = [oc.comandante, oc.motorista, oc.patrulheiroI, oc.patrulheiroII].filter(Boolean).join(', ');
       document.getElementById('bdEquipe').textContent     = equipe || '—';
       document.getElementById('bdRelato').textContent     = relato || '—';
