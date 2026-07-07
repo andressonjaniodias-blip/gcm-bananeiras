@@ -177,10 +177,8 @@ exports.statsGlobais = async (req, res) => {
 };
 
 exports.listarBOs = async (req, res) => {
-  const { role } = req.usuario;
-  if (role === 'agente') {
-    return res.status(403).json({ error: 'Acesso negado.' });
-  }
+  const { usuario, role } = req.usuario;
+  const ehAgente = role === 'agente';
 
   try {
     const page  = Math.max(1, parseInt(req.query.page)  || 1);
@@ -188,12 +186,23 @@ exports.listarBOs = async (req, res) => {
     const offset = (page - 1) * limit;
 
     let rows, totalRows;
-    ({ rows } = await db.query(
-      'SELECT * FROM boletins ORDER BY id DESC LIMIT $1 OFFSET $2', [limit, offset]
-    ));
-    ({ rows: [{ count: totalRows }] } = await db.query(
-      'SELECT COUNT(*) AS count FROM boletins'
-    ));
+    if (ehAgente) {
+      // Agente vê apenas os BOs que ele mesmo registrou.
+      ({ rows } = await db.query(
+        'SELECT * FROM boletins WHERE criado_por = $1 ORDER BY id DESC LIMIT $2 OFFSET $3',
+        [usuario, limit, offset]
+      ));
+      ({ rows: [{ count: totalRows }] } = await db.query(
+        'SELECT COUNT(*) AS count FROM boletins WHERE criado_por = $1', [usuario]
+      ));
+    } else {
+      ({ rows } = await db.query(
+        'SELECT * FROM boletins ORDER BY id DESC LIMIT $1 OFFSET $2', [limit, offset]
+      ));
+      ({ rows: [{ count: totalRows }] } = await db.query(
+        'SELECT COUNT(*) AS count FROM boletins'
+      ));
+    }
 
     rows = rows.map(r => ({ ...r, dados: desencriptarComFallback(r.dados) }));
 
@@ -213,15 +222,13 @@ exports.consultarBO = async (req, res) => {
   const { id } = req.params;
   if (!id) return res.status(400).json({ error: 'ID do BO é obrigatório' });
 
-  // Checa a permissão ANTES de tocar o banco: evita que um agente distinga um
-  // BO existente (403) de um inexistente (404) e enumere IDs válidos.
   const { usuario, role } = req.usuario;
-  if (role === 'agente') {
-    return res.status(403).json({ error: 'Acesso negado.' });
-  }
-
   try {
-    const { rows } = await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
+    // Agente só acessa os próprios BOs. Filtrar por criado_por na própria query
+    // faz um BO de outro cair no mesmo 404 de "inexistente", sem vazar existência.
+    const { rows } = role === 'agente'
+      ? await db.query('SELECT * FROM boletins WHERE id = $1 AND criado_por = $2', [id, usuario])
+      : await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
 
     const ip = ipFromReq(req);
@@ -567,14 +574,12 @@ exports.exportarPDF = async (req, res) => {
   const { id } = req.params;
   if (!id) return res.status(400).json({ error: 'ID do BO é obrigatório' });
 
-  // Permissão antes do banco (evita enumeração de IDs por diferença 403/404).
   const { usuario, role } = req.usuario;
-  if (role === 'agente') {
-    return res.status(403).json({ error: 'Acesso negado.' });
-  }
-
   try {
-    const { rows } = await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
+    // Agente só exporta os próprios BOs (mesmo critério de consultarBO).
+    const { rows } = role === 'agente'
+      ? await db.query('SELECT * FROM boletins WHERE id = $1 AND criado_por = $2', [id, usuario])
+      : await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
 
     const ip = ipFromReq(req);
