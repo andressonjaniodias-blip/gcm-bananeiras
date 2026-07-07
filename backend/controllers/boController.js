@@ -145,23 +145,19 @@ exports.criarBO = async (req, res) => {
 
 exports.statsGlobais = async (req, res) => {
   try {
-    const hoje      = new Date().toISOString().slice(0, 10);
-    const mesAtual  = hoje.slice(0, 7);
-    const seteDias  = new Date(); seteDias.setDate(seteDias.getDate() - 6);
-    const seteDiasStr = seteDias.toISOString().slice(0, 10);
-    const limite30  = new Date(); limite30.setDate(limite30.getDate() - 30);
-    const lim30Str  = limite30.toISOString().slice(0, 10);
-
-    const amanha = new Date(); amanha.setDate(amanha.getDate() + 1);
-    const amanhaStr = amanha.toISOString().slice(0, 10);
+    // Buckets de data no fuso local (America/Sao_Paulo). O servidor roda em UTC;
+    // sem converter, um BO registrado ~22h30 (horário local) contaria no dia
+    // seguinte e distorceria as contagens de "hoje"/"semana"/"mês".
+    const localDate = `(data AT TIME ZONE 'America/Sao_Paulo')::date`;
+    const hojeLocal = `(NOW() AT TIME ZONE 'America/Sao_Paulo')::date`;
 
     const [{ rows: [{ total }] }, { rows: [{ hoje: qtdHoje }] }, { rows: [{ semana }] }, { rows: [{ mes }] }, { rows: bos30 }] =
       await Promise.all([
         db.query('SELECT COUNT(*) AS total FROM boletins'),
-        db.query('SELECT COUNT(*) AS hoje FROM boletins WHERE data >= $1 AND data < $2', [hoje, amanhaStr]),
-        db.query('SELECT COUNT(*) AS semana FROM boletins WHERE data >= $1', [seteDiasStr]),
-        db.query('SELECT COUNT(*) AS mes FROM boletins WHERE data >= $1', [mesAtual + '-01']),
-        db.query('SELECT dados FROM boletins WHERE data >= $1', [lim30Str]),
+        db.query(`SELECT COUNT(*) AS hoje   FROM boletins WHERE ${localDate} = ${hojeLocal}`),
+        db.query(`SELECT COUNT(*) AS semana FROM boletins WHERE ${localDate} >  ${hojeLocal} - 7`),
+        db.query(`SELECT COUNT(*) AS mes    FROM boletins WHERE ${localDate} >= date_trunc('month', ${hojeLocal})::date`),
+        db.query(`SELECT dados FROM boletins WHERE ${localDate} > ${hojeLocal} - 30`),
       ]);
 
     const contagem = {};
@@ -217,14 +213,16 @@ exports.consultarBO = async (req, res) => {
   const { id } = req.params;
   if (!id) return res.status(400).json({ error: 'ID do BO é obrigatório' });
 
+  // Checa a permissão ANTES de tocar o banco: evita que um agente distinga um
+  // BO existente (403) de um inexistente (404) e enumere IDs válidos.
+  const { usuario, role } = req.usuario;
+  if (role === 'agente') {
+    return res.status(403).json({ error: 'Acesso negado.' });
+  }
+
   try {
     const { rows } = await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
-
-    const { usuario, role } = req.usuario;
-    if (role === 'agente') {
-      return res.status(403).json({ error: 'Acesso negado.' });
-    }
 
     const ip = ipFromReq(req);
     await registrarAuditoria(usuario, 'ACESSAR_BO', rows[0].numero, ip);
@@ -247,6 +245,9 @@ exports.excluirBO = async (req, res) => {
     const { rows } = await db.query('SELECT numero FROM boletins WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
 
+    // Remove anexos vinculados antes do BO para não deixar órfãos (blobs base64
+    // que nunca seriam limpos). Mesmo padrão da exclusão de relatório.
+    await db.query(`DELETE FROM anexos WHERE tipo_ref = 'bo' AND ref_id = $1`, [id]);
     await db.query('DELETE FROM boletins WHERE id = $1', [id]);
 
     const ip = ipFromReq(req);
@@ -566,14 +567,15 @@ exports.exportarPDF = async (req, res) => {
   const { id } = req.params;
   if (!id) return res.status(400).json({ error: 'ID do BO é obrigatório' });
 
+  // Permissão antes do banco (evita enumeração de IDs por diferença 403/404).
+  const { usuario, role } = req.usuario;
+  if (role === 'agente') {
+    return res.status(403).json({ error: 'Acesso negado.' });
+  }
+
   try {
     const { rows } = await db.query('SELECT * FROM boletins WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'BO não encontrado' });
-
-    const { usuario, role } = req.usuario;
-    if (role === 'agente') {
-      return res.status(403).json({ error: 'Acesso negado.' });
-    }
 
     const ip = ipFromReq(req);
     await registrarAuditoria(usuario, 'EXPORTAR_PDF', rows[0].numero, ip);

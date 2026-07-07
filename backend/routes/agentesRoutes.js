@@ -85,7 +85,10 @@ router.post('/', verificarToken, exigirAdmin, async (req, res) => {
     );
     await auditar(req, 'CRIAR_AGENTE', `${rows[0].nome} (mat. ${rows[0].matricula})`);
     res.status(201).json(decifrarAgente(rows[0]));
-  } catch (err) { erroServidor(res, err); }
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Matrícula já cadastrada para outro agente.' });
+    erroServidor(res, err);
+  }
 });
 
 // Atualizar agente (admin)
@@ -124,7 +127,10 @@ router.put('/:id', verificarToken, exigirAdmin, async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Agente não encontrado.' });
     await auditar(req, 'ALTERAR_AGENTE', `${rows[0].nome} (mat. ${rows[0].matricula})`);
     res.json(decifrarAgente(rows[0]));
-  } catch (err) { erroServidor(res, err); }
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Matrícula já cadastrada para outro agente.' });
+    erroServidor(res, err);
+  }
 });
 
 // Auto-edição de contato — qualquer usuário autenticado atualiza os próprios dados mutáveis

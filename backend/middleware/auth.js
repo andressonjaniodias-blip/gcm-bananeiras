@@ -97,7 +97,10 @@ async function registrarAuditoria(usuario, acao, recurso, ip, extra = {}) {
       [usuario, acao, recurso, ip || null,
        user_agent || null, dispositivo || null, navegador || null, so || null, sessao_id || null]
     );
-  } catch { /* não bloqueia a requisição por falha de auditoria */ }
+  } catch (e) {
+    // Não bloqueia a requisição, mas registra a falha — a trilha tem peso legal.
+    console.error('[auditoria] Falha ao gravar log de auditoria:', e.message);
+  }
 }
 
 // Monta o objeto extra a partir de um request Express

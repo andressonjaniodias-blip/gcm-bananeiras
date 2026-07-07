@@ -1,5 +1,6 @@
 // backend/config/db.js
 const { Pool } = require('pg');
+const { encriptar, desencriptar } = require('../utils/encryption');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -371,6 +372,61 @@ pool.connect()
       ), 0) AS max_vtr FROM controle_viatura
     `);
     if (parseInt(max_vtr) > 0) await client.query(`SELECT setval('vtr_seq', $1)`, [max_vtr]);
+
+    // ── Índices para colunas muito consultadas ───────────────────────────────
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_boletins_data ON boletins(data)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_audit_data     ON audit_logs(data)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_anexos_ref     ON anexos(tipo_ref, ref_id)`);
+
+    // ── Unicidade de matrícula do agente (chave natural usada no reset de senha) ──
+    // Guardado: se houver matrículas duplicadas legadas, o ALTER falha; nesse caso
+    // apenas registra aviso e segue — a constraint entra depois que as duplicatas
+    // forem resolvidas manualmente.
+    try {
+      const { rows: temUk } = await client.query(
+        `SELECT 1 FROM pg_constraint WHERE conname = 'agentes_matricula_uk'`
+      );
+      if (!temUk.length) {
+        await client.query(`ALTER TABLE agentes ADD CONSTRAINT agentes_matricula_uk UNIQUE (matricula)`);
+      }
+    } catch (e) {
+      console.warn('[schema] UNIQUE em agentes.matricula não aplicado (verifique matrículas duplicadas):', e.message);
+    }
+
+    // ── Salvaguarda da chave de criptografia (canário) ───────────────────────
+    // Detecta troca acidental da ENCRYPTION_KEY, que tornaria todos os BOs e o
+    // CPF/RG dos agentes ilegíveis de forma permanente e silenciosa. Se a chave
+    // mudou, aborta o start (a menos que ALLOW_ENCRYPTION_KEY_MISMATCH=true) para
+    // não gravar dado novo cifrado com uma chave incompatível com o dado antigo.
+    await client.query(`CREATE TABLE IF NOT EXISTS sys_meta (chave TEXT PRIMARY KEY, valor TEXT)`);
+    try {
+      const CANARY_PLAIN = 'gcm-encryption-canary-v1';
+      const { rows: canRows } = await client.query(`SELECT valor FROM sys_meta WHERE chave = 'enc_canary'`);
+      if (!canRows.length) {
+        await client.query(
+          `INSERT INTO sys_meta (chave, valor) VALUES ('enc_canary', $1)
+           ON CONFLICT (chave) DO NOTHING`,
+          [encriptar(CANARY_PLAIN)]
+        );
+      } else {
+        let ok = false;
+        try { ok = desencriptar(canRows[0].valor) === CANARY_PLAIN; } catch { ok = false; }
+        if (!ok) {
+          console.error('==================================================================');
+          console.error('CRÍTICO: ENCRYPTION_KEY não confere com a chave usada nos dados');
+          console.error('existentes. Iniciar assim corromperia dados (BOs e CPF/RG).');
+          console.error('Restaure a ENCRYPTION_KEY correta. Para ignorar (perigoso), defina');
+          console.error('ALLOW_ENCRYPTION_KEY_MISMATCH=true.');
+          console.error('==================================================================');
+          if (process.env.ALLOW_ENCRYPTION_KEY_MISMATCH !== 'true') {
+            client.release();
+            process.exit(1);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[schema] Falha ao verificar canário de criptografia:', e.message);
+    }
 
     client.release();
   })
