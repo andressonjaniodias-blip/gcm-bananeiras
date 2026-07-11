@@ -51,12 +51,23 @@
   --bg-body-to:      #EBEBEB;
   --bg-card:         #FFFFFF;
   --bg-surface-2:    #F4F7FC;
-  --bg-header-from:  #EAF2FD;
-  --bg-header-to:    #D0E6FD;
+
+  /* Cabeçalhos institucionais — sempre azul-marinho (texto branco) */
+  --bg-header-from:  #0F1C4A;
+  --bg-header-to:    #162660;
   --header-accent:      #F59E0B; /* dourado de preenchimento (bordas, dot, avatar) */
-  --header-accent-text: #B45309; /* dourado de texto sobre fundo claro (contraste AA) */
-  --header-text:     #162660;
-  --header-text-sub: #3A4A78;
+  --header-accent-text: #F59E0B; /* dourado de texto sobre o marinho */
+  --header-text:     #FFFFFF;
+  --header-text-sub: #C6D6EF;
+
+  /* Menu lateral (independente do cabeçalho) — claro no tema claro */
+  --sidebar-bg-from: #EAF2FD;
+  --sidebar-bg-to:   #D0E6FD;
+  --sidebar-text:      #162660;
+  --sidebar-text-sub:  #3A4A78;
+  --sidebar-overlay: rgba(22,38,96,0.06);  /* hover dos links */
+  --sidebar-border:  rgba(22,38,96,0.08);  /* divisores */
+  --sidebar-scroll:  rgba(22,38,96,0.28);  /* barra de rolagem */
 
   --color-primary:       #162660;
   --color-primary-hover: #0F1C4A;
@@ -107,6 +118,81 @@
   --shadow-card:  0 4px 18px rgba(22,38,96,0.08);
   --shadow-input: 0 0 0 3px rgba(22,38,96,0.22);
   --shadow-pop:   0 10px 30px rgba(15,30,60,0.14);
+}
+
+/* ── Tema escuro — azul meia-noite + cobalto + apoio (dourado mantido) ──────
+   Sobrescreve os tokens de :root. Cabeçalho e menu ficam escuros; o dourado
+   permanece como destaque. Ativado por data-theme="dark" no <html>. ──────── */
+html[data-theme="dark"] {
+  --bg-page:         #0A1226;
+  --bg-body-from:    #070C1A;
+  --bg-body-mid:     #0A1226;
+  --bg-body-to:      #0D1732;
+  --bg-card:         #121E3E;
+  --bg-surface-2:    #182747;
+
+  --bg-header-from:  #060B18;
+  --bg-header-to:    #0E1B3C;
+  --header-accent:      #F59E0B;
+  --header-accent-text: #FBBF24;
+  --header-text:     #FFFFFF;
+  --header-text-sub: #A9BEE0;
+
+  --sidebar-bg-from: #0A1430;
+  --sidebar-bg-to:   #0E1B3C;
+  --sidebar-text:      #E6ECF5;
+  --sidebar-text-sub:  #A9BEE0;
+  --sidebar-overlay: rgba(255,255,255,0.06);
+  --sidebar-border:  rgba(255,255,255,0.08);
+  --sidebar-scroll:  rgba(255,255,255,0.22);
+
+  --color-primary:       #2B5CE0;  /* azul cobalto */
+  --color-primary-hover: #1E48C0;
+  --color-primary-light: #1E2F55;
+
+  --color-accent:        #F59E0B;
+  --color-accent-hover:  #D97706;
+  --color-accent-light:  #3A2F14;
+
+  --color-success:       #34A853;
+  --color-success-hover: #2C8C46;
+  --color-danger:        #EF5350;
+  --color-danger-hover:  #E53935;
+
+  --color-warning:        #F59E0B;
+  --color-warning-bg:     #3A2F14;
+  --color-warning-text:   #FCD34D;
+  --color-success-bg:     #14311F;
+  --color-success-text:   #86EFAC;
+  --color-danger-bg:      #3A1A1A;
+  --color-danger-text:    #FCA5A5;
+  --color-info-bg:        #14263F;
+  --color-info-text:      #93C5FD;
+
+  --color-text:       #E6ECF5;
+  --color-text-muted: #9FB3D1;
+  --color-label:      #C3D2E8;
+  --color-border:     #2A3A5C;
+  --color-border-soft:#24304C;
+  --color-input-bg:   #132241;
+  --color-row-alt:    #152643;
+  --color-row-hover:  #20365E;
+  --color-bloco-bg:   #16233F;  /* no escuro não é creme, e sim superfície azul */
+  --color-bloco-border:#2A3A5C;
+  --color-hint:       #6E7F9C;
+  --color-link:       #7CA7F0;  /* azul-gelo */
+
+  --tab-active-bg:    #2B5CE0;
+  --tab-active-text:  #FFFFFF;
+  --tab-inactive-bg:  #16233F;
+  --tab-inactive-text:#A9BEE0;
+
+  --scroll-thumb:       rgba(255,255,255,0.18);
+  --scroll-thumb-hover: #2B5CE0;
+
+  --shadow-card:  0 4px 20px rgba(0,0,0,0.45);
+  --shadow-input: 0 0 0 3px rgba(43,92,224,0.35);
+  --shadow-pop:   0 12px 34px rgba(0,0,0,0.55);
 }
 
 
@@ -186,6 +272,7 @@ body {
   flex: 1;
   text-align: center;
   letter-spacing: 0.02em;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
 .header-titulo {
@@ -195,6 +282,7 @@ body {
   align-items: center;
   gap: 1px;
   text-align: center;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
 .header-linha-1 {
@@ -227,7 +315,7 @@ body {
   height: clamp(60px, 10vw, 92px);
   width: auto;
   flex-shrink: 0;
-  filter: drop-shadow(0 2px 6px rgba(22,38,96,0.22));
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
 }
 
 .header .header-actions {
@@ -251,9 +339,9 @@ body {
 .header a:hover { opacity: 1; text-decoration: underline; }
 
 .header .btn-header {
-  background: rgba(22,38,96,0.07);
+  background: rgba(255,255,255,0.12);
   color: var(--header-text);
-  border: 1px solid rgba(22,38,96,0.16);
+  border: 1px solid rgba(255,255,255,0.2);
   border-radius: var(--radius-sm);
   padding: 5px 12px;
   cursor: pointer;
@@ -261,7 +349,7 @@ body {
   transition: background 0.2s;
 }
 .header .btn-header:hover {
-  background: rgba(22,38,96,0.14);
+  background: rgba(255,255,255,0.22);
 }
 
 .header .btn-sair {
@@ -293,16 +381,16 @@ body {
   justify-content: center;
   flex-shrink: 0;
   padding: 0;
-  border: 1px solid rgba(22,38,96,0.18);
+  border: 1px solid rgba(255,255,255,0.22);
   border-radius: var(--radius-pill);
-  background: rgba(22,38,96,0.06);
+  background: rgba(255,255,255,0.12);
   color: var(--header-text);
   cursor: pointer;
   transition: background var(--tr-base), transform var(--tr-fast), border-color var(--tr-base);
 }
 .header-icon-btn:hover {
-  background: rgba(22,38,96,0.13);
-  border-color: rgba(22,38,96,0.32);
+  background: rgba(255,255,255,0.22);
+  border-color: rgba(255,255,255,0.4);
   transform: translateY(-1px);
 }
 .header-icon-btn svg { width: 20px; height: 20px; }
@@ -1222,8 +1310,8 @@ table button:hover { background: var(--color-primary-hover); }
 #sidebar {
   width: 230px;
   overflow-y: hidden;
-  background: linear-gradient(180deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%);
-  border-right: 1px solid rgba(22,38,96,0.08);
+  background: linear-gradient(180deg, var(--sidebar-bg-from) 0%, var(--sidebar-bg-to) 100%);
+  border-right: 1px solid var(--sidebar-border);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -1297,7 +1385,7 @@ table button:hover { background: var(--color-primary-hover); }
   align-items: center;
   gap: 8px;
   padding: 22px 14px 18px;
-  border-bottom: 1px solid rgba(22,38,96,0.08);
+  border-bottom: 1px solid var(--sidebar-border);
   text-align: center;
   flex-shrink: 0;
 }
@@ -1342,7 +1430,7 @@ table button:hover { background: var(--color-primary-hover); }
   font-weight: 700;
   font-size: 0.85rem;
   flex-shrink: 0;
-  border: 2px solid rgba(22,38,96,0.18);
+  border: 2px solid rgba(255,255,255,0.3);
   overflow: hidden;
   text-decoration: none;
   cursor: pointer;
@@ -1366,7 +1454,7 @@ table button:hover { background: var(--color-primary-hover); }
   display: block;
   font-size: 0.88rem;
   font-weight: 700;
-  color: var(--header-text);
+  color: var(--sidebar-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1376,7 +1464,7 @@ table button:hover { background: var(--color-primary-hover); }
 .sb-user-role {
   display: block;
   font-size: 0.7rem;
-  color: var(--header-text-sub);
+  color: var(--sidebar-text-sub);
   margin-top: 2px;
 }
 
@@ -1388,21 +1476,21 @@ table button:hover { background: var(--color-primary-hover); }
   display: flex;
   flex-direction: column;
   scrollbar-width: thin;
-  scrollbar-color: rgba(22,38,96,0.28) transparent;
+  scrollbar-color: var(--sidebar-scroll) transparent;
 }
 .sb-nav::-webkit-scrollbar { width: 5px; }
 .sb-nav::-webkit-scrollbar-thumb {
-  background: rgba(22,38,96,0.28);
+  background: var(--sidebar-scroll);
   border-radius: 4px;
 }
-.sb-nav::-webkit-scrollbar-thumb:hover { background: rgba(22,38,96,0.42); }
+.sb-nav::-webkit-scrollbar-thumb:hover { background: var(--sidebar-text-sub); }
 
 .sb-link {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  color: var(--header-text-sub);
+  color: var(--sidebar-text-sub);
   text-decoration: none;
   font-size: 0.855rem;
   font-weight: 500;
@@ -1435,14 +1523,14 @@ table button:hover { background: var(--color-primary-hover); }
 }
 
 .sb-link:hover {
-  background: rgba(22,38,96,0.06);
-  color: var(--header-text);
+  background: var(--sidebar-overlay);
+  color: var(--sidebar-text);
   border-left-color: rgba(245,158,11,0.7);
 }
 
 .sb-link.active {
   background: rgba(245,158,11,0.14);
-  color: var(--header-text);
+  color: var(--sidebar-text);
   border-left-color: var(--header-accent);
   font-weight: 700;
 }
@@ -1459,7 +1547,7 @@ table button:hover { background: var(--color-primary-hover); }
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--header-text-sub);
+  color: var(--sidebar-text-sub);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.07em;
@@ -1467,7 +1555,7 @@ table button:hover { background: var(--color-primary-hover); }
   opacity: 0.62;
   transition: opacity 0.15s, color 0.15s;
 }
-.sb-group-head:hover { opacity: 1; color: var(--header-text); }
+.sb-group-head:hover { opacity: 1; color: var(--sidebar-text); }
 
 .sb-group-chev {
   display: flex;
@@ -1487,13 +1575,13 @@ table button:hover { background: var(--color-primary-hover); }
 .sb-nav-solo {
   margin-top: 6px;
   padding-top: 6px;
-  border-top: 1px solid rgba(22,38,96,0.08);
+  border-top: 1px solid var(--sidebar-border);
 }
 
 .sb-footer {
   padding: 12px 14px;
   padding-bottom: max(12px, env(safe-area-inset-bottom));
-  border-top: 1px solid rgba(22,38,96,0.08);
+  border-top: 1px solid var(--sidebar-border);
   flex-shrink: 0;
 }
 
@@ -1990,26 +2078,25 @@ body.has-sidebar .header {
 /* Firefox — barra fina no tom do conteúdo claro */
 html { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
 
-/* ── Header — claro, profundidade sutil ───────────────────── */
+/* ── Header — azul-marinho, profundidade ──────────────────── */
 .header {
   background: linear-gradient(135deg,
-    #EAF2FD 0%,
-    #DCEAFB 45%,
+    var(--bg-header-from) 0%,
     var(--bg-header-to) 100%);
-  box-shadow: 0 2px 12px rgba(22,38,96,0.10);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.28);
 }
 
-/* Linha "GUARDA CIVIL MUNICIPAL" — dourado escuro para contraste no claro */
+/* Linha "GUARDA CIVIL MUNICIPAL" — dourado brilhante sobre o marinho */
 .header-linha-2 {
   color: var(--header-accent-text) !important;
   opacity: 1 !important;
   font-weight: 700;
-  text-shadow: none;
+  text-shadow: 0 1px 6px rgba(245,158,11,0.35);
 }
 
-/* ── Sidebar — clara, profundidade sutil ──────────────────── */
+/* ── Sidebar — segue os tokens do menu (claro no tema claro) ── */
 #sidebar {
-  background: linear-gradient(180deg, #EAF2FD 0%, #DCEAFB 50%, var(--bg-header-to) 100%);
+  background: linear-gradient(180deg, var(--sidebar-bg-from) 0%, var(--sidebar-bg-to) 100%);
   box-shadow: 3px 0 16px rgba(22,38,96,0.10);
 }
 
@@ -2027,7 +2114,7 @@ html { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; 
 .sb-link.active {
   background: linear-gradient(90deg, rgba(245,158,11,0.20) 0%, rgba(245,158,11,0.05) 100%) !important;
   border-left-color: var(--header-accent) !important;
-  color: var(--header-text) !important;
+  color: var(--sidebar-text) !important;
   font-weight: 700;
 }
 
@@ -2135,9 +2222,9 @@ table th {
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
 }
 
-/* ── Pub panel header — claro ─────────────────────────────── */
+/* ── Pub panel header — azul-marinho (via tokens do cabeçalho) ── */
 .pub-panel-header {
-  background: linear-gradient(135deg, #EAF2FD 0%, var(--bg-header-to) 100%) !important;
+  background: linear-gradient(135deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%) !important;
   border-bottom: 3px solid var(--header-accent) !important;
 }
 

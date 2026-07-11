@@ -7,7 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../assets/css/style.css?v=3">
+  <link rel="stylesheet" href="../assets/css/style.css?v=4">
+  <script src="../assets/js/theme-switcher.js?v=2"></script>
 </head>
 <body>
   <header class="header">
@@ -30,11 +31,13 @@
       <input type="text" id="usuario" placeholder="Nome de usuário" required autocomplete="off">
       <input type="password" id="senha" placeholder="Senha" required>
       <input type="password" id="confirmar" placeholder="Confirmar senha" required>
+      <small class="senha-regras" style="display:block;color:var(--color-text-muted);font-size:0.78rem;margin:-4px 0 12px;"></small>
       <button type="submit" id="btn">Criar Administrador</button>
     </form>
   </main>
 
   <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/senha.js"></script>
   <script>
     async function criarAdmin(e) {
       e.preventDefault();
@@ -46,6 +49,12 @@
 
       if (senha !== confirmar) {
         mostrarMsg('As senhas não coincidem.', 'erro');
+        return;
+      }
+
+      const erroSenha = validarSenhaCliente(senha);
+      if (erroSenha) {
+        mostrarMsg(erroSenha, 'erro');
         return;
       }
 

@@ -7,7 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../assets/css/style.css?v=3">
+  <link rel="stylesheet" href="../assets/css/style.css?v=4">
+  <script src="../assets/js/theme-switcher.js?v=2"></script>
   <script src="../assets/js/sidebar.js?v=2"></script>
   <style>
     .page-wrap { max-width: 900px; }
@@ -190,7 +191,8 @@
           </div>
           <div class="field">
             <label>Senha <span class="obrig">*</span></label>
-            <input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
+            <input type="password" id="novaSenha" placeholder="Mínimo 8 caracteres" required minlength="8" autocomplete="new-password">
+            <small class="senha-regras" style="display:block;color:var(--color-hint);font-size:0.72rem;margin-top:4px;"></small>
           </div>
           <div class="field">
             <label>Perfil de Acesso</label>
@@ -476,6 +478,7 @@
         <div class="modal-field">
           <label>Nova Senha <span style="font-weight:400;color:var(--color-hint)">(em branco = manter)</span></label>
           <input type="password" id="editSenha" placeholder="Nova senha (mín. 8 caracteres)" autocomplete="new-password">
+          <small class="senha-regras" style="display:block;color:var(--color-hint);font-size:0.72rem;margin-top:4px;"></small>
         </div>
         <div class="modal-field">
           <label>Perfil de Acesso</label>
@@ -592,6 +595,7 @@
   </div>
 
   <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/senha.js"></script>
   <script src="../assets/js/geolocalizacao.js"></script>
   <script>
     function geoNovoServidor(btn) {
@@ -725,6 +729,8 @@
       e.preventDefault();
       const usuario       = document.getElementById('novoUsuario').value.trim();
       const senha         = document.getElementById('novaSenha').value;
+      const erroSenha = validarSenhaCliente(senha);
+      if (erroSenha) { toast(erroSenha, 'erro'); return; }
       const role          = document.getElementById('novoRole').value;
       const nome          = document.getElementById('novoNome').value.trim();
       const cpf           = document.getElementById('novoCpf').value.trim();
@@ -837,6 +843,8 @@
 
       // Atualiza senha se preenchida
       if (novaSenha) {
+        const erroSenha = validarSenhaCliente(novaSenha);
+        if (erroSenha) { toast(erroSenha, 'erro'); return; }
         try {
           const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${userId}/senha`, {
             method: 'PATCH', credentials: 'include',

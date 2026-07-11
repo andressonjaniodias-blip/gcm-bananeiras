@@ -7,7 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../assets/css/style.css?v=3">
+  <link rel="stylesheet" href="../assets/css/style.css?v=4">
+  <script src="../assets/js/theme-switcher.js?v=2"></script>
   <script>if (window.self !== window.top) document.addEventListener('DOMContentLoaded', () => document.body.classList.add('in-page-modal'));</script>
 </head>
 <body>
@@ -62,13 +63,12 @@
         </div>
         <button type="submit" id="btn-redefinir">Salvar nova senha</button>
       </form>
-      <p style="font-size:0.8rem;color:var(--color-hint);text-align:center;margin-top:10px;">
-        Mínimo 8 caracteres, 1 maiúscula, 1 número, 1 caractere especial.
-      </p>
+      <p class="senha-regras" style="font-size:0.8rem;color:var(--color-hint);text-align:center;margin-top:10px;"></p>
     </div>
   </main>
 
   <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/senha.js"></script>
   <script>
     const token = new URLSearchParams(window.location.search).get('token');
 
@@ -107,6 +107,12 @@
 
       if (novaSenha !== confirmar) {
         mostrarMsg('msg-redefinir', 'As senhas não coincidem.', 'erro');
+        return;
+      }
+
+      const erroSenha = validarSenhaCliente(novaSenha);
+      if (erroSenha) {
+        mostrarMsg('msg-redefinir', erroSenha, 'erro');
         return;
       }
 

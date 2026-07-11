@@ -128,6 +128,7 @@
         <button class="header-icon-btn" id="hdr-btn-menu" title="Menu" onclick="window.toggleSidebar()">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
         </button>
+        <button class="header-icon-btn" id="hdr-btn-tema" title="Alternar tema (claro/escuro)" onclick="window.toggleTema()">${_iconeTema()}</button>
         <a class="hdr-avatar" id="hdrAvatar" href="/pages/perfil.html" title="Meu Perfil">${hdrAvatarContent}</a>`;
       headerEl.appendChild(actionsRow);
       appShell.appendChild(headerEl);
@@ -181,6 +182,25 @@
     document.body.classList.remove('sb-open');
     const ov = document.getElementById('sb-overlay');
     if (ov) ov.style.display = 'none';
+  };
+
+  // ── Alternador de tema (claro/escuro) ────────────────────────────────────
+  // O tema é aplicado cedo por theme-switcher.js; aqui só alternamos e salvamos.
+  function _iconeTema() {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    // Mostra o ícone do tema-alvo: lua quando está claro, sol quando está escuro.
+    return dark
+      ? `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="3.6"/><path d="M10 1.6v2.2M10 16.2v2.2M1.6 10h2.2M16.2 10h2.2M4.2 4.2l1.6 1.6M14.2 14.2l1.6 1.6M15.8 4.2l-1.6 1.6M5.8 14.2l-1.6 1.6"/></svg>`
+      : `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 12.4A6.8 6.8 0 0 1 7.6 3.5a6.8 6.8 0 1 0 8.9 8.9z"/></svg>`;
+  }
+
+  window.toggleTema = function () {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const novo = dark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', novo);
+    try { localStorage.setItem('gcm-tema', novo); } catch (e) {}
+    const btn = document.getElementById('hdr-btn-tema');
+    if (btn) btn.innerHTML = _iconeTema();
   };
 
   // ── Navegação em modal flutuante (telas e forms abrem sobre a página atual) ─
