@@ -1,7 +1,6 @@
 /* ============================================================
-   DESIGN TOKENS — base compartilhada por todos os temas
-   Valores que NÃO mudam entre temas (raios, espaçamento,
-   tipografia). As cores ficam em cada bloco [data-theme].
+   DESIGN TOKENS — raios, espaçamento e tipografia.
+   As cores do tema ficam logo abaixo, em :root.
    ============================================================ */
 :root {
   /* Raio de canto — padrão suave e institucional */
@@ -29,31 +28,39 @@
   /* Transições padrão */
   --tr-fast: 0.15s ease;
   --tr-base: 0.2s ease;
+
+  /* Altura padrão de controles em linha (inputs, selects e botões lado a lado).
+     Garante que campos e botões na mesma linha fiquem com a mesma altura. */
+  --control-h:    42px;  /* formulários padrão */
+  --control-h-sm: 36px;  /* filtros e ações compactas */
 }
 
 /* ============================================================
-   TEMAS — variáveis de cor por data-theme no <html>
+   TEMA — variáveis de cor (tema único)
    ============================================================ */
 
-/* ── Gov Modern (padrão) — claro, azul naval + âmbar ──────── */
-:root,
-html[data-theme="gov-modern"] {
+/* ── Tema institucional (claro, azul naval + âmbar) ─────────
+   Tema único do sistema. Tokens em :root para que, futuramente,
+   um tema escuro possa ser adicionado só com um bloco
+   [data-theme="dark"] sobrescrevendo estas variáveis. ─────── */
+:root {
   --header-h: 110px;
-  --bg-page:         #EFF3FF;
-  --bg-body-from:    #0a1a2e;
-  --bg-body-mid:     #112444;
-  --bg-body-to:      #1a3560;
+  --bg-page:         #EBEBEB;
+  --bg-body-from:    #DCE7F5;
+  --bg-body-mid:     #E4ECF7;
+  --bg-body-to:      #EBEBEB;
   --bg-card:         #FFFFFF;
-  --bg-surface-2:    #F7FAFF;
-  --bg-header-from:  #0e1f3d;
-  --bg-header-to:    #2171B5;
-  --header-accent:   #F59E0B;
-  --header-text:     #FFFFFF;
-  --header-text-sub: #BDD7E7;
+  --bg-surface-2:    #F4F7FC;
+  --bg-header-from:  #EAF2FD;
+  --bg-header-to:    #D0E6FD;
+  --header-accent:      #F59E0B; /* dourado de preenchimento (bordas, dot, avatar) */
+  --header-accent-text: #B45309; /* dourado de texto sobre fundo claro (contraste AA) */
+  --header-text:     #162660;
+  --header-text-sub: #3A4A78;
 
-  --color-primary:       #2171B5;
-  --color-primary-hover: #174f8a;
-  --color-primary-light: #BDD7E7;
+  --color-primary:       #162660;
+  --color-primary-hover: #0F1C4A;
+  --color-primary-light: #D0E6FD;
 
   --color-accent:        #F59E0B;
   --color-accent-hover:  #D97706;
@@ -76,145 +83,30 @@ html[data-theme="gov-modern"] {
   --color-info-text:      #1E40AF;
 
   --color-text:       #1A202C;
-  --color-text-muted: #6B7280;
+  --color-text-muted: #5B6472;
   --color-label:      #374151;
-  --color-border:     #BDD7E7;
+  --color-border:     #C9D8EC;
+  --color-border-soft:#E4E4E4;
   --color-input-bg:   #FFFFFF;
-  --color-row-alt:    #EFF3FF;
-  --color-row-hover:  #BDD7E7;
-  --color-bloco-bg:   #EFF3FF;
-  --color-bloco-border:#6BAED6;
-  --color-hint:       #9CA3AF;
-  --color-link:       #2171B5;
+  --color-row-alt:    #F4F7FC;
+  --color-row-hover:  #D0E6FD;
+  --color-bloco-bg:   #F1E4D1;  /* creme — painéis de destaque (filtros, cabeçalho de relatório) */
+  --color-bloco-border:#E3D6BE;
+  --color-hint:       #9098A5;
+  --color-link:       #1B3A8A;
 
-  --tab-active-bg:    #2171B5;
+  --tab-active-bg:    #162660;
   --tab-active-text:  #FFFFFF;
-  --tab-inactive-bg:  #EFF3FF;
-  --tab-inactive-text:#2171B5;
+  --tab-inactive-bg:  #FFFFFF;
+  --tab-inactive-text:#162660;
 
-  --shadow-card:  0 4px 18px rgba(33,113,181,0.10);
-  --shadow-input: 0 0 0 3px rgba(107,174,214,0.30);
-  --shadow-pop:   0 10px 30px rgba(15,30,60,0.18);
-}
+  /* Barras de rolagem sobre conteúdo claro (tom da própria superfície) */
+  --scroll-thumb:       #B7C6DE;
+  --scroll-thumb-hover: #162660;
 
-/* ── Dark Command — escuro, comando/operação noturna ──────── */
-html[data-theme="dark-command"] {
-  --header-h: 110px;
-  --bg-page:         #0f1826;
-  --bg-body-from:    #04070d;
-  --bg-body-mid:     #080f1c;
-  --bg-body-to:      #0d1a2e;
-  --bg-card:         #172336;
-  --bg-surface-2:    #1c2a40;
-  --bg-header-from:  #05090f;
-  --bg-header-to:    #14375f;
-  --header-accent:   #F59E0B;
-  --header-text:     #FFFFFF;
-  --header-text-sub: #9FB6D4;
-
-  --color-primary:       #3B8FD6;
-  --color-primary-hover: #2C79BC;
-  --color-primary-light: #24405e;
-
-  --color-accent:        #F59E0B;
-  --color-accent-hover:  #D97706;
-  --color-accent-light:  #3a2f14;
-
-  --color-success:       #34A853;
-  --color-success-hover: #2C8C46;
-  --color-danger:        #EF5350;
-  --color-danger-hover:  #E53935;
-
-  --color-warning:        #F59E0B;
-  --color-warning-bg:     #3a2f14;
-  --color-warning-text:   #FCD34D;
-  --color-success-bg:     #14311f;
-  --color-success-text:   #86EFAC;
-  --color-danger-bg:      #3a1a1a;
-  --color-danger-text:    #FCA5A5;
-  --color-info-bg:        #14263f;
-  --color-info-text:      #93C5FD;
-
-  --color-text:       #E6ECF5;
-  --color-text-muted: #94A3B8;
-  --color-label:      #C3D0E0;
-  --color-border:     #2A3A52;
-  --color-input-bg:   #1E2C42;
-  --color-row-alt:    #1b283c;
-  --color-row-hover:  #24344d;
-  --color-bloco-bg:   #16202f;
-  --color-bloco-border:#2A3A52;
-  --color-hint:       #64748B;
-  --color-link:       #6BAED6;
-
-  --tab-active-bg:    #3B8FD6;
-  --tab-active-text:  #FFFFFF;
-  --tab-inactive-bg:  #16202f;
-  --tab-inactive-text:#9FB6D4;
-
-  --shadow-card:  0 4px 20px rgba(0,0,0,0.45);
-  --shadow-input: 0 0 0 3px rgba(59,143,214,0.35);
-  --shadow-pop:   0 12px 34px rgba(0,0,0,0.55);
-}
-
-/* ── Claro Operacional (google-material) — claro neutro ───── */
-html[data-theme="google-material"] {
-  --header-h: 110px;
-  --bg-page:         #F5F7FA;
-  --bg-body-from:    #0a1a2e;
-  --bg-body-mid:     #112444;
-  --bg-body-to:      #1a3560;
-  --bg-card:         #FFFFFF;
-  --bg-surface-2:    #F1F3F4;
-  --bg-header-from:  #0e1f3d;
-  --bg-header-to:    #1A73E8;
-  --header-accent:   #F9AB00;
-  --header-text:     #FFFFFF;
-  --header-text-sub: #C6DAFC;
-
-  --color-primary:       #1A73E8;
-  --color-primary-hover: #1558B0;
-  --color-primary-light: #E8F0FE;
-
-  --color-accent:        #F9AB00;
-  --color-accent-hover:  #E37400;
-  --color-accent-light:  #FEF7E0;
-
-  --color-success:       #188038;
-  --color-success-hover: #12652b;
-  --color-danger:        #D93025;
-  --color-danger-hover:  #B3261E;
-
-  --color-warning:        #F9AB00;
-  --color-warning-bg:     #FEF7E0;
-  --color-warning-text:   #7A5900;
-  --color-success-bg:     #E6F4EA;
-  --color-success-text:   #137333;
-  --color-danger-bg:      #FCE8E6;
-  --color-danger-text:    #C5221F;
-  --color-info-bg:        #E8F0FE;
-  --color-info-text:      #1A73E8;
-
-  --color-text:       #202124;
-  --color-text-muted: #5F6368;
-  --color-label:      #3C4043;
-  --color-border:     #DADCE0;
-  --color-input-bg:   #FFFFFF;
-  --color-row-alt:    #F1F3F4;
-  --color-row-hover:  #E8F0FE;
-  --color-bloco-bg:   #F1F3F4;
-  --color-bloco-border:#DADCE0;
-  --color-hint:       #80868B;
-  --color-link:       #1A73E8;
-
-  --tab-active-bg:    #1A73E8;
-  --tab-active-text:  #FFFFFF;
-  --tab-inactive-bg:  #F1F3F4;
-  --tab-inactive-text:#1A73E8;
-
-  --shadow-card:  0 1px 3px rgba(60,64,67,0.15), 0 4px 12px rgba(60,64,67,0.08);
-  --shadow-input: 0 0 0 3px rgba(26,115,232,0.25);
-  --shadow-pop:   0 10px 30px rgba(60,64,67,0.22);
+  --shadow-card:  0 4px 18px rgba(22,38,96,0.08);
+  --shadow-input: 0 0 0 3px rgba(22,38,96,0.22);
+  --shadow-pop:   0 10px 30px rgba(15,30,60,0.14);
 }
 
 
@@ -257,7 +149,7 @@ body {
   /* overflow: clip preserva o recorte visual das bordas arredondadas
      sem criar um scroll container — o que quebraria position: sticky */
   overflow: clip;
-  box-shadow: 0 24px 72px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05);
+  box-shadow: 0 16px 48px rgba(22,38,96,0.16), 0 0 0 1px rgba(22,38,96,0.05);
   background: var(--bg-page);
   min-height: calc(100vh - clamp(16px, 3vw, 40px));
   display: flex;
@@ -294,7 +186,6 @@ body {
   flex: 1;
   text-align: center;
   letter-spacing: 0.02em;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
 .header-titulo {
@@ -304,7 +195,6 @@ body {
   align-items: center;
   gap: 1px;
   text-align: center;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
 .header-linha-1 {
@@ -337,7 +227,7 @@ body {
   height: clamp(60px, 10vw, 92px);
   width: auto;
   flex-shrink: 0;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.55));
+  filter: drop-shadow(0 2px 6px rgba(22,38,96,0.22));
 }
 
 .header .header-actions {
@@ -345,74 +235,6 @@ body {
   align-items: center;
   gap: 10px;
 }
-
-/* ── Wrapper do dropdown de tema ───────────────────────────── */
-.header-tema-wrapper {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
-}
-
-.header-tema-menu {
-  display: none;
-  flex-direction: column;
-  gap: 8px;
-  position: absolute;
-  top: calc(100% + 10px);
-  left: 0;
-  z-index: 9999;
-  padding: 4px 0;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-primary) transparent;
-}
-.header-tema-menu::-webkit-scrollbar { width: 4px; }
-.header-tema-menu::-webkit-scrollbar-thumb {
-  background: var(--color-primary);
-  border-radius: 4px;
-}
-/* Quando aberto: escapa do overflow:clip do app-shell via position:fixed.
-   top/left são definidos por JS com getBoundingClientRect() do botão. */
-.header-tema-menu.open {
-  display: flex;
-  position: fixed;
-  max-height: calc(100dvh - 100px);
-  overflow-y: auto;
-  overflow-x: visible;
-  /* Padding lateral/vertical para sombras dos filhos não serem cortadas pelo overflow */
-  padding: 8px 6px;
-}
-
-.sb-tema-item {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  width: 52px;
-  height: 52px;
-  border-radius: 26px;
-  overflow: hidden;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-  color: #fff;
-  border: none;
-  text-decoration: none;
-  cursor: pointer;
-  font-size: 0.84rem;
-  font-weight: 600;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  transition:
-    width 0.38s cubic-bezier(0.34, 1.10, 0.64, 1),
-    box-shadow 0.25s ease,
-    background 0.2s ease;
-}
-.sb-tema-item:hover {
-  width: 210px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.28);
-}
-
-/* Tema: herda tudo do nav-item, sem overrides visuais */
-.sb-tema-item { padding: 0; }
 
 .header .usuario-nome {
   font-size: 0.82rem;
@@ -429,9 +251,9 @@ body {
 .header a:hover { opacity: 1; text-decoration: underline; }
 
 .header .btn-header {
-  background: rgba(255,255,255,0.12);
+  background: rgba(22,38,96,0.07);
   color: var(--header-text);
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(22,38,96,0.16);
   border-radius: var(--radius-sm);
   padding: 5px 12px;
   cursor: pointer;
@@ -439,7 +261,7 @@ body {
   transition: background 0.2s;
 }
 .header .btn-header:hover {
-  background: rgba(255,255,255,0.22);
+  background: rgba(22,38,96,0.14);
 }
 
 .header .btn-sair {
@@ -471,72 +293,19 @@ body {
   justify-content: center;
   flex-shrink: 0;
   padding: 0;
-  border: 1px solid rgba(255,255,255,0.22);
+  border: 1px solid rgba(22,38,96,0.18);
   border-radius: var(--radius-pill);
-  background: rgba(255,255,255,0.12);
+  background: rgba(22,38,96,0.06);
   color: var(--header-text);
   cursor: pointer;
   transition: background var(--tr-base), transform var(--tr-fast), border-color var(--tr-base);
 }
 .header-icon-btn:hover {
-  background: rgba(255,255,255,0.22);
-  border-color: rgba(255,255,255,0.4);
+  background: rgba(22,38,96,0.13);
+  border-color: rgba(22,38,96,0.32);
   transform: translateY(-1px);
 }
 .header-icon-btn svg { width: 20px; height: 20px; }
-
-/* ── Menu de tema (dropdown popover) — usado no login e nas páginas ── */
-.header-tema-menu {
-  display: none;
-  flex-direction: column;
-  gap: 2px;
-  position: fixed;
-  z-index: 9999;
-  min-width: 190px;
-  padding: 6px;
-  background: var(--bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-pop);
-}
-.header-tema-menu.open { display: flex; }
-
-/* Sobrescreve o comportamento de "pílula que expande": no dropdown de tema
-   os itens são linhas normais com bolinha de cor + rótulo sempre visível. */
-.header-tema-menu .sb-tema-item {
-  width: 100%;
-  height: auto;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text);
-  overflow: visible;
-  box-shadow: none;
-  gap: 10px;
-  padding: 9px 12px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: background var(--tr-fast), color var(--tr-fast);
-  animation: none !important;
-}
-.header-tema-menu .sb-tema-item:hover {
-  width: 100%;
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  box-shadow: none;
-}
-.header-tema-menu .sb-tema-item.active {
-  background: var(--color-primary);
-  color: #fff;
-  box-shadow: none;
-}
-.sb-tema-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: var(--radius-pill);
-  flex-shrink: 0;
-  border: 2px solid rgba(255,255,255,0.6);
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.12);
-}
 
 /* Rótulo da seção da sidebar (span dentro de .sb-group-head) */
 .sb-group-title { flex: 1; text-align: left; }
@@ -823,6 +592,38 @@ form textarea:focus {
   box-shadow: var(--shadow-input);
   outline: none;
 }
+
+/* Dentro de .campo-group o espaçamento vertical vem do `gap`; zera a margem
+   do input para não dobrar o espaço entre rótulo e campo. */
+.campo-group input,
+.campo-group textarea,
+.campo-group select {
+  margin: 0;
+}
+
+/* ── Altura uniforme de controles (alinhamento em linha) ──────────────────
+   Inputs, selects e botões que aparecem lado a lado compartilham a mesma
+   altura. Botões recebem borda transparente para que a caixa (border-box)
+   iguale a dos inputs, que têm borda de 1px — evita o desalinhamento de ~2px. */
+.campo-group input,
+.campo-group select,
+.field input,
+.field select,
+.form-row input,
+.form-row select,
+.form-row button,
+.grid-form button {
+  height: var(--control-h);
+}
+.form-row button,
+.grid-form button { border: 1px solid transparent; }
+
+.filters input,
+.filters select,
+.filters button {
+  height: var(--control-h-sm);
+}
+.filters button { border: 1px solid transparent; }
 
 input:invalid,
 textarea:invalid,
@@ -1416,88 +1217,13 @@ table button:hover { background: var(--color-primary-hover); }
 }
 
 /* ============================================================
-   SELETOR DE TEMA (botão flutuante)
-   ============================================================ */
-#theme-switcher {
-  position: fixed;
-  bottom: 22px;
-  right: 22px;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-#theme-switcher-btn {
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-pill);
-  padding: 10px 16px;
-  cursor: pointer;
-  font-size: 0.82rem;
-  font-weight: 700;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: background 0.2s, transform 0.15s;
-  letter-spacing: 0.02em;
-}
-#theme-switcher-btn:hover {
-  background: var(--color-primary-hover);
-  transform: translateY(-2px);
-}
-
-#theme-menu {
-  display: none;
-  flex-direction: column;
-  gap: 6px;
-  background: var(--bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 8px;
-  box-shadow: var(--shadow-card);
-  min-width: 170px;
-}
-
-#theme-menu.open { display: flex; }
-
-.theme-option {
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--color-text);
-  text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: background 0.2s;
-}
-.theme-option:hover {
-  background: var(--color-primary-light);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-.theme-option.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: #fff;
-}
-
-/* ============================================================
    SIDEBAR LAYOUT
    ============================================================ */
 #sidebar {
   width: 230px;
   overflow-y: hidden;
   background: linear-gradient(180deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%);
-  border-right: 1px solid rgba(255,255,255,0.07);
+  border-right: 1px solid rgba(22,38,96,0.08);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -1571,7 +1297,7 @@ table button:hover { background: var(--color-primary-hover); }
   align-items: center;
   gap: 8px;
   padding: 22px 14px 18px;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  border-bottom: 1px solid rgba(22,38,96,0.08);
   text-align: center;
   flex-shrink: 0;
 }
@@ -1616,7 +1342,7 @@ table button:hover { background: var(--color-primary-hover); }
   font-weight: 700;
   font-size: 0.85rem;
   flex-shrink: 0;
-  border: 2px solid rgba(255,255,255,0.3);
+  border: 2px solid rgba(22,38,96,0.18);
   overflow: hidden;
   text-decoration: none;
   cursor: pointer;
@@ -1662,14 +1388,14 @@ table button:hover { background: var(--color-primary-hover); }
   display: flex;
   flex-direction: column;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.22) transparent;
+  scrollbar-color: rgba(22,38,96,0.28) transparent;
 }
 .sb-nav::-webkit-scrollbar { width: 5px; }
 .sb-nav::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.22);
+  background: rgba(22,38,96,0.28);
   border-radius: 4px;
 }
-.sb-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.38); }
+.sb-nav::-webkit-scrollbar-thumb:hover { background: rgba(22,38,96,0.42); }
 
 .sb-link {
   display: flex;
@@ -1709,14 +1435,14 @@ table button:hover { background: var(--color-primary-hover); }
 }
 
 .sb-link:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(22,38,96,0.06);
   color: var(--header-text);
-  border-left-color: rgba(245,158,11,0.55);
+  border-left-color: rgba(245,158,11,0.7);
 }
 
 .sb-link.active {
-  background: rgba(245,158,11,0.12);
-  color: #fff;
+  background: rgba(245,158,11,0.14);
+  color: var(--header-text);
   border-left-color: var(--header-accent);
   font-weight: 700;
 }
@@ -1761,70 +1487,20 @@ table button:hover { background: var(--color-primary-hover); }
 .sb-nav-solo {
   margin-top: 6px;
   padding-top: 6px;
-  border-top: 1px solid rgba(255,255,255,0.07);
+  border-top: 1px solid rgba(22,38,96,0.08);
 }
 
 .sb-footer {
   padding: 12px 14px;
   padding-bottom: max(12px, env(safe-area-inset-bottom));
-  border-top: 1px solid rgba(255,255,255,0.07);
+  border-top: 1px solid rgba(22,38,96,0.08);
   flex-shrink: 0;
 }
-
-.sb-btn-tema {
-  width: 100%;
-  padding: 9px 12px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: var(--radius-sm);
-  color: #e2e8f0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  transition: background 0.2s;
-}
-
-.sb-btn-tema:hover {
-  background: rgba(255,255,255,0.16);
-}
-
-.sb-tema-wrapper {
-  position: relative;
-  width: 100%;
-  margin-bottom: 8px;
-}
-
-.sb-tema-menu {
-  display: none;
-  flex-direction: column;
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
-  right: 0;
-  background: #1e2d42;
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
-  z-index: 500;
-}
-
-.sb-tema-menu.open { display: flex; }
-
-.sb-tema-item.active {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.42);
-}
-
 
 .sb-btn-sair {
   width: 100%;
   padding: 9px 12px;
-  background: rgba(198,40,40,0.65);
+  background: var(--color-danger);
   color: #fff;
   border: none;
   border-radius: var(--radius-sm);
@@ -1835,7 +1511,7 @@ table button:hover { background: var(--color-primary-hover); }
 }
 
 .sb-btn-sair:hover {
-  background: var(--color-danger);
+  background: var(--color-danger-hover);
 }
 
 /* ── Mobile: header e sidebar fixos (drawer) ─────────────────────────── */
@@ -2139,7 +1815,7 @@ body.has-sidebar .header {
        mais alto que a área visível e recorte o fundo do conteúdo no Android. */
     min-height: unset;
     margin: 0 auto;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05);
+    box-shadow: 0 8px 32px rgba(22,38,96,0.18), 0 0 0 1px rgba(22,38,96,0.05);
     overflow: hidden;
   }
 
@@ -2307,33 +1983,34 @@ body.has-sidebar .header {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--scroll-thumb);
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
+/* Firefox — barra fina no tom do conteúdo claro */
+html { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
 
-/* ── Header — profundidade e identidade ───────────────────── */
+/* ── Header — claro, profundidade sutil ───────────────────── */
 .header {
   background: linear-gradient(135deg,
-    #060f1c 0%,
-    var(--bg-header-from) 30%,
-    #162d52 65%,
+    #EAF2FD 0%,
+    #DCEAFB 45%,
     var(--bg-header-to) 100%);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  box-shadow: 0 2px 12px rgba(22,38,96,0.10);
 }
 
-/* Linha "GUARDA CIVIL MUNICIPAL" em dourado */
+/* Linha "GUARDA CIVIL MUNICIPAL" — dourado escuro para contraste no claro */
 .header-linha-2 {
-  color: var(--header-accent) !important;
+  color: var(--header-accent-text) !important;
   opacity: 1 !important;
   font-weight: 700;
-  text-shadow: 0 1px 6px rgba(245,158,11,0.4);
+  text-shadow: none;
 }
 
-/* ── Sidebar — mais profundidade e active state refinado ───── */
+/* ── Sidebar — clara, profundidade sutil ──────────────────── */
 #sidebar {
-  background: linear-gradient(180deg, #060f1c 0%, #0a1628 50%, #112240 100%);
-  box-shadow: 3px 0 20px rgba(0,0,0,0.35);
+  background: linear-gradient(180deg, #EAF2FD 0%, #DCEAFB 50%, var(--bg-header-to) 100%);
+  box-shadow: 3px 0 16px rgba(22,38,96,0.10);
 }
 
 .sb-user {
@@ -2348,14 +2025,14 @@ body.has-sidebar .header {
 }
 
 .sb-link.active {
-  background: linear-gradient(90deg, rgba(245,158,11,0.16) 0%, rgba(245,158,11,0.03) 100%) !important;
+  background: linear-gradient(90deg, rgba(245,158,11,0.20) 0%, rgba(245,158,11,0.05) 100%) !important;
   border-left-color: var(--header-accent) !important;
-  color: #fff !important;
+  color: var(--header-text) !important;
   font-weight: 700;
 }
 
 .sb-link:hover {
-  border-left-color: rgba(245,158,11,0.45) !important;
+  border-left-color: rgba(245,158,11,0.6) !important;
 }
 
 /* ── Login — borda amber e botão com gradiente ─────────────── */
@@ -2384,12 +2061,12 @@ body.has-sidebar .header {
    pela linha toda. Por isso o <th> fica transparente e deixa o gradiente da
    <tr> aparecer por trás. ──────────────────────────────────────────────── */
 table thead tr {
-  background: linear-gradient(135deg, #0a1628 0%, var(--color-primary) 100%);
+  background: linear-gradient(135deg, #0F1C4A 0%, var(--color-primary) 100%);
 }
 table th {
   background: transparent;
   text-shadow: 0 1px 2px rgba(0,0,0,0.25);
-  border-color: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.12);
 }
 
 /* ── Botões de ação — gradiente + shadow ──────────────────── */
@@ -2458,9 +2135,9 @@ table th {
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
 }
 
-/* ── Pub panel header — gradiente naval ───────────────────── */
+/* ── Pub panel header — claro ─────────────────────────────── */
 .pub-panel-header {
-  background: linear-gradient(135deg, #060f1c 0%, var(--bg-header-to) 100%) !important;
+  background: linear-gradient(135deg, #EAF2FD 0%, var(--bg-header-to) 100%) !important;
   border-bottom: 3px solid var(--header-accent) !important;
 }
 
@@ -2495,7 +2172,7 @@ table th {
 
 .hist-item-icon {
   width: 42px; height: 42px; flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: var(--radius);
   display: flex; align-items: center; justify-content: center;
   font-size: 1.15rem;
   background: var(--color-primary-light);
@@ -2542,7 +2219,7 @@ table th {
 .detail-modal {
   background: var(--bg-card);
   border-radius: var(--radius);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.32);
+  box-shadow: 0 20px 60px rgba(22,38,96,0.24);
   width: 100%; max-width: 600px;
   max-height: 90vh;
   display: flex; flex-direction: column;
@@ -2697,7 +2374,7 @@ table th {
   justify-content: center;
   padding: 40px 20px;
   overflow: hidden;
-  background: radial-gradient(circle at 30% 20%, #1a3560 0%, #0a1a2e 70%);
+  background: radial-gradient(circle at 30% 20%, #1F3470 0%, #0F1C4A 70%);
 }
 
 /* Página do palco: o #app-content passa a ser flex para o .app-stage
@@ -2738,7 +2415,7 @@ body.stage-page.sb-open #sidebar { transform: translateX(0) !important; }
   body.stage-page .header { position: static; }
 }
 
-/* ── Botões flutuantes de menu e tema — canto superior esquerdo do palco ── */
+/* ── Botão flutuante de menu — canto superior esquerdo do palco ── */
 .stage-float-btns {
   position: absolute;
   z-index: 2;
@@ -2748,6 +2425,18 @@ body.stage-page.sb-open #sidebar { transform: translateX(0) !important; }
   flex-direction: row;
   gap: 10px;
   align-items: flex-start;
+}
+
+/* Sobre a foto (fundo escuro) os botões voltam a ser claros para contraste,
+   diferente do cabeçalho claro onde o .header-icon-btn é marinho. */
+.stage-float-btns .header-icon-btn {
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.32);
+  color: #fff;
+}
+.stage-float-btns .header-icon-btn:hover {
+  background: rgba(255,255,255,0.24);
+  border-color: rgba(255,255,255,0.5);
 }
 
 /* Fundo dinâmico — camadas que alternam em crossfade (controlado via JS) */
@@ -2770,7 +2459,7 @@ body.stage-page.sb-open #sidebar { transform: translateX(0) !important; }
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(180deg, rgba(10,26,46,0.55) 0%, rgba(10,26,46,0.82) 100%);
+  background: linear-gradient(180deg, rgba(15,28,74,0.42) 0%, rgba(15,28,74,0.76) 100%);
 }
 
 .app-stage-btn {
@@ -2837,7 +2526,7 @@ body.stage-page.sb-open #sidebar { transform: translateX(0) !important; }
   max-height: 90vh;
   display: flex; flex-direction: column;
   border-radius: var(--radius);
-  box-shadow: 0 24px 72px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05);
+  box-shadow: 0 24px 60px rgba(22,38,96,0.28), 0 0 0 1px rgba(22,38,96,0.06);
   animation: dmSlideUp 0.22s ease;
   overflow: hidden;
   transition: max-width 0.2s ease;
@@ -2869,10 +2558,10 @@ body.stage-page.sb-open #sidebar { transform: translateX(0) !important; }
   border-bottom: 3px solid var(--header-accent);
 }
 .pg-modal-head--accent .pg-modal-title {
-  color: #fff;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  color: var(--header-text);
+  text-shadow: none;
 }
-.pg-modal-head--accent .pg-modal-close { color: #fff; }
+.pg-modal-head--accent .pg-modal-close { color: var(--header-text); }
 
 .pg-modal-body { flex: 1; overflow-y: auto; }
 .pg-modal-frame { flex: 1; width: 100%; height: 100%; min-height: 60vh; border: none; background: var(--bg-page); }
