@@ -7,8 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css?v=2">
-  <script src="assets/js/theme-switcher.js"></script>
+  <link rel="stylesheet" href="assets/css/style.css?v=3">
   <style>
     /* ── Quadro de Avisos: ancorado no canto inferior esquerdo do #app-shell,
        ocupando 1/4 da área, atrás do menu lateral (z-index: 300) ──────────── */
@@ -55,10 +54,10 @@
       padding: 14px 18px;
       background: linear-gradient(135deg, var(--bg-header-from) 0%, var(--bg-header-to) 100%);
       border-bottom: 3px solid var(--color-accent);
-      color: #fff;
+      color: var(--header-text);
       display: flex; align-items: center; gap: 10px;
     }
-    .pub-panel-header svg { width: 18px; height: 18px; stroke: rgba(255,255,255,0.8); flex-shrink: 0; }
+    .pub-panel-header svg { width: 18px; height: 18px; stroke: var(--header-text); flex-shrink: 0; }
     .pub-panel-header-sub   { font-size: 1.05rem; font-weight: 700; }
     .pub-list { padding: 0; }
 
@@ -164,16 +163,6 @@
             <button class="header-icon-btn" id="hdr-btn-menu" title="Menu" onclick="toggleSidebar()">
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
             </button>
-            <div class="header-tema-wrapper" id="hdr-tema-wrapper">
-              <button class="header-icon-btn" id="hdr-btn-tema" title="Tema" onclick="toggleTemaMenu()">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5a7.5 7.5 0 1 0 7.5 7.5c0-1.38-1.12-2.5-2.5-2.5h-1.25c-.69 0-1.25-.56-1.25-1.25V5c0-1.38-1.12-2.5-2.5-2.5z"/><circle cx="6.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="11.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="8.5" r="1" fill="currentColor" stroke="none"/></svg>
-              </button>
-              <div class="header-tema-menu" id="hdr-tema-menu">
-                <button class="sb-tema-item" data-theme="gov-modern"      onclick="aplicarTema('gov-modern')"><span class="sb-tema-dot" style="background:#2171B5"></span>Gov Modern</button>
-                <button class="sb-tema-item" data-theme="dark-command"    onclick="aplicarTema('dark-command')"><span class="sb-tema-dot" style="background:#0d1a2e"></span>Dark Command</button>
-                <button class="sb-tema-item" data-theme="google-material" onclick="aplicarTema('google-material')"><span class="sb-tema-dot" style="background:#1A73E8"></span>Claro Operacional</button>
-              </div>
-            </div>
           </div>
 
           <button class="app-stage-btn" id="btnNovoBO" style="display:none" title="Criar Boletim de Ocorrência" aria-label="Criar Boletim de Ocorrência" onclick="openPageModal('/pages/dashboard.html','Novo Boletim de Ocorrência')">
@@ -421,24 +410,6 @@
       document.getElementById('sbUserBlock').style.display = logado ? '' : 'none';
     }
 
-    function toggleTemaMenu() {
-      const menu = document.getElementById('hdr-tema-menu');
-      const btn  = document.getElementById('hdr-btn-tema');
-      if (!menu.classList.contains('open')) {
-        const r = btn.getBoundingClientRect();
-        menu.style.top  = (r.bottom + 10) + 'px';
-        menu.style.left = r.left + 'px';
-      }
-      menu.classList.toggle('open');
-    }
-
-    function aplicarTema(tema) {
-      document.documentElement.setAttribute('data-theme', tema);
-      localStorage.setItem('gcm-tema', tema);
-      document.querySelectorAll('.sb-tema-item').forEach(btn => btn.classList.toggle('active', btn.dataset.theme === tema));
-      document.getElementById('hdr-tema-menu').classList.remove('open');
-    }
-
     // Hook chamado por login() (assets/js/main.js) após autenticação bem-sucedida
     window.aposLoginSucesso = function (perfil) {
       closePageModal();
@@ -648,18 +619,12 @@
     }
 
     document.addEventListener('click', e => {
-      const temaWrap = document.getElementById('hdr-tema-wrapper');
-      if (temaWrap && !temaWrap.contains(e.target)) document.getElementById('hdr-tema-menu').classList.remove('open');
       const overlay = document.getElementById('pg-overlay');
       const closeBtn = document.getElementById('pg-modal-close');
       if (overlay && e.target === overlay && closeBtn && closeBtn.style.display !== 'none') closePageModal();
     });
 
     (async function start() {
-      const temaAtual = localStorage.getItem('gcm-tema') || 'gov-modern';
-      document.documentElement.setAttribute('data-theme', temaAtual);
-      document.querySelectorAll('.sb-tema-item').forEach(btn => btn.classList.toggle('active', btn.dataset.theme === temaAtual));
-
       try {
         const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
         if (res.ok) {
