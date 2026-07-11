@@ -7,8 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../assets/css/style.css?v=2">
-  <script src="../assets/js/theme-switcher.js"></script>
+  <link rel="stylesheet" href="../assets/css/style.css?v=3">
   <script src="../assets/js/sidebar.js?v=2"></script>
   <style>
     .page-wrap { max-width: 1100px; }
@@ -401,8 +400,18 @@
       addBtn('Prox. ›', paginaAtual + 1, false, paginaAtual === totalPg);
     }
 
-    function exportarCSV() {
+    async function exportarCSV() {
       if (!logsFiltrados.length) { toast('Nenhum registro para exportar.', 'erro'); return; }
+      // Registra a exportação na trilha de auditoria (accountability LGPD).
+      // O X-CSRF-Token é injetado automaticamente pelo wrapper de fetch (config.js).
+      try {
+        await fetch(`${API_BASE_URL}/api/auth/auditoria/exportacao`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ total: logsFiltrados.length }),
+        });
+      } catch (_) { /* não bloqueia a exportação */ }
       const cols = ['#','Data/Hora','Usuário','Ação','Recurso','Dispositivo','Navegador','SO','IP','ID Sessão'];
       const linhas = logsFiltrados.map((l, i) => [
         i + 1,
