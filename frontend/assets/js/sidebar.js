@@ -128,16 +128,6 @@
         <button class="header-icon-btn" id="hdr-btn-menu" title="Menu" onclick="window.toggleSidebar()">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
         </button>
-        <div class="header-tema-wrapper" id="hdr-tema-wrapper">
-          <button class="header-icon-btn" id="hdr-btn-tema" title="Tema" onclick="window.toggleTemaMenu()">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5a7.5 7.5 0 1 0 7.5 7.5c0-1.38-1.12-2.5-2.5-2.5h-1.25c-.69 0-1.25-.56-1.25-1.25V5c0-1.38-1.12-2.5-2.5-2.5z"/><circle cx="6.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="11.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="8.5" r="1" fill="currentColor" stroke="none"/></svg>
-          </button>
-          <div class="header-tema-menu" id="hdr-tema-menu">
-            <button class="sb-tema-item" data-theme="gov-modern"      onclick="window.aplicarTema('gov-modern')"><span class="sb-tema-dot" style="background:#2171B5"></span>Gov Modern</button>
-            <button class="sb-tema-item" data-theme="dark-command"    onclick="window.aplicarTema('dark-command')"><span class="sb-tema-dot" style="background:#1E3A5F"></span>Dark Command</button>
-            <button class="sb-tema-item" data-theme="google-material" onclick="window.aplicarTema('google-material')"><span class="sb-tema-dot" style="background:#1A73E8"></span>Claro Operacional</button>
-          </div>
-        </div>
         <a class="hdr-avatar" id="hdrAvatar" href="/pages/perfil.html" title="Meu Perfil">${hdrAvatarContent}</a>`;
       headerEl.appendChild(actionsRow);
       appShell.appendChild(headerEl);
@@ -147,9 +137,6 @@
     document.body.appendChild(appShell);
     document.body.appendChild(overlay);
     document.body.classList.add('has-sidebar');
-
-    // Marca o tema ativo no menu
-    _marcarTemaAtivo();
 
     // Ajusta --header-h com a altura real do cabeçalho
     function syncHeaderHeight() {
@@ -189,41 +176,6 @@
     const open = document.body.classList.toggle('sb-open');
     document.getElementById('sb-overlay').style.display = open ? 'block' : 'none';
   };
-
-  function _marcarTemaAtivo() {
-    const cur = localStorage.getItem('gcm-tema') || 'gov-modern';
-    document.querySelectorAll('.sb-tema-item').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.theme === cur);
-    });
-  }
-
-  window.toggleTemaMenu = function () {
-    const menu = document.getElementById('hdr-tema-menu');
-    const btn  = document.getElementById('hdr-btn-tema');
-    if (menu && btn && !menu.classList.contains('open')) {
-      const r = btn.getBoundingClientRect();
-      menu.style.top  = (r.bottom + 10) + 'px';
-      menu.style.left = r.left + 'px';
-    }
-    if (menu) menu.classList.toggle('open');
-  };
-
-  window.aplicarTema = function (tema) {
-    document.documentElement.setAttribute('data-theme', tema);
-    localStorage.setItem('gcm-tema', tema);
-    _marcarTemaAtivo();
-    const menu = document.getElementById('hdr-tema-menu');
-    if (menu) menu.classList.remove('open');
-  };
-
-  // Fecha o menu ao clicar fora
-  document.addEventListener('click', function (e) {
-    const wrapper = document.getElementById('hdr-tema-wrapper');
-    if (wrapper && !wrapper.contains(e.target)) {
-      const menu = document.getElementById('hdr-tema-menu');
-      if (menu) menu.classList.remove('open');
-    }
-  });
 
   window.closeSidebar = function () {
     document.body.classList.remove('sb-open');
