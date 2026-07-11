@@ -634,6 +634,18 @@
           return;
         }
       } catch {}
+
+      // Sem sessão: se o sistema ainda não tem nenhum usuário, leva direto à
+      // criação do admin em vez de um login sem saída (primeiro acesso ou banco
+      // recém-provisionado). Ver GET /api/auth/setup-status no backend.
+      try {
+        const s = await fetch(`${API_BASE_URL}/api/auth/setup-status`, { credentials: 'include' });
+        if (s.ok && (await s.json()).needsSetup) {
+          window.location.href = '/pages/setup.html';
+          return;
+        }
+      } catch {}
+
       buildSidebarNav('');
       openLoginModal();
     })();

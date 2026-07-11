@@ -141,6 +141,18 @@ router.post('/lgpd-aceite', verificarToken, async (req, res) => {
   }
 });
 
+// Status do setup — usado pelo frontend para decidir entre a tela de login e a
+// de criação do primeiro admin. Público (GET, isento de CSRF): informa apenas se
+// ainda não há nenhum usuário cadastrado.
+router.get('/setup-status', async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT COUNT(*) AS total FROM usuarios');
+    res.json({ needsSetup: parseInt(rows[0].total, 10) === 0 });
+  } catch (error) {
+    erroServidor(res, error);
+  }
+});
+
 // Setup — cria o primeiro admin
 router.post('/setup', async (req, res) => {
   try {
