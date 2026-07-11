@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
@@ -61,13 +62,33 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ✅ Cabeçalhos de segurança básicos
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  next();
-});
+// ✅ Cabeçalhos de segurança (helmet) — medida técnica LGPD art. 46.
+// CSP compatível com o frontend atual: scripts/estilos inline nas páginas,
+// Google Fonts (googleapis/gstatic), imagens em data: URI (fotos base64 / brasões)
+// e chamadas à API na mesma origem (ver frontend/assets/js/config.js).
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      'default-src': ["'self'"],
+      'base-uri': ["'self'"],
+      'script-src': ["'self'", "'unsafe-inline'"],
+      'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      'font-src': ["'self'", 'https://fonts.gstatic.com'],
+      'img-src': ["'self'", 'data:'],
+      'connect-src': ["'self'"],
+      'object-src': ["'none'"],
+      'frame-ancestors': ["'self'"],
+      'form-action': ["'self'"],
+      'upgrade-insecure-requests': [],
+    },
+  },
+  // HSTS ativo em produção (HTTPS). includeSubDomains + 180 dias (padrão helmet).
+  hsts: { maxAge: 15552000, includeSubDomains: true },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  // Evita quebrar o carregamento de recursos same-origin/data: no frontend atual.
+  crossOriginEmbedderPolicy: false,
+}));
 
 // Middlewares
 app.use(cookieParser());
@@ -125,7 +146,9 @@ app.use((req, res) => {
 
 // ✅ Tratamento de erros global
 app.use((err, req, res, next) => {
-  console.error('❌ Erro:', err);
+  // Em produção loga só a mensagem: o objeto de erro pode carregar a query e os
+  // valores de parâmetros (dados pessoais) para o stdout do provedor (LGPD).
+  console.error('❌ Erro:', process.env.NODE_ENV === 'production' ? err.message : err);
   res.status(err.status || 500).json({
     error: process.env.NODE_ENV === 'production' 
       ? 'Erro interno do servidor' 
