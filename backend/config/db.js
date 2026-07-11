@@ -51,6 +51,11 @@ pool.connect()
     await client.query(`
       ALTER TABLE boletins ADD COLUMN IF NOT EXISTS sensivel BOOLEAN DEFAULT false;
     `);
+    // Marca BOs anonimizados pela política de retenção: os dados pessoais foram
+    // removidos, preservando apenas natureza/tipificação/data para estatística.
+    await client.query(`
+      ALTER TABLE boletins ADD COLUMN IF NOT EXISTS anonimizado BOOLEAN DEFAULT false;
+    `);
     await client.query(`
       CREATE TABLE IF NOT EXISTS relatorios (
         id          SERIAL PRIMARY KEY,
