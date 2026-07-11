@@ -35,7 +35,9 @@ async function enviarEmail({ to, toName, subject, html, attachments }) {
 
 // Envia um PDF gerado automaticamente para o e-mail de notificação configurado.
 // Fire-and-forget: nunca deve derrubar o fluxo principal que o chamou.
-function enviarPdfNotificacao({ subject, html, pdfBuffer, filename }) {
+// onError (opcional): callback chamado em caso de falha no envio — usado para
+// registrar a falha na trilha de auditoria (a trilha tem peso legal).
+function enviarPdfNotificacao({ subject, html, pdfBuffer, filename, onError }) {
   const to = process.env.NOTIFICACAO_PDF_EMAIL;
   if (!to) {
     console.error('[Email-PDF] NOTIFICACAO_PDF_EMAIL não configurado — envio ignorado.');
@@ -46,7 +48,12 @@ function enviarPdfNotificacao({ subject, html, pdfBuffer, filename }) {
     subject,
     html,
     attachments: [{ content: pdfBuffer.toString('base64'), name: filename }],
-  }).catch(err => console.error(`[Email-PDF] Falha ao enviar "${filename}":`, err.message));
+  }).catch(err => {
+    console.error(`[Email-PDF] Falha ao enviar "${filename}":`, err.message);
+    if (typeof onError === 'function') {
+      try { onError(err); } catch (_) { /* auditoria best-effort */ }
+    }
+  });
 }
 
 module.exports = { enviarEmail, enviarPdfNotificacao };
