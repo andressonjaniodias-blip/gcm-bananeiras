@@ -7,8 +7,19 @@ const erroServidor = require('../utils/erroServidor');
 const { encriptar, desencriptarComFallback } = require('../utils/encryption');
 const { validarEmail } = require('../utils/validation');
 
+// Campos pessoais cifrados em repouso (art. 46 LGPD). E-mail fica em texto puro por
+// ser usado no fluxo de recuperação de senha (authRoutes); cidade/UF são de baixa
+// granularidade. O fallback tolera linhas legadas gravadas em texto puro.
+const CAMPOS_CIFRADOS = ['cpf', 'rg', 'data_nascimento', 'telefone', 'cep', 'logradouro', 'numero_end', 'complemento', 'bairro'];
+
+const cifrar = v => (v != null && String(v).trim()) ? encriptar(String(v).trim()) : null;
+
 function decifrarAgente(a) {
-  return { ...a, cpf: desencriptarComFallback(a.cpf), rg: desencriptarComFallback(a.rg) };
+  const out = { ...a };
+  for (const k of CAMPOS_CIFRADOS) {
+    if (out[k] != null) out[k] = desencriptarComFallback(out[k]);
+  }
+  return out;
 }
 
 const CAMPOS_AGENTE = `
@@ -73,14 +84,13 @@ router.post('/', verificarToken, exigirAdmin, async (req, res) => {
       [
         nome.trim(), matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal',
         usuario?.trim() || null, ativo !== false,
-        cpf?.trim() ? encriptar(cpf.trim()) : null,
-        rg?.trim() ? encriptar(rg.trim()) : null,
-        data_nascimento || null, sexo || null,
+        cifrar(cpf), cifrar(rg),
+        cifrar(data_nascimento), sexo || null,
         lotacao?.trim() || null, turno || null, data_admissao || null,
-        email?.trim() || null, telefone?.trim() || null,
-        cep?.trim() || null, logradouro?.trim() || null,
-        numero_end?.trim() || null, complemento?.trim() || null,
-        bairro?.trim() || null, cidade?.trim() || null, uf?.trim() || null,
+        email?.trim() || null, cifrar(telefone),
+        cifrar(cep), cifrar(logradouro),
+        cifrar(numero_end), cifrar(complemento),
+        cifrar(bairro), cidade?.trim() || null, uf?.trim() || null,
       ]
     );
     await auditar(req, 'CRIAR_AGENTE', `${rows[0].nome} (mat. ${rows[0].matricula})`);
@@ -113,14 +123,13 @@ router.put('/:id', verificarToken, exigirAdmin, async (req, res) => {
       [
         nome.trim(), matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal',
         usuario?.trim() || null, ativo !== false,
-        cpf?.trim() ? encriptar(cpf.trim()) : null,
-        rg?.trim() ? encriptar(rg.trim()) : null,
-        data_nascimento || null, sexo || null,
+        cifrar(cpf), cifrar(rg),
+        cifrar(data_nascimento), sexo || null,
         lotacao?.trim() || null, turno || null, data_admissao || null,
-        email?.trim() || null, telefone?.trim() || null,
-        cep?.trim() || null, logradouro?.trim() || null,
-        numero_end?.trim() || null, complemento?.trim() || null,
-        bairro?.trim() || null, cidade?.trim() || null, uf?.trim() || null,
+        email?.trim() || null, cifrar(telefone),
+        cifrar(cep), cifrar(logradouro),
+        cifrar(numero_end), cifrar(complemento),
+        cifrar(bairro), cidade?.trim() || null, uf?.trim() || null,
         req.params.id
       ]
     );
@@ -146,16 +155,16 @@ router.patch('/meu-contato', verificarToken, async (req, res) => {
            atualizado_em=NOW()
        WHERE usuario=$10 RETURNING ${CAMPOS_AGENTE}`,
       [
-        telefone?.trim() || null, email?.trim() || null,
-        cep?.trim() || null, logradouro?.trim() || null,
-        numero_end?.trim() || null, complemento?.trim() || null,
-        bairro?.trim() || null, cidade?.trim() || null, uf?.trim() || null,
+        cifrar(telefone), email?.trim() || null,
+        cifrar(cep), cifrar(logradouro),
+        cifrar(numero_end), cifrar(complemento),
+        cifrar(bairro), cidade?.trim() || null, uf?.trim() || null,
         usuario
       ]
     );
     if (!rows.length) return res.status(404).json({ error: 'Agente vinculado ao usuário não encontrado.' });
     await auditar(req, 'ATUALIZAR_CONTATO', `Dados de contato — ${rows[0].nome}`);
-    res.json(rows[0]);
+    res.json(decifrarAgente(rows[0]));
   } catch (err) { erroServidor(res, err); }
 });
 
