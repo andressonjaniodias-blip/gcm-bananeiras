@@ -8,10 +8,19 @@ const crypto = require('crypto');
 const db = require('../config/db');
 const { enviarEmail } = require('../utils/email');
 const {
-  verificarToken, verificarAdmin, registrarAuditoria, extraFromReq, ipFromReq, ROLES
+  verificarToken, verificarAdmin, registrarAuditoria, extraFromReq, ipFromReq, auditar, ROLES
 } = require('../middleware/auth');
 const { gerarCsrfToken } = require('../middleware/csrf');
 const { validarSenha, validarEmail } = require('../utils/validation');
+const { encriptar, desencriptarComFallback } = require('../utils/encryption');
+
+// Mascara o IP para papéis que não precisam do endereço completo (mínimo necessário,
+// art. 6º III da LGPD). Só o admin vê o IP inteiro; o supervisor recebe mascarado.
+function mascararIp(ip) {
+  if (!ip) return ip;
+  const m = String(ip).match(/^(\d{1,3})\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
+  return m ? `${m[1]}.${m[2]}.*.*` : '***';
+}
 
 const INATIVIDADE_MINUTOS = parseInt(process.env.INATIVIDADE_MINUTOS || '30');
 
@@ -320,6 +329,46 @@ router.delete('/retencao/arquivar', verificarToken, verificarAdmin, async (req, 
   }
 });
 
+// Anonimizar BOs antigos (admin) — alternativa à exclusão prevista no aviso de
+// privacidade: remove os dados pessoais preservando apenas natureza/tipificação/data
+// para fins estatísticos (LGPD art. 16 c/c art. 6º; anonimização do art. 5º, XI).
+router.post('/retencao/anonimizar', verificarToken, verificarAdmin, async (req, res) => {
+  try {
+    const anos = parseInt(process.env.RETENCAO_ANOS || '5');
+    const { rows } = await db.query(
+      `SELECT id, dados FROM boletins
+       WHERE anonimizado = false AND data::timestamptz < NOW() - make_interval(years => $1)`,
+      [anos]
+    );
+    let anonimizados = 0;
+    for (const bo of rows) {
+      let dados;
+      try { dados = JSON.parse(desencriptarComFallback(bo.dados)); } catch { dados = {}; }
+      const minimo = {
+        dadosSolicitacao: {
+          natureza: dados?.dadosSolicitacao?.natureza || null,
+          dataHoraSolicitacao: dados?.dadosSolicitacao?.dataHoraSolicitacao || null,
+        },
+        dadosOcorrencia: {
+          tipificacao: dados?.dadosOcorrencia?.tipificacao || null,
+          dataHoraOcorrencia: dados?.dadosOcorrencia?.dataHoraOcorrencia || null,
+        },
+      };
+      await db.query(
+        'UPDATE boletins SET dados = $1, anonimizado = true WHERE id = $2',
+        [encriptar(JSON.stringify(minimo)), bo.id]
+      );
+      // Remove anexos vinculados (podem conter imagens/PII de pessoas).
+      await db.query(`DELETE FROM anexos WHERE tipo_ref = 'bo' AND ref_id = $1`, [bo.id]);
+      anonimizados++;
+    }
+    await auditar(req, 'ANONIMIZAR_BOs', `${anonimizados} BO(s) anonimizado(s)`);
+    res.json({ message: `${anonimizados} BO(s) anonimizado(s)`, anonimizados });
+  } catch (error) {
+    erroServidor(res, error);
+  }
+});
+
 // Logs de auditoria (admin + supervisor)
 router.get('/auditoria', verificarToken, async (req, res) => {
   try {
@@ -342,8 +391,58 @@ router.get('/auditoria', verificarToken, async (req, res) => {
       db.query(`SELECT COUNT(*) AS total FROM audit_logs`),
     ]);
 
+    // Mínimo necessário: só o admin recebe o IP completo; o supervisor, mascarado.
+    const dados = role === 'admin' ? rows : rows.map(r => ({ ...r, ip: mascararIp(r.ip) }));
+
     const total = parseInt(countRows[0].total);
-    res.json({ data: rows, total, page, pages: Math.ceil(total / limit) });
+    res.json({ data: dados, total, page, pages: Math.ceil(total / limit) });
+
+    // O acesso à própria trilha de auditoria é, ele mesmo, evento auditável.
+    await auditar(req, 'ACESSAR_LOGS', `página ${page} (${role})`);
+  } catch (error) {
+    erroServidor(res, error);
+  }
+});
+
+// Registra a exportação do log de auditoria (o CSV é montado no cliente a partir
+// dos dados já carregados) — accountability (art. 37/48).
+router.post('/auditoria/exportacao', verificarToken, async (req, res) => {
+  const role = req.usuario?.role;
+  if (role !== 'admin' && role !== 'supervisor') return res.status(403).json({ error: 'Acesso negado' });
+  await auditar(req, 'EXPORTAR_LOGS', `${req.body?.total ?? '?'} registro(s)`);
+  res.json({ ok: true });
+});
+
+// Retenção do log de auditoria (admin): IP e fingerprint de dispositivo são dado
+// pessoal — devem ter prazo de guarda (término do tratamento, art. 15/16).
+router.get('/auditoria/retencao', verificarToken, verificarAdmin, async (req, res) => {
+  try {
+    const anos = parseInt(process.env.RETENCAO_LOGS_ANOS || '2');
+    const { rows: total }  = await db.query('SELECT COUNT(*) AS total FROM audit_logs');
+    const { rows: antigos } = await db.query(
+      `SELECT COUNT(*) AS total FROM audit_logs WHERE data < NOW() - make_interval(years => $1)`,
+      [anos]
+    );
+    res.json({
+      retencao_logs_anos: anos,
+      total_logs: parseInt(total[0].total),
+      logs_para_expurgar: parseInt(antigos[0].total),
+    });
+  } catch (error) {
+    erroServidor(res, error);
+  }
+});
+
+// Expurgar logs de auditoria além do prazo de retenção (admin)
+router.delete('/auditoria/retencao/expurgar', verificarToken, verificarAdmin, async (req, res) => {
+  try {
+    const anos = parseInt(process.env.RETENCAO_LOGS_ANOS || '2');
+    const { rowCount } = await db.query(
+      `DELETE FROM audit_logs WHERE data < NOW() - make_interval(years => $1)`,
+      [anos]
+    );
+    await auditar(req, 'EXPURGAR_LOGS', `${rowCount} registro(s) de log removido(s)`);
+    res.json({ message: `${rowCount} registro(s) de log expurgado(s)` });
   } catch (error) {
     erroServidor(res, error);
   }
