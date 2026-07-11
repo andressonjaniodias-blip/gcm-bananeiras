@@ -130,6 +130,9 @@ router.get('/:id/download', verificarToken, async (req, res) => {
 
     const { arquivo, arquivo_nome, arquivo_mime, arquivo_dados } = rows[0];
 
+    // Trilha de acesso: documentos institucionais podem conter dados pessoais.
+    await auditar(req, 'BAIXAR_DOCUMENTO', arquivo_nome);
+
     res.setHeader('Content-Type', arquivo_mime || 'application/octet-stream');
     res.setHeader('Content-Disposition', `attachment; filename="${arquivo_nome}"`);
 
