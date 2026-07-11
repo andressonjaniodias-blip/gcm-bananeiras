@@ -140,12 +140,16 @@ exports.criarBO = async (req, res) => {
 
     res.status(201).json({ message: 'BO criado com sucesso', id: result.rows[0].id, numero });
 
-    construirPdfBO({ id: result.rows[0].id, numero, dados, data, criado_por })
+    // BO sensível vai censurado também no e-mail (a caixa de notificação é um
+    // canal menos controlado que o sistema; os dados pessoais restritos ao comando
+    // permanecem acessíveis apenas dentro da aplicação).
+    construirPdfBO({ id: result.rows[0].id, numero, dados, data, criado_por }, { censurar: sensivel })
       .then(pdfBuffer => enviarPdfNotificacao({
         subject: `Novo BO registrado — ${numero}`,
         html: `<p>Boletim de Ocorrência <b>${numero}</b> foi registrado por <b>${criado_por}</b>.</p>`,
         pdfBuffer,
         filename: `${numero.replace(/\//g, '-')}.pdf`,
+        onError: () => registrarAuditoria(criado_por, 'FALHA_NOTIFICACAO_EMAIL', numero, ip),
       }))
       .catch(err => console.error('[Email-PDF] Falha ao gerar PDF do BO para envio:', err.message));
   } catch (err) {
@@ -603,6 +607,9 @@ async function construirPdfBO(row, opts = {}) {
   return bufferPromise;
 }
 
+// Exportado para teste: valida que o PDF de BO sensível sai censurado no e-mail.
+exports.construirPdfBO = construirPdfBO;
+
 exports.exportarPDF = async (req, res) => {
   const { id } = req.params;
   if (!id) return res.status(400).json({ error: 'ID do BO é obrigatório' });
@@ -630,7 +637,8 @@ exports.exportarPDF = async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${row.numero.replace(/\//g, '-')}.pdf"`);
     res.end(pdfBuffer);
   } catch (err) {
-    console.error('Erro ao gerar PDF do BO:', err);
+    // Só a mensagem em produção — o erro pode conter dados do BO (PII) no stdout.
+    console.error('Erro ao gerar PDF do BO:', process.env.NODE_ENV === 'production' ? err.message : err);
     if (!res.headersSent) erroServidor(res, err);
   }
 };
