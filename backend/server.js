@@ -73,6 +73,10 @@ app.use(helmet({
       'default-src': ["'self'"],
       'base-uri': ["'self'"],
       'script-src': ["'self'", "'unsafe-inline'"],
+      // As páginas usam handlers de evento inline (onclick=, onsubmit=, ...). O helmet,
+      // com useDefaults, define script-src-attr 'none', que os bloquearia; liberamos
+      // aqui de forma coerente com o 'unsafe-inline' já adotado no script-src.
+      'script-src-attr': ["'unsafe-inline'"],
       'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       'font-src': ["'self'", 'https://fonts.gstatic.com'],
       'img-src': ["'self'", 'data:'],
