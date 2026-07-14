@@ -28,6 +28,8 @@
     </p>
     <div id="msg" style="display:none; padding:10px; border-radius:var(--radius-sm); margin-bottom:12px; text-align:center;"></div>
     <form onsubmit="criarAdmin(event)">
+      <input type="text" id="nome" placeholder="Nome completo" required autocomplete="off">
+      <input type="text" id="matricula" placeholder="Matrícula" required autocomplete="off">
       <input type="text" id="usuario" placeholder="Nome de usuário" required autocomplete="off">
       <input type="password" id="senha" placeholder="Senha" required>
       <input type="password" id="confirmar" placeholder="Confirmar senha" required>
@@ -41,11 +43,18 @@
   <script>
     async function criarAdmin(e) {
       e.preventDefault();
+      const nome = document.getElementById('nome').value.trim();
+      const matricula = document.getElementById('matricula').value.trim();
       const usuario = document.getElementById('usuario').value.trim();
       const senha = document.getElementById('senha').value;
       const confirmar = document.getElementById('confirmar').value;
       const msg = document.getElementById('msg');
       const btn = document.getElementById('btn');
+
+      if (!nome || !matricula) {
+        mostrarMsg('Informe seu nome completo e matrícula.', 'erro');
+        return;
+      }
 
       if (senha !== confirmar) {
         mostrarMsg('As senhas não coincidem.', 'erro');
@@ -65,7 +74,7 @@
         const res = await fetch(`${API_BASE_URL}/api/auth/setup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuario, senha })
+          body: JSON.stringify({ usuario, senha, nome, matricula })
         });
         const data = await res.json();
 
