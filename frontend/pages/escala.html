@@ -176,8 +176,10 @@
   <script>
     let PERFIL={}, AGENTES=[], POSTOS=[], ITENS=[], ESCALA_ID=null;
     const PATRULHAS=['1','2','3','4'];
+    const HORARIOS=['24x72','12x36','Diurno','Noturno','Segunda a Sexta','Sábado','Domingo'];
 
     function mesAtual(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+    function fmtMes(ym){ const [y,m]=String(ym).split('-'); return `${m}/${y}`; }
     function msg(t,ok){ const e=document.getElementById('msg'); e.textContent=t; e.style.display='block';
       e.style.background=ok?'#dcfce7':'#fee2e2'; e.style.color=ok?'#166534':'#991b1b'; setTimeout(()=>e.style.display='none',5000); }
 
@@ -236,12 +238,42 @@
         if(d.escala){ ESCALA_ID=d.escala.id; document.getElementById('tituloEscala').value=d.escala.titulo||'';
           document.getElementById('obsEscala').value=d.escala.obs||'';
           document.getElementById('patrulhaDia1').value=String(d.escala.patrulha_dia1||'1');
-          ITENS=(d.itens||[]).map(i=>({patrulha:String(i.patrulha),posto:i.posto,agente_id:i.agente_id,nome:i.nome,matricula:i.matricula,regime:i.regime||'24x72',turno:i.turno||''}));
-        } else { document.getElementById('tituloEscala').value=''; document.getElementById('obsEscala').value=''; document.getElementById('patrulhaDia1').value='1'; }
+          ITENS=(d.itens||[]).map(mapItem);
+        } else {
+          document.getElementById('tituloEscala').value=''; document.getElementById('obsEscala').value=''; document.getElementById('patrulhaDia1').value='1';
+          // Escala do mês ainda não existe: herdar a mais recente anterior para só
+          // trocar nomes/postos e salvar (a escala muda pouco de um mês para o outro).
+          const herdado=await herdarMesAnterior(mes);
+          if(herdado){ document.getElementById('patrulhaDia1').value=String(herdado.patrulha_dia1||'1');
+            msg(`Pré-preenchido a partir de ${fmtMes(herdado.mes_referencia)} — revise e salve.`,true); }
+        }
       } catch {}
       document.getElementById('btnPdfAtual').style.display = ESCALA_ID?'inline-block':'none';
       renderGrid();
       carregarFeriasMes();
+    }
+
+    function mapItem(i){ return {patrulha:String(i.patrulha),posto:i.posto,agente_id:i.agente_id,nome:i.nome_exibicao||i.nome,matricula:i.matricula,regime:i.regime||'24x72',turno:i.turno||'',horario:i.horario||''}; }
+
+    // Pré-preenche ITENS com a escala salva mais recente anterior ao mês pedido
+    // (fallback: a mais recente da lista). Retorna {mes_referencia, patrulha_dia1}
+    // ou null se não houver escala anterior. ESCALA_ID permanece null — só vira
+    // registro ao salvar.
+    async function herdarMesAnterior(mes){
+      try{
+        const r=await fetch(`${API_BASE_URL}/api/escala`,{credentials:'include'});
+        if(!r.ok) return null;
+        const lista=await r.json();
+        if(!Array.isArray(lista)||!lista.length) return null;
+        const anteriores=lista.filter(e=>String(e.mes_referencia)<mes);  // lista vem DESC
+        const base=anteriores.length?anteriores[0]:lista[0];
+        if(!base || String(base.mes_referencia)===mes) return null;
+        const ri=await fetch(`${API_BASE_URL}/api/escala/${base.id}`,{credentials:'include'});
+        if(!ri.ok) return null;
+        const {escala,itens}=await ri.json();
+        ITENS=(itens||[]).map(mapItem);
+        return {mes_referencia:base.mes_referencia, patrulha_dia1:escala.patrulha_dia1};
+      }catch{ return null; }
     }
 
     // ── Férias do mês ─────────────────────────────────────────────────────────
@@ -287,23 +319,23 @@
 
     function optAgentes(sel){ return '<option value="">— agente —</option>'+AGENTES.map(a=>`<option value="${a.id}" ${String(a.id)===String(sel)?'selected':''}>${a.nome}${a.matricula?' ('+a.matricula+')':''}</option>`).join(''); }
     function optPostos(sel,segSex){ return '<option value="">— posto —</option>'+POSTOS.filter(p=>segSex===undefined||p.seg_sex===segSex).map(p=>`<option ${p.nome===sel?'selected':''}>${p.nome}</option>`).join(''); }
+    function optHorarios(){ return '<option value="">— horário —</option>'+HORARIOS.map(h=>`<option value="${h}">${h}</option>`).join(''); }
+
+    // Sufixo de horário exibido após o nome. Usa o campo `horario` (seletor único);
+    // itens antigos sem `horario` caem no sufixo legado derivado de regime/turno.
+    function sufHorario(it){
+      if(it.horario) return it.horario;
+      if(it.regime==='12x36') return '12x36'+(it.turno?'/'+it.turno[0].toUpperCase():'');
+      return '';
+    }
 
     function columnFormHTML(colKey, segSex){
       return `<div class="item-row">
         <select id="form_posto_${colKey}">${optPostos(undefined, segSex)}</select>
         <select id="form_agente_${colKey}">${optAgentes(undefined)}</select>
-        ${segSex?'':`<select id="form_regime_${colKey}" onchange="onFormRegimeChange('${colKey}')">
-          <option value="24x72">24x72</option><option value="12x36">12x36</option></select>
-          <select id="form_turno_${colKey}" style="display:none;">
-            <option value="">turno</option><option value="diurno">Diurno</option><option value="noturno">Noturno</option></select>`}
+        <select id="form_horario_${colKey}">${optHorarios()}</select>
         <button class="add-row" onclick="addItemFromForm('${colKey}')">+ Adicionar</button>
       </div>`;
-    }
-
-    function onFormRegimeChange(colKey){
-      const regime=document.getElementById(`form_regime_${colKey}`).value;
-      const turnoSel=document.getElementById(`form_turno_${colKey}`);
-      if(turnoSel) turnoSel.style.display = regime==='12x36' ? '' : 'none';
     }
 
     function addItemFromForm(colKey){
@@ -312,20 +344,17 @@
       const agenteId=document.getElementById(`form_agente_${colKey}`).value;
       if(!posto || !agenteId){ alert('Selecione posto e agente.'); return; }
       const a=AGENTES.find(x=>String(x.id)===String(agenteId));
-      let regime='seg-sex', turno='';
-      if(patrulha!=='ADM'){
-        regime=document.getElementById(`form_regime_${colKey}`).value;
-        turno = regime==='12x36' ? document.getElementById(`form_turno_${colKey}`).value : '';
-      }
-      ITENS.push({patrulha,posto,agente_id:Number(agenteId),nome:a?a.nome:'',matricula:a?a.matricula:'',regime,turno});
+      const horario=document.getElementById(`form_horario_${colKey}`).value;
+      const regime = patrulha==='ADM' ? 'seg-sex' : '24x72';   // legado (compat)
+      ITENS.push({patrulha,posto,agente_id:Number(agenteId),nome:a?a.nome:'',matricula:a?a.matricula:'',regime,turno:'',horario});
       renderGrid();
     }
 
     function addedItemHTML(it, idx){
-      const reg = it.regime==='12x36' ? ` · 12x36${it.turno?'/'+it.turno[0].toUpperCase():''}` : '';
+      const h=sufHorario(it);
       return `<div class="added-item">
         <div class="ai-body"><div class="ai-nome">${it.nome||'(sem nome)'}${it.matricula?' — '+it.matricula:''}</div>
-        <div class="ai-meta">${it.posto}${reg}</div></div>
+        <div class="ai-meta">${it.posto}${h?' · '+h:''}</div></div>
         <button class="rm" onclick="rmItem(${idx})">Remover</button>
       </div>`;
     }
@@ -403,7 +432,7 @@
           let colBody = postos.length ? '' : '<div style="color:var(--color-hint);font-size:0.8rem;">(sem lançamentos)</div>';
           postos.forEach(posto=>{
             colBody+=`<div class="view-posto">${posto}</div>`;
-            byPosto[posto].forEach(i=>{ const reg=i.regime==='12x36'?` <span style="color:var(--color-hint)">(12x36${i.turno?'/'+i.turno[0].toUpperCase():''})</span>`:'';
+            byPosto[posto].forEach(i=>{ const h=sufHorario(i); const reg=h?` <span style="color:var(--color-hint)">(${h})</span>`:'';
               colBody+=`<div class="view-agente">• ${i.nome_exibicao||i.nome}${reg}</div>`; });
           });
           html+=`<div class="view-col"><div class="view-col-head">Patrulha ${p}${p===dia1View?' (dia 1)':''}</div><div class="view-col-body">${colBody}</div></div>`;
@@ -413,7 +442,7 @@
         if(adm.length){
           const byPosto={}; adm.forEach(i=>{(byPosto[i.posto]=byPosto[i.posto]||[]).push(i);});
           html+='<div class="view-obs"><div class="view-posto">Administrativo — Segunda a Sexta</div>';
-          Object.keys(byPosto).forEach(posto=>{ html+=`<div class="view-agente"><strong>${posto}:</strong> ${byPosto[posto].map(i=>i.nome_exibicao||i.nome).join(', ')}</div>`; });
+          Object.keys(byPosto).forEach(posto=>{ html+=`<div class="view-agente"><strong>${posto}:</strong> ${byPosto[posto].map(i=>{const h=sufHorario(i);return (i.nome_exibicao||i.nome)+(h?' ('+h+')':'');}).join(', ')}</div>`; });
           html+='</div>';
         }
         // Férias do mês na visualização
