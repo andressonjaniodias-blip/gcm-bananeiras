@@ -160,17 +160,37 @@ router.post('/setup', async (req, res) => {
     if (parseInt(rows[0].total) > 0) {
       return res.status(403).json({ error: 'Setup já realizado' });
     }
-    const { usuario, senha } = req.body;
+    const { usuario, senha, nome, matricula } = req.body;
     if (!usuario || !senha) {
       return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
+    }
+    if (!nome || !nome.trim() || !matricula || !matricula.trim()) {
+      return res.status(400).json({ error: 'Nome e matrícula são obrigatórios' });
     }
     const erroSenha = validarSenha(senha);
     if (erroSenha) return res.status(400).json({ error: erroSenha });
     const hash = await bcrypt.hash(senha, 10);
-    await db.query(
-      "INSERT INTO usuarios (usuario, senha, role) VALUES ($1, $2, 'admin')",
-      [usuario, hash]
-    );
+    // Cria o login admin e o registro no efetivo (agentes) juntos, para o primeiro
+    // admin já aparecer na escala. Transação para não deixar login sem agente.
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        "INSERT INTO usuarios (usuario, senha, role) VALUES ($1, $2, 'admin')",
+        [usuario, hash]
+      );
+      await client.query(
+        `INSERT INTO agentes (nome, matricula, cargo, usuario, ativo, atualizado_em)
+         VALUES ($1, $2, 'Guarda Civil Municipal', $3, true, NOW())`,
+        [nome.trim(), matricula.trim(), usuario]
+      );
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
     res.json({ message: 'Administrador criado com sucesso' });
   } catch (error) {
     erroServidor(res, error);
