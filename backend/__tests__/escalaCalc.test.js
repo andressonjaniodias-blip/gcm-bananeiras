@@ -1,4 +1,4 @@
-const { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje } = require('../utils/escalaCalc');
+const { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, rankSetor, compararItensEscala } = require('../utils/escalaCalc');
 
 describe('escalaCalc — rotação 24x72', () => {
   test('cada dia tem exatamente uma patrulha em serviço', () => {
@@ -79,5 +79,60 @@ describe('escalaCalc — distribuição por horário (escalaTrabalhaHoje)', () =
     expect(escalaTrabalhaHoje('24x72', '1', 2, 5)).toBe(false);
     expect(escalaTrabalhaHoje('12x36 Diurno', '1', 5, 1)).toBe(true);
     expect(escalaTrabalhaHoje('', '1', 1, 0)).toBe(true);   // vazio → rodízio
+  });
+});
+
+describe('escalaCalc — ordem dos setores (rankSetor / compararItensEscala)', () => {
+  test('setores nomeados têm a ordem fixa, mesmo com grafia/acento variados', () => {
+    expect(rankSetor('Ronda / Viatura', '24x72')).toBe(0);
+    expect(rankSetor('ronda/viatura', '')).toBe(0);
+    expect(rankSetor('Hospital', '24x72')).toBe(1);
+    expect(rankSetor('Monitoramento', '24x72')).toBe(2);
+    expect(rankSetor('Trânsito', 'Segunda a Sexta')).toBe(3);   // acentuado
+    expect(rankSetor('transito', '')).toBe(3);                  // sem acento
+    expect(rankSetor('Ação Social', 'Segunda a Sexta')).toBe(4);
+    expect(rankSetor('ACAO SOCIAL', '')).toBe(4);
+  });
+
+  test('setor nomeado vence o horário (Ação Social seg-sex ainda vem antes dos demais)', () => {
+    expect(rankSetor('Ação Social', 'Segunda a Sexta')).toBeLessThan(rankSetor('Portaria', 'Segunda a Sexta'));
+  });
+
+  test('setores não nomeados agrupam por horário: seg-sex < diurno < noturno < fim de semana', () => {
+    const segSex   = rankSetor('Portaria', 'Segunda a Sexta');
+    const diurno   = rankSetor('Apoio', '24x72');
+    const noturno  = rankSetor('Base Noturna', '12x36 Noturno');
+    const fimDeSem = rankSetor('Praça', 'Sábado e Domingo (12x36)');
+    expect(segSex).toBeLessThan(diurno);
+    expect(diurno).toBeLessThan(noturno);
+    expect(noturno).toBeLessThan(fimDeSem);
+  });
+
+  test('compararItensEscala: patrulha (1..4, ADM por último) → setor → nome', () => {
+    const itens = [
+      { patrulha: 'ADM', posto: 'Ação Social', horario: 'Segunda a Sexta', nome: 'Zulmira' },
+      { patrulha: '2',   posto: 'Hospital',     horario: '24x72',          nome: 'Bruno'  },
+      { patrulha: '1',   posto: 'Monitoramento',horario: '24x72',          nome: 'Ana'    },
+      { patrulha: '1',   posto: 'Ronda / Viatura', horario: '24x72',       nome: 'Yara'   },
+      { patrulha: '1',   posto: 'Ronda / Viatura', horario: '24x72',       nome: 'Bento'  },
+    ];
+    const ordenados = [...itens].sort(compararItensEscala)
+      .map(i => `${i.patrulha}|${i.posto}|${i.nome}`);
+    expect(ordenados).toEqual([
+      '1|Ronda / Viatura|Bento',   // patrulha 1, setor rank 0, nome A→Z
+      '1|Ronda / Viatura|Yara',
+      '1|Monitoramento|Ana',       // patrulha 1, setor rank 2
+      '2|Hospital|Bruno',          // patrulha 2
+      'ADM|Ação Social|Zulmira',   // ADM por último
+    ]);
+  });
+
+  test('desempate alfabético dentro do mesmo grupo de horário', () => {
+    const itens = [
+      { patrulha: '1', posto: 'Praça Central', horario: '12x36 Noturno', nome: 'X' },
+      { patrulha: '1', posto: 'Base Norte',    horario: '12x36 Noturno', nome: 'Y' },
+    ];
+    const ordenados = [...itens].sort(compararItensEscala).map(i => i.posto);
+    expect(ordenados).toEqual(['Base Norte', 'Praça Central']);
   });
 });
