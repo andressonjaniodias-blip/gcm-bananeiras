@@ -213,7 +213,7 @@
         </div>
       </div>
       <div class="ac-dots" id="acDots">
-        <button class="ac-dot active" onclick="acGoTo(0)" title="Publicações"></button>
+        <button class="ac-dot active" onclick="acDotFirst()" title="Publicações"></button>
         <button class="ac-dot" onclick="acGoTo(1)" title="Extras de hoje"></button>
         <button class="ac-dot" onclick="acGoTo(2)" title="Escala de hoje"></button>
       </div>
@@ -449,17 +449,79 @@
 
     // ── Quadro de Avisos (carrossel) — só é chamado após login bem-sucedido ──
     const AC_SUBS = ['Publicações Oficiais', 'Plantões extras de hoje', 'Escala de serviço de hoje'];
-    let acIndex = 0, acTimer = null;
-    const acSlideCount = () => document.querySelectorAll('#acTrack .ac-slide').length;
+    let acIndex = 0, acTimer = null, acAnimating = false;
+    // Conta apenas os slides reais (o clone usado no loop não entra na contagem).
+    const acSlideCount = () => document.querySelectorAll('#acTrack .ac-slide:not(.ac-clone)').length;
 
+    // Atualiza bolinha ativa + subtítulo do cabeçalho para o índice dado.
+    function acSetActive(idx) {
+      document.querySelectorAll('#acDots .ac-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+      document.getElementById('acHeaderSub').textContent = AC_SUBS[idx];
+    }
+
+    // Navegação "pura": clampa ao intervalo real e aplica. Usada por bolinhas e swipe.
     function acGoTo(i) {
       const total = acSlideCount();
       acIndex = Math.max(0, Math.min(total - 1, i));
       document.getElementById('acTrack').style.transform = `translateX(-${acIndex * 100}%)`;
-      document.querySelectorAll('#acDots .ac-dot').forEach((d, idx) => d.classList.toggle('active', idx === acIndex));
-      document.getElementById('acHeaderSub').textContent = AC_SUBS[acIndex];
+      acSetActive(acIndex);
     }
-    function acNext() { acGoTo((acIndex + 1) % acSlideCount()); }
+
+    // Cria/atualiza o clone do primeiro slide no fim da faixa (usado no loop pra frente).
+    function acSetupClone() {
+      const track = document.getElementById('acTrack');
+      if (!track) return;
+      track.querySelectorAll('.ac-slide.ac-clone').forEach(c => c.remove());
+      const first = track.querySelector('.ac-slide');
+      if (!first) return;
+      const clone = first.cloneNode(true);
+      clone.classList.add('ac-clone');
+      clone.setAttribute('aria-hidden', 'true');
+      clone.removeAttribute('id');
+      clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+      track.appendChild(clone);
+    }
+
+    // Loop contínuo pra frente: desliza do último até o clone e salta pro primeiro real.
+    function acLoopToFirst() {
+      const track = document.getElementById('acTrack');
+      const n = acSlideCount();
+      if (acAnimating) return;
+      // Sem clone disponível (ex.: antes do login) → volta ao comportamento simples.
+      if (!track || !track.querySelector('.ac-slide.ac-clone')) { acGoTo(0); return; }
+
+      acAnimating = true;
+      track.style.transform = `translateX(-${n * 100}%)`; // desliza até o clone (= slide 1)
+      acSetActive(0);
+
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(fallback);
+        track.removeEventListener('transitionend', onEnd);
+        track.classList.add('ac-dragging');   // desativa a transição p/ o salto ser instantâneo
+        acIndex = 0;
+        track.style.transform = 'translateX(0%)';
+        void track.offsetWidth;                // força reflow antes de reativar a transição
+        track.classList.remove('ac-dragging');
+        acAnimating = false;
+      };
+      const onEnd = (e) => { if (e.target === track && e.propertyName === 'transform') finish(); };
+      track.addEventListener('transitionend', onEnd);
+      const fallback = setTimeout(finish, 550); // caso o transitionend não dispare (aba em 2º plano)
+    }
+
+    function acNext() {
+      if (acAnimating) return;
+      if (acIndex === acSlideCount() - 1) acLoopToFirst();
+      else acGoTo(acIndex + 1);
+    }
+    // Clique/toque na primeira bolinha: se estiver no último, segue pra frente (loop); senão, direto.
+    function acDotFirst() {
+      if (acIndex === acSlideCount() - 1) acLoopToFirst();
+      else acGoTo(0);
+    }
     function acPause() { clearInterval(acTimer); }
     function acResume() { acTimer = setInterval(acNext, 6000); }
     acResume();
@@ -635,6 +697,9 @@
           el.innerHTML = '<div class="pub-vazio">Não foi possível carregar a escala de hoje.</div>';
         }
       } catch { document.getElementById('escalaResumo').innerHTML = '<div class="pub-vazio">Não foi possível carregar a escala de hoje.</div>'; }
+
+      // Cria o clone do primeiro slide (já preenchido) para o loop contínuo do carrossel.
+      acSetupClone();
     }
 
     document.addEventListener('click', e => {
