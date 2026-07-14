@@ -71,4 +71,58 @@ function escalaTrabalhaHoje(horario, patrulha, dia, diaSemana, patrulhaDia1 = '1
   return trabalhaNoDia(patrulha, dia, patrulhaDia1);
 }
 
-module.exports = { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje };
+// ── Ordenação dos setores (posto) na escala ──────────────────────────────────
+// Ordem operacional fixa (não alfabética): setores nomeados primeiro, depois os
+// demais agrupados pelo horário do lançamento. Ver rankSetor().
+function _semAcento(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim();
+}
+
+// Lista fixa de setores nomeados (ranks 0..4). Cada entrada casa por palavra-chave
+// no nome normalizado, tolerando variações de grafia/acento.
+const _SETORES_NOMEADOS = [
+  n => n.includes('ronda') || n.includes('viatura'),   // 0 — Ronda / Viatura
+  n => n.includes('hospital'),                          // 1 — Hospital
+  n => n.includes('monitoramento'),                     // 2 — Monitoramento
+  n => n.includes('transito'),                          // 3 — Trânsito
+  n => n.includes('acao social') || (n.includes('acao') && n.includes('social')), // 4 — Ação Social
+];
+
+// Rank de ordenação de um setor. Menor = aparece antes.
+// 0..4  setores nomeados (ordem fixa)
+// 10    demais de "Segunda a Sexta"
+// 20    demais diurnos / rodízio (24x72, 12x36 Diurno, sem horário)
+// 30    noturnos ("12x36 Noturno")
+// 40    fim de semana ("Sábado e Domingo")
+function rankSetor(posto, horario) {
+  const n = _semAcento(posto);
+  for (let i = 0; i < _SETORES_NOMEADOS.length; i++) {
+    if (_SETORES_NOMEADOS[i](n)) return i;
+  }
+  const h = _semAcento(horario);
+  if (h.includes('noturno')) return 30;
+  if (h.includes('sabado') || h.includes('domingo')) return 40;
+  if (h.includes('segunda a sexta')) return 10;
+  return 20; // 24x72, 12x36 Diurno, vazio ou desconhecido
+}
+
+// Peso da patrulha para ordenação: 1..4 na ordem numérica, 'ADM' (e demais) por último.
+function _pesoPatrulha(p) {
+  const s = String(p || '');
+  const num = parseInt(s, 10);
+  return (num >= 1 && num <= 4) ? num : 99;
+}
+
+// Comparador de itens da escala: patrulha (1..4, ADM por último) → rank do setor
+// → nome do setor (alfabético) → nome do agente. Usado no PDF e nas telas.
+function compararItensEscala(a, b) {
+  const dp = _pesoPatrulha(a.patrulha) - _pesoPatrulha(b.patrulha);
+  if (dp) return dp;
+  const dr = rankSetor(a.posto, a.horario) - rankSetor(b.posto, b.horario);
+  if (dr) return dr;
+  const ds = String(a.posto || '').localeCompare(String(b.posto || ''), 'pt-BR');
+  if (ds) return ds;
+  return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
+}
+
+module.exports = { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, rankSetor, compararItensEscala };
