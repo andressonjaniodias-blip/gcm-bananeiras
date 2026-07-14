@@ -5,7 +5,7 @@ const { verificarToken, verificarSupervisor, auditar } = require('../middleware/
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
 const { cabecalhoPDF, rodapePDF, assinaturasPDF, fmtData, NAVY } = require('../utils/pdfLayout');
-const { numeroFolga, trabalhaNoDia } = require('../utils/escalaCalc');
+const { numeroFolga, trabalhaNoDia, escalaTrabalhaHoje } = require('../utils/escalaCalc');
 const { coletarPdfBuffer } = require('../utils/pdfBuffer');
 const { enviarPdfNotificacao } = require('../utils/email');
 
@@ -69,7 +69,8 @@ router.get('/', verificarToken, async (req, res) => {
   } catch (err) { erroServidor(res, err); }
 });
 
-// Escala de hoje (resumo p/ quadro de avisos): patrulha ativa + bloco ADM se dia útil
+// Escala de hoje (resumo p/ quadro de avisos): agentes de serviço no dia, com o
+// horário decidindo a distribuição (Seg–Sex, Sáb/Dom ou rodízio da patrulha).
 router.get('/hoje', verificarToken, async (req, res) => {
   try {
     const dataRef = /^\d{4}-\d{2}-\d{2}$/.test(req.query.data || '')
@@ -77,28 +78,22 @@ router.get('/hoje', verificarToken, async (req, res) => {
       : new Date().toISOString().slice(0, 10);
     const mes = dataRef.slice(0, 7);
     const dia = parseInt(dataRef.slice(8, 10), 10);
+    const diaSemana = new Date(dataRef + 'T12:00:00').getDay();
 
     const { rows: escalas } = await pool.query(`SELECT * FROM escalas WHERE mes_referencia = $1`, [mes]);
     if (!escalas.length) return res.json({ publicado: false });
     const escala = escalas[0];
 
     const patrulhaHoje = PATRULHAS.find(p => trabalhaNoDia(p, dia, escala.patrulha_dia1));
-    const { rows: equipe } = await pool.query(
-      `SELECT posto, nome, matricula, regime, turno, horario FROM escala_itens
-       WHERE escala_id = $1 AND patrulha = $2 ORDER BY posto, nome`,
-      [escala.id, patrulhaHoje]
-    );
 
-    const diaSemana = new Date(dataRef + 'T12:00:00').getDay();
-    let administrativo = [];
-    if (diaSemana >= 1 && diaSemana <= 5) {
-      const { rows } = await pool.query(
-        `SELECT posto, nome, matricula, regime, turno, horario FROM escala_itens
-         WHERE escala_id = $1 AND patrulha = 'ADM' ORDER BY posto, nome`,
-        [escala.id]
-      );
-      administrativo = rows;
-    }
+    const { rows: itens } = await pool.query(
+      `SELECT posto, nome, matricula, patrulha, horario FROM escala_itens
+       WHERE escala_id = $1 ORDER BY posto, nome`,
+      [escala.id]
+    );
+    const equipe = itens
+      .filter(i => escalaTrabalhaHoje(i.horario, i.patrulha, dia, diaSemana, escala.patrulha_dia1))
+      .map(({ posto, nome, matricula, horario }) => ({ posto, nome, matricula, horario }));
 
     res.json({
       publicado: true,
@@ -106,7 +101,6 @@ router.get('/hoje', verificarToken, async (req, res) => {
       numero: escala.numero,
       patrulha_hoje: patrulhaHoje || null,
       equipe,
-      administrativo,
     });
   } catch (err) { erroServidor(res, err); }
 });
