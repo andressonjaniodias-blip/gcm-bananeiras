@@ -5,7 +5,7 @@ const { verificarToken, verificarSupervisor, auditar } = require('../middleware/
 const erroServidor = require('../utils/erroServidor');
 const PDFDocument  = require('pdfkit');
 const { cabecalhoPDF, rodapePDF, assinaturasPDF, fmtData, NAVY } = require('../utils/pdfLayout');
-const { numeroFolga, trabalhaNoDia, escalaTrabalhaHoje } = require('../utils/escalaCalc');
+const { numeroFolga, trabalhaNoDia, escalaTrabalhaHoje, rankSetor, compararItensEscala } = require('../utils/escalaCalc');
 const { coletarPdfBuffer } = require('../utils/pdfBuffer');
 const { enviarPdfNotificacao } = require('../utils/email');
 
@@ -88,12 +88,17 @@ router.get('/hoje', verificarToken, async (req, res) => {
 
     const { rows: itens } = await pool.query(
       `SELECT posto, nome, matricula, patrulha, horario FROM escala_itens
-       WHERE escala_id = $1 ORDER BY posto, nome`,
+       WHERE escala_id = $1 ORDER BY nome`,
       [escala.id]
     );
     const equipe = itens
       .filter(i => escalaTrabalhaHoje(i.horario, i.patrulha, dia, diaSemana, escala.patrulha_dia1))
-      .map(({ posto, nome, matricula, horario }) => ({ posto, nome, matricula, horario }));
+      .map(({ posto, nome, matricula, horario }) => ({ posto, nome, matricula, horario }))
+      // Ordem operacional dos setores (não alfabética); sem coluna de patrulha aqui.
+      .sort((a, b) =>
+        (rankSetor(a.posto, a.horario) - rankSetor(b.posto, b.horario)) ||
+        String(a.posto || '').localeCompare(String(b.posto || ''), 'pt-BR') ||
+        String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
 
     res.json({
       publicado: true,
@@ -112,9 +117,10 @@ router.get('/mes/:mes', verificarToken, async (req, res) => {
     if (!rows.length) return res.json({ escala: null, itens: [] });
     const escala = rows[0];
     const { rows: itens } = await pool.query(
-      `SELECT * FROM escala_itens WHERE escala_id = $1 ORDER BY patrulha, posto, nome`,
+      `SELECT * FROM escala_itens WHERE escala_id = $1 ORDER BY patrulha, nome`,
       [escala.id]
     );
+    itens.sort(compararItensEscala);
     res.json({ escala, itens });
   } catch (err) { erroServidor(res, err); }
 });
@@ -129,9 +135,10 @@ router.get('/:id', verificarToken, async (req, res) => {
          FROM escala_itens ei
          LEFT JOIN agentes a ON a.id = ei.agente_id
         WHERE ei.escala_id = $1
-        ORDER BY ei.patrulha, ei.posto, ei.nome`,
+        ORDER BY ei.patrulha, ei.nome`,
       [req.params.id]
     );
+    itens.sort(compararItensEscala);
     res.json({ escala: rows[0], itens });
   } catch (err) { erroServidor(res, err); }
 });
@@ -224,9 +231,10 @@ async function construirPdfEscala(escala) {
        FROM escala_itens ei
        LEFT JOIN agentes a ON a.id = ei.agente_id
       WHERE ei.escala_id = $1
-      ORDER BY ei.patrulha, ei.posto, ei.nome`,
+      ORDER BY ei.patrulha, ei.nome`,
     [escala.id]
   );
+  itens.sort(compararItensEscala);
 
   const mes = escala.mes_referencia;
   const inicioMes = `${mes}-01`;
