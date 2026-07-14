@@ -121,7 +121,7 @@
     .ac-resumo { padding: 14px 16px; }
     .ac-resumo-titulo { font-weight: 700; font-size: 0.85rem; color: var(--color-text); margin-bottom: 10px; }
     .ac-resumo-pills { display: flex; flex-wrap: wrap; gap: 6px; }
-    .ac-resumo-lista { display: flex; flex-direction: column; gap: 6px; max-height: 190px; overflow-y: auto; text-align: left; }
+    .ac-resumo-lista { display: flex; flex-direction: column; gap: 6px; text-align: left; }
     .ac-rl-item { display: flex; flex-direction: column; padding: 6px 9px; background: var(--color-row-alt, rgba(0,0,0,0.03));
       border: 1px solid var(--color-border); border-radius: 8px; }
     .ac-rl-nome { font-weight: 600; font-size: 0.82rem; color: var(--color-text); }
@@ -694,7 +694,6 @@
               el.innerHTML = '<div class="pub-vazio">Ninguém em serviço hoje.</div>';
             } else {
               el.innerHTML = `
-                ${d.patrulha_hoje ? `<div class="ac-resumo-titulo">Patrulha ${d.patrulha_hoje} de serviço hoje</div>` : ''}
                 <div class="ac-resumo-lista">
                   ${equipe.map(i => `
                     <div class="ac-rl-item">
