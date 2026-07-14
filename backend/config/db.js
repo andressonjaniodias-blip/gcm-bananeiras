@@ -265,11 +265,15 @@ pool.connect()
         agente_id INTEGER,
         nome      TEXT,                         -- snapshot do nome
         matricula TEXT,
-        regime    TEXT DEFAULT '24x72',         -- '24x72' | '12x36' | 'seg-sex'
-        turno     TEXT,                         -- 'diurno' | 'noturno' (12x36)
+        regime    TEXT DEFAULT '24x72',         -- '24x72' | '12x36' | 'seg-sex' (legado)
+        turno     TEXT,                         -- 'diurno' | 'noturno' (12x36) (legado)
         obs       TEXT
       );
     `);
+    // Horário único selecionável na montagem (substitui regime/turno na UI; estes
+    // ficam para compatibilidade). Ex.: '24x72', '12x36', 'Diurno', 'Noturno',
+    // 'Segunda a Sexta', 'Sábado', 'Domingo'.
+    await client.query(`ALTER TABLE escala_itens ADD COLUMN IF NOT EXISTS horario TEXT;`);
 
     // Plantões extras: uma linha por vaga preenchida (máx. 4 por dia)
     await client.query(`
