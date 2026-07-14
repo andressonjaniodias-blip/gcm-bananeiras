@@ -1,4 +1,4 @@
-const { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe } = require('../utils/escalaCalc');
+const { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje } = require('../utils/escalaCalc');
 
 describe('escalaCalc — rotação 24x72', () => {
   test('cada dia tem exatamente uma patrulha em serviço', () => {
@@ -54,5 +54,30 @@ describe('escalaCalc — rotação 24x72', () => {
     // Fevereiro deve respeitar o último dia real do mês
     const fevQ2 = quinzenaDe('2026-02-20');
     expect(fevQ2.fim).toBe('2026-02-28');
+  });
+});
+
+describe('escalaCalc — distribuição por horário (escalaTrabalhaHoje)', () => {
+  // diaSemana: 0=domingo … 6=sábado
+  test('"Segunda a Sexta" só aparece em dia útil', () => {
+    expect(escalaTrabalhaHoje('Segunda a Sexta', '1', 10, 3)).toBe(true);  // quarta
+    expect(escalaTrabalhaHoje('Segunda a Sexta', '1', 10, 1)).toBe(true);  // segunda
+    expect(escalaTrabalhaHoje('Segunda a Sexta', '1', 10, 5)).toBe(true);  // sexta
+    expect(escalaTrabalhaHoje('Segunda a Sexta', '1', 10, 6)).toBe(false); // sábado
+    expect(escalaTrabalhaHoje('Segunda a Sexta', '1', 10, 0)).toBe(false); // domingo
+  });
+
+  test('"Sábado e Domingo (12x36)" só aparece no fim de semana', () => {
+    expect(escalaTrabalhaHoje('Sábado e Domingo (12x36)', '1', 10, 6)).toBe(true);  // sábado
+    expect(escalaTrabalhaHoje('Sábado e Domingo (12x36)', '1', 10, 0)).toBe(true);  // domingo
+    expect(escalaTrabalhaHoje('Sábado e Domingo (12x36)', '1', 10, 3)).toBe(false); // quarta
+  });
+
+  test('24x72 / 12x36 / vazio seguem o rodízio da patrulha (independe do dia da semana)', () => {
+    // Patrulha 1 trabalha no dia 1 e folga 2/3/4 (patrulhaDia1 padrão)
+    expect(escalaTrabalhaHoje('24x72', '1', 1, 4)).toBe(true);
+    expect(escalaTrabalhaHoje('24x72', '1', 2, 5)).toBe(false);
+    expect(escalaTrabalhaHoje('12x36 Diurno', '1', 5, 1)).toBe(true);
+    expect(escalaTrabalhaHoje('', '1', 1, 0)).toBe(true);   // vazio → rodízio
   });
 });
