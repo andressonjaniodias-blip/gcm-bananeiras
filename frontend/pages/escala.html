@@ -12,8 +12,26 @@
   <style>
     .patrulhas-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:12px; }
     @media (max-width:900px){ .patrulhas-grid { grid-template-columns:1fr; } }
-    .patrulha-col { border:1px solid var(--color-border); border-radius:var(--radius-sm); overflow:hidden; }
-    .patrulha-head { background:var(--color-primary); color:#fff; padding:9px; font-weight:700; text-align:center; }
+    .patrulha-col { border:1px solid var(--color-border); border-radius:var(--radius-sm); }
+    .patrulha-head { background:var(--color-primary); color:#fff; padding:9px; font-weight:700; text-align:center;
+      border-radius:calc(var(--radius-sm) - 1px) calc(var(--radius-sm) - 1px) 0 0; }
+    /* Busca inteligente de agente (typeahead) */
+    .ta { position:relative; margin-bottom:5px; }
+    .ta > input[type=text] { margin-bottom:0; }
+    .ta-list { position:absolute; z-index:30; left:0; right:0; top:100%; margin-top:2px; background:var(--bg-card);
+      border:1px solid var(--color-border); border-radius:var(--radius-sm); max-height:210px; overflow-y:auto;
+      display:none; box-shadow:0 6px 18px rgba(0,0,0,0.18); }
+    .ta-list.aberta { display:block; }
+    .ta-item { padding:6px 9px; cursor:pointer; font-size:0.8rem; color:var(--color-text); line-height:1.25; }
+    .ta-item:hover, .ta-item.ativo { background:var(--color-row-alt); }
+    .ta-item .ta-mat { color:var(--color-text-muted); font-size:0.72rem; }
+    .ta-empty { padding:6px 9px; font-size:0.76rem; color:var(--color-text-muted); }
+    /* Botões-ícone (lista de escalas salvas) */
+    .icon-btn { background:none; border:1px solid var(--color-border); border-radius:var(--radius-sm); cursor:pointer;
+      width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; font-size:0.95rem; padding:0;
+      color:var(--color-text); }
+    .icon-btn:hover { background:var(--color-row-alt); }
+    .icon-btn.danger:hover { background:var(--color-danger-bg); }
     .patrulha-body { padding:8px; display:flex; flex-direction:column; gap:8px; }
     .item-row { background:var(--color-row-alt); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:8px; }
     .item-row select, .item-row input { width:100%; margin-bottom:5px; padding:5px 7px; font-size:0.8rem;
@@ -30,7 +48,6 @@
     .added-item .ai-meta { font-size:0.72rem; color:var(--color-text-muted); }
     .added-item .rm { background:var(--color-danger); color:#fff; border:none; border-radius:var(--radius-sm); padding:4px 8px;
       cursor:pointer; font-size:0.72rem; flex-shrink:0; }
-    .adm-box { border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:10px; margin-top:14px; }
     .msg { padding:10px; border-radius:var(--radius-sm); margin-top:10px; display:none; font-size:0.88rem; }
 
     /* Visualização da escala (modal) */
@@ -96,11 +113,6 @@
 
       <div class="patrulhas-grid" id="grid"></div>
 
-      <div class="adm-box">
-        <div style="font-weight:700;margin-bottom:6px;">Administrativo — Segunda a Sexta</div>
-        <div class="patrulha-body" id="admBody" style="padding:0;"></div>
-      </div>
-
       <div class="campo-group" style="margin-top:12px;"><label>Observações</label>
         <textarea id="obsEscala" rows="2"></textarea></div>
 
@@ -139,14 +151,10 @@
       <div class="card">
         <h3 style="margin-top:0;font-size:1rem;">Adicionar Posto / Setor</h3>
         <p style="font-size:0.82rem;color:var(--color-hint);margin:0 0 10px;">
-          Postos ficam disponíveis nos seletores da escala. Marque "Administrativo" para postos de Segunda a Sexta.</p>
+          Postos ficam disponíveis nos seletores da escala, em todas as patrulhas.</p>
         <div class="grid-form">
           <div class="campo-group" style="margin:0;"><label>Nome do posto</label>
             <input type="text" id="novoPosto" placeholder="Ex: Escola Municipal X"></div>
-          <div class="campo-group" style="margin:0;">
-            <label style="display:flex;align-items:center;gap:7px;font-size:0.85rem;cursor:pointer;">
-              <input type="checkbox" id="novoPostoSegSex"> Administrativo (Seg–Sex)</label>
-          </div>
           <div class="campo-group" style="margin:0;"><label>&nbsp;</label>
             <button class="btn-adicionar" style="width:100%;margin-top:0;" onclick="addPosto()">Adicionar Posto</button></div>
         </div>
@@ -176,7 +184,7 @@
   <script>
     let PERFIL={}, AGENTES=[], POSTOS=[], ITENS=[], ESCALA_ID=null;
     const PATRULHAS=['1','2','3','4'];
-    const HORARIOS=['24x72','12x36','Diurno','Noturno','Segunda a Sexta','Sábado','Domingo'];
+    const HORARIOS=['12x36 Diurno','12x36 Noturno','24x72','Segunda a Sexta','Sábado e Domingo (12x36)'];
 
     function mesAtual(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
     function fmtMes(ym){ const [y,m]=String(ym).split('-'); return `${m}/${y}`; }
@@ -238,7 +246,7 @@
         if(d.escala){ ESCALA_ID=d.escala.id; document.getElementById('tituloEscala').value=d.escala.titulo||'';
           document.getElementById('obsEscala').value=d.escala.obs||'';
           document.getElementById('patrulhaDia1').value=String(d.escala.patrulha_dia1||'1');
-          ITENS=(d.itens||[]).map(mapItem);
+          ITENS=itensDePatrulhas(d.itens);
         } else {
           document.getElementById('tituloEscala').value=''; document.getElementById('obsEscala').value=''; document.getElementById('patrulhaDia1').value='1';
           // Escala do mês ainda não existe: herdar a mais recente anterior para só
@@ -254,6 +262,8 @@
     }
 
     function mapItem(i){ return {patrulha:String(i.patrulha),posto:i.posto,agente_id:i.agente_id,nome:i.nome_exibicao||i.nome,matricula:i.matricula,regime:i.regime||'24x72',turno:i.turno||'',horario:i.horario||''}; }
+    // Mantém só lançamentos das patrulhas 1–4 (descarta itens legados 'ADM', que não têm mais bloco próprio).
+    function itensDePatrulhas(itens){ return (itens||[]).map(mapItem).filter(i=>PATRULHAS.includes(i.patrulha)); }
 
     // Pré-preenche ITENS com a escala salva mais recente anterior ao mês pedido
     // (fallback: a mais recente da lista). Retorna {mes_referencia, patrulha_dia1}
@@ -271,7 +281,7 @@
         const ri=await fetch(`${API_BASE_URL}/api/escala/${base.id}`,{credentials:'include'});
         if(!ri.ok) return null;
         const {escala,itens}=await ri.json();
-        ITENS=(itens||[]).map(mapItem);
+        ITENS=itensDePatrulhas(itens);
         return {mes_referencia:base.mes_referencia, patrulha_dia1:escala.patrulha_dia1};
       }catch{ return null; }
     }
@@ -317,9 +327,75 @@
     async function rmFeria(id){ if(!confirm('Remover este registro de férias?'))return;
       const r=await fetch(`${API_BASE_URL}/api/ferias/${id}`,{method:'DELETE',credentials:'include'}); if(r.ok) carregarFeriasMes(); }
 
-    function optAgentes(sel){ return '<option value="">— agente —</option>'+AGENTES.map(a=>`<option value="${a.id}" ${String(a.id)===String(sel)?'selected':''}>${a.nome}${a.matricula?' ('+a.matricula+')':''}</option>`).join(''); }
-    function optPostos(sel,segSex){ return '<option value="">— posto —</option>'+POSTOS.filter(p=>segSex===undefined||p.seg_sex===segSex).map(p=>`<option ${p.nome===sel?'selected':''}>${p.nome}</option>`).join(''); }
+    // Todos os postos ativos ficam disponíveis em qualquer patrulha.
+    function optPostos(sel){ return '<option value="">— posto —</option>'+POSTOS.map(p=>`<option ${p.nome===sel?'selected':''}>${p.nome}</option>`).join(''); }
     function optHorarios(){ return '<option value="">— horário —</option>'+HORARIOS.map(h=>`<option value="${h}">${h}</option>`).join(''); }
+
+    // ── Busca inteligente de agente (typeahead, ignora acento/maiúsculas) ──────
+    function normNome(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim(); }
+
+    function filtrarAgentes(colKey){
+      const inp=document.getElementById(`form_agente_${colKey}`);
+      const box=document.getElementById(`ta_${colKey}`);
+      if(!inp||!box) return;
+      document.getElementById(`form_agenteid_${colKey}`).value='';   // texto mudou → invalida seleção
+      const q=normNome(inp.value);
+      const achados=(q?AGENTES.filter(a=>normNome(a.nome).includes(q)||String(a.matricula||'').toLowerCase().includes(q)):AGENTES).slice(0,8);
+      if(!achados.length){ box.innerHTML='<div class="ta-empty">Nenhum agente encontrado.</div>'; box.classList.add('aberta'); return; }
+      box.innerHTML=achados.map((a,i)=>`<div class="ta-item${i===0?' ativo':''}" data-id="${a.id}"
+        onmousedown="event.preventDefault();escolherAgente('${colKey}',${a.id})">${a.nome}${a.matricula?` <span class="ta-mat">${a.matricula}</span>`:''}</div>`).join('');
+      box.classList.add('aberta');
+    }
+    function escolherAgente(colKey,id){
+      const a=AGENTES.find(x=>String(x.id)===String(id)); if(!a) return;
+      document.getElementById(`form_agente_${colKey}`).value=a.nome;
+      document.getElementById(`form_agenteid_${colKey}`).value=a.id;
+      const box=document.getElementById(`ta_${colKey}`); if(box) box.classList.remove('aberta');
+    }
+    function fecharAgentes(colKey){ setTimeout(()=>{ const b=document.getElementById(`ta_${colKey}`); if(b) b.classList.remove('aberta'); },150); }
+    function navAgentes(e,colKey){
+      const box=document.getElementById(`ta_${colKey}`); if(!box) return;
+      const itens=[...box.querySelectorAll('.ta-item')]; if(!itens.length) return;
+      let idx=itens.findIndex(el=>el.classList.contains('ativo'));
+      if(e.key==='ArrowDown'){ e.preventDefault(); idx=Math.min(itens.length-1,idx+1); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); idx=Math.max(0,idx-1); }
+      else if(e.key==='Enter'){ if(box.classList.contains('aberta')&&itens[idx<0?0:idx]){ e.preventDefault(); escolherAgente(colKey, itens[idx<0?0:idx].dataset.id); } return; }
+      else if(e.key==='Escape'){ box.classList.remove('aberta'); return; }
+      else return;
+      itens.forEach(el=>el.classList.remove('ativo')); if(itens[idx]){ itens[idx].classList.add('ativo'); itens[idx].scrollIntoView({block:'nearest'}); }
+    }
+
+    function columnFormHTML(colKey){
+      return `<div class="item-row">
+        <select id="form_posto_${colKey}">${optPostos(undefined)}</select>
+        <div class="ta">
+          <input id="form_agente_${colKey}" type="text" autocomplete="off" placeholder="Digite nome ou sobrenome…"
+                 oninput="filtrarAgentes('${colKey}')" onfocus="filtrarAgentes('${colKey}')"
+                 onkeydown="navAgentes(event,'${colKey}')" onblur="fecharAgentes('${colKey}')">
+          <input type="hidden" id="form_agenteid_${colKey}">
+          <div class="ta-list" id="ta_${colKey}"></div>
+        </div>
+        <select id="form_horario_${colKey}">${optHorarios()}</select>
+        <button class="add-row" onclick="addItemFromForm('${colKey}')">+ Adicionar</button>
+      </div>`;
+    }
+
+    function addItemFromForm(colKey){
+      const posto=document.getElementById(`form_posto_${colKey}`).value;
+      let agenteId=document.getElementById(`form_agenteid_${colKey}`).value;
+      if(!agenteId){
+        // Sem seleção: aceitar só se o texto casar exatamente e de forma única.
+        const q=normNome(document.getElementById(`form_agente_${colKey}`).value);
+        const iguais=AGENTES.filter(a=>normNome(a.nome)===q);
+        if(q && iguais.length===1) agenteId=String(iguais[0].id);
+      }
+      if(!posto){ alert('Selecione o posto.'); return; }
+      if(!agenteId){ alert('Selecione um agente da lista.'); return; }
+      const a=AGENTES.find(x=>String(x.id)===String(agenteId));
+      const horario=document.getElementById(`form_horario_${colKey}`).value;
+      ITENS.push({patrulha:colKey,posto,agente_id:Number(agenteId),nome:a?a.nome:'',matricula:a?a.matricula:'',regime:'24x72',turno:'',horario});
+      renderGrid();
+    }
 
     // Sufixo de horário exibido após o nome. Usa o campo `horario` (seletor único);
     // itens antigos sem `horario` caem no sufixo legado derivado de regime/turno.
@@ -327,27 +403,6 @@
       if(it.horario) return it.horario;
       if(it.regime==='12x36') return '12x36'+(it.turno?'/'+it.turno[0].toUpperCase():'');
       return '';
-    }
-
-    function columnFormHTML(colKey, segSex){
-      return `<div class="item-row">
-        <select id="form_posto_${colKey}">${optPostos(undefined, segSex)}</select>
-        <select id="form_agente_${colKey}">${optAgentes(undefined)}</select>
-        <select id="form_horario_${colKey}">${optHorarios()}</select>
-        <button class="add-row" onclick="addItemFromForm('${colKey}')">+ Adicionar</button>
-      </div>`;
-    }
-
-    function addItemFromForm(colKey){
-      const patrulha = colKey==='ADM' ? 'ADM' : colKey;
-      const posto=document.getElementById(`form_posto_${colKey}`).value;
-      const agenteId=document.getElementById(`form_agente_${colKey}`).value;
-      if(!posto || !agenteId){ alert('Selecione posto e agente.'); return; }
-      const a=AGENTES.find(x=>String(x.id)===String(agenteId));
-      const horario=document.getElementById(`form_horario_${colKey}`).value;
-      const regime = patrulha==='ADM' ? 'seg-sex' : '24x72';   // legado (compat)
-      ITENS.push({patrulha,posto,agente_id:Number(agenteId),nome:a?a.nome:'',matricula:a?a.matricula:'',regime,turno:'',horario});
-      renderGrid();
     }
 
     function addedItemHTML(it, idx){
@@ -367,14 +422,11 @@
         const linhas=ITENS.map((it,idx)=>({it,idx})).filter(x=>x.it.patrulha===p);
         col.innerHTML=`<div class="patrulha-head">Patrulha ${p}${p===dia1?' (dia 1)':''}</div>
           <div class="patrulha-body">
-            ${columnFormHTML(p,false)}
+            ${columnFormHTML(p)}
             <div class="added-list">${linhas.map(x=>addedItemHTML(x.it,x.idx)).join('')}</div>
           </div>`;
         grid.appendChild(col);
       });
-      const admBody=document.getElementById('admBody');
-      const admLin=ITENS.map((it,idx)=>({it,idx})).filter(x=>x.it.patrulha==='ADM');
-      admBody.innerHTML = columnFormHTML('ADM',true) + `<div class="added-list">${admLin.map(x=>addedItemHTML(x.it,x.idx)).join('')}</div>`;
     }
 
     function rmItem(idx){ ITENS.splice(idx,1); renderGrid(); }
@@ -407,10 +459,10 @@
           <div class="hist-item-icon">📅</div>
           <div class="hist-item-body"><div class="hist-item-title">${e.mes_referencia}${e.titulo?' — '+e.titulo:''}</div>
           <div class="hist-item-meta"><span>${e.numero||''}</span><span>·</span><span>por ${e.criado_por||'—'}</span></div></div>
-          <div class="hist-item-right" style="display:flex;gap:6px;" onclick="event.stopPropagation()">
-            ${podeGerenciar?`<button class="add-row" style="width:auto;padding:6px 10px;" onclick="editarEscala('${e.mes_referencia}')">Editar</button>`:''}
-            <button class="add-row" style="width:auto;padding:6px 10px;background:var(--color-primary);" onclick="baixarPDF('${API_BASE_URL}/api/escala/${e.id}/pdf','escala-${e.mes_referencia}.pdf')">PDF</button>
-            ${podeGerenciar?`<button class="rm" style="width:auto;padding:6px 10px;" onclick="excluirEscala(${e.id})">Excluir</button>`:''}
+          <div class="hist-item-right" style="display:flex;gap:6px;align-items:center;" onclick="event.stopPropagation()">
+            ${podeGerenciar?`<button class="icon-btn" title="Editar" aria-label="Editar" onclick="editarEscala('${e.mes_referencia}')">✏️</button>`:''}
+            <button class="icon-btn" title="Baixar PDF" aria-label="Baixar PDF" onclick="baixarPDF('${API_BASE_URL}/api/escala/${e.id}/pdf','escala-${e.mes_referencia}.pdf')">⬇️</button>
+            ${podeGerenciar?`<button class="icon-btn danger" title="Excluir" aria-label="Excluir" onclick="excluirEscala(${e.id})">🗑️</button>`:''}
           </div></div>`).join('')+'</div>';
       }catch{ cont.innerHTML='<p style="color:var(--color-danger);text-align:center;">Erro.</p>'; }
     }
@@ -468,15 +520,13 @@
       if(!POSTOS.length){ c.innerHTML='<p style="color:var(--color-hint);text-align:center;">Nenhum posto cadastrado.</p>'; return; }
       c.innerHTML=POSTOS.map(p=>`<div class="posto-item">
         <span class="pi-nome">${p.nome}</span>
-        ${p.seg_sex?'<span class="badge badge-supervisor">Seg–Sex</span>':'<span class="badge badge-usuario">Plantão</span>'}
         <button class="btn-rm-soft" onclick="rmPosto(${p.id})">Remover</button>
       </div>`).join('');
     }
     async function addPosto(){
       const nome=document.getElementById('novoPosto').value.trim(); if(!nome)return;
-      const seg=document.getElementById('novoPostoSegSex').checked;
-      const r=await fetch(`${API_BASE_URL}/api/escala/postos`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome,seg_sex:seg})});
-      if(r.ok){ document.getElementById('novoPosto').value=''; document.getElementById('novoPostoSegSex').checked=false; await carregarPostos(); renderGrid(); }
+      const r=await fetch(`${API_BASE_URL}/api/escala/postos`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome})});
+      if(r.ok){ document.getElementById('novoPosto').value=''; await carregarPostos(); renderGrid(); }
     }
     async function rmPosto(id){ if(!confirm('Remover este posto da lista?'))return; const r=await fetch(`${API_BASE_URL}/api/escala/postos/${id}`,{method:'DELETE',credentials:'include'}); if(r.ok){ await carregarPostos(); renderGrid(); } }
 
