@@ -63,6 +63,34 @@ router.get('/meu', verificarToken, async (req, res) => {
   } catch (err) { erroServidor(res, err); }
 });
 
+// Auto-cadastro do próprio agente — para logins que ainda não têm registro no
+// efetivo (ex.: admin criado no setup). Qualquer autenticado cria o SEU registro,
+// vinculado ao próprio usuário; uma linha por usuário (trava de duplicidade).
+router.post('/meu', verificarToken, async (req, res) => {
+  try {
+    const usuario = req.usuario?.usuario;
+    if (!usuario) return res.status(401).json({ error: 'Sessão inválida.' });
+    const { nome, matricula, cargo, lotacao, turno } = req.body;
+    if (!nome || !nome.trim() || !matricula || !matricula.trim()) {
+      return res.status(400).json({ error: 'Nome e matrícula são obrigatórios.' });
+    }
+    const { rows: existe } = await db.query('SELECT 1 FROM agentes WHERE usuario = $1', [usuario]);
+    if (existe.length) return res.status(409).json({ error: 'Você já tem cadastro de agente.' });
+    const { rows } = await db.query(
+      `INSERT INTO agentes (nome, matricula, cargo, usuario, ativo, lotacao, turno, atualizado_em)
+       VALUES ($1,$2,$3,$4,true,$5,$6,NOW())
+       RETURNING ${CAMPOS_AGENTE}`,
+      [nome.trim(), matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal', usuario,
+       lotacao?.trim() || null, turno || null]
+    );
+    await auditar(req, 'CRIAR_AGENTE', `${rows[0].nome} (mat. ${rows[0].matricula}) — auto-cadastro`);
+    res.status(201).json(decifrarAgente(rows[0]));
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Matrícula já cadastrada para outro agente.' });
+    erroServidor(res, err);
+  }
+});
+
 // Criar agente
 router.post('/', verificarToken, exigirAdmin, async (req, res) => {
   try {
