@@ -11,6 +11,15 @@ const { enviarPdfNotificacao } = require('../utils/email');
 
 const PATRULHAS = ['1', '2', '3', '4'];
 
+// Sufixo de horário exibido após o nome do agente. Usa o campo `horario`
+// (novo seletor único). Para itens antigos sem `horario`, cai no sufixo legado
+// derivado de `regime`/`turno`. Retorna '' quando não há nada a exibir.
+function sufixoHorario(i) {
+  if (i.horario) return ` (${i.horario})`;
+  if (i.regime === '12x36') return ` (12x36${i.turno ? '/' + i.turno[0].toUpperCase() : ''})`;
+  return '';
+}
+
 function nomeMes(mesRef) {
   const [ano, mes] = String(mesRef).split('-');
   const nomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -75,7 +84,7 @@ router.get('/hoje', verificarToken, async (req, res) => {
 
     const patrulhaHoje = PATRULHAS.find(p => trabalhaNoDia(p, dia, escala.patrulha_dia1));
     const { rows: equipe } = await pool.query(
-      `SELECT posto, nome, matricula, regime, turno FROM escala_itens
+      `SELECT posto, nome, matricula, regime, turno, horario FROM escala_itens
        WHERE escala_id = $1 AND patrulha = $2 ORDER BY posto, nome`,
       [escala.id, patrulhaHoje]
     );
@@ -84,7 +93,7 @@ router.get('/hoje', verificarToken, async (req, res) => {
     let administrativo = [];
     if (diaSemana >= 1 && diaSemana <= 5) {
       const { rows } = await pool.query(
-        `SELECT posto, nome, matricula, regime, turno FROM escala_itens
+        `SELECT posto, nome, matricula, regime, turno, horario FROM escala_itens
          WHERE escala_id = $1 AND patrulha = 'ADM' ORDER BY posto, nome`,
         [escala.id]
       );
@@ -174,10 +183,10 @@ router.post('/', verificarToken, verificarSupervisor, async (req, res) => {
     for (const it of (itens || [])) {
       if (!it.patrulha || !it.posto || !it.nome) continue;
       await client.query(
-        `INSERT INTO escala_itens (escala_id, patrulha, posto, agente_id, nome, matricula, regime, turno, obs)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        `INSERT INTO escala_itens (escala_id, patrulha, posto, agente_id, nome, matricula, regime, turno, horario, obs)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         [escalaId, String(it.patrulha), it.posto, it.agente_id || null, it.nome,
-         it.matricula || null, it.regime || '24x72', it.turno || null, it.obs || null]
+         it.matricula || null, it.regime || '24x72', it.turno || null, it.horario || null, it.obs || null]
       );
     }
 
@@ -272,9 +281,8 @@ async function construirPdfEscala(escala) {
            .text(posto.toUpperCase(), x + 2, y, { width: colW - 4 });
         y = doc.y + 1;
         porPosto[posto].forEach(i => {
-          const reg = i.regime === '12x36' ? ` (12x36${i.turno ? '/' + i.turno[0].toUpperCase() : ''})` : '';
           doc.fillColor('#222').fontSize(8).font('Helvetica')
-             .text(`• ${i.nome_exibicao || i.nome}${reg}`, x + 4, y, { width: colW - 6 });
+             .text(`• ${i.nome_exibicao || i.nome}${sufixoHorario(i)}`, x + 4, y, { width: colW - 6 });
           y = doc.y + 0.5;
         });
         y += 2;
@@ -295,7 +303,7 @@ async function construirPdfEscala(escala) {
       const porPosto = {};
       adm.forEach(i => { (porPosto[i.posto] = porPosto[i.posto] || []).push(i); });
       Object.keys(porPosto).forEach(posto => {
-        const nomes = porPosto[posto].map(i => i.nome_exibicao || i.nome).join(', ');
+        const nomes = porPosto[posto].map(i => `${i.nome_exibicao || i.nome}${sufixoHorario(i)}`).join(', ');
         doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text(`${posto}: `, { continued: true })
            .fillColor('#222').font('Helvetica').text(nomes);
       });
