@@ -58,4 +58,17 @@ function quinzenaDe(dataStr) {
   };
 }
 
-module.exports = { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe };
+// Um lançamento (agente/posto) está de serviço no dia? O horário selecionado na
+// montagem decide a distribuição: 'Segunda a Sexta' → dias úteis; 'Sábado e Domingo'
+// → fim de semana; os demais (24x72, 12x36, vazio) seguem o rodízio da patrulha.
+// diaSemana: 0=domingo … 6=sábado (Date.getDay()).
+function escalaTrabalhaHoje(horario, patrulha, dia, diaSemana, patrulhaDia1 = '1') {
+  const h = (horario || '').toLowerCase();
+  if (h.includes('segunda a sexta')) return diaSemana >= 1 && diaSemana <= 5;
+  if (h.includes('sábado') || h.includes('sabado') || h.includes('domingo')) {
+    return diaSemana === 0 || diaSemana === 6;
+  }
+  return trabalhaNoDia(patrulha, dia, patrulhaDia1);
+}
+
+module.exports = { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje };
