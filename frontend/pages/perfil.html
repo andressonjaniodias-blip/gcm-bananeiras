@@ -320,6 +320,51 @@
       </div>
     </div>
 
+    <!-- Completar cadastro de agente (só aparece quando o login ainda não tem registro no efetivo) -->
+    <div class="card" id="cardVirarAgente" style="display:none;">
+      <div class="card-title">🪖 Completar cadastro de agente</div>
+      <p style="font-size:0.83rem;color:var(--color-text-muted);margin-bottom:16px;">
+        Sua conta ainda não está vinculada ao efetivo da GCM, por isso você não aparece na escala de
+        serviço. Preencha seus dados abaixo para se registrar como agente. Isso <strong>não</strong>
+        cria uma nova conta — apenas vincula seu cadastro de agente a este mesmo login.
+      </p>
+      <form onsubmit="virarAgente(event)" autocomplete="off">
+        <div class="fg-2" style="margin-bottom:14px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>Nome completo *</label>
+            <input type="text" id="agNome" placeholder="Nome como aparece na escala" maxlength="120" required>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Matrícula *</label>
+            <input type="text" id="agMatricula" placeholder="Matrícula funcional" maxlength="40" required>
+          </div>
+        </div>
+        <div class="fg-2" style="margin-bottom:14px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>Cargo / Função</label>
+            <input type="text" id="agCargo" placeholder="Guarda Civil Municipal" maxlength="80">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Lotação / Setor</label>
+            <input type="text" id="agLotacao" placeholder="Ex.: Ronda / Viatura" maxlength="80">
+          </div>
+        </div>
+        <div class="field">
+          <label>Turno</label>
+          <select id="agTurno">
+            <option value="">Não definido</option>
+            <option value="Matutino">Matutino</option>
+            <option value="Vespertino">Vespertino</option>
+            <option value="Noturno">Noturno</option>
+            <option value="Integral">Integral</option>
+            <option value="Escala 12x36">Escala 12×36</option>
+            <option value="Escala 24x72">Escala 24×72</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-primary">Registrar como agente</button>
+      </form>
+    </div>
+
     <!-- Alterar senha -->
     <div class="card">
       <div class="card-title">🔑 Alterar Senha</div>
@@ -437,11 +482,13 @@
             const inicial = (perfil.usuario || '?')[0].toUpperCase();
             renderAvatar(null, inicial);
             document.getElementById('perfilNome').textContent   = perfil.usuario;
+            document.getElementById('cardVirarAgente').style.display = '';
           }
         } else {
           const inicial = (perfil.usuario || '?')[0].toUpperCase();
           renderAvatar(null, inicial);
           document.getElementById('perfilNome').textContent   = perfil.usuario;
+          document.getElementById('cardVirarAgente').style.display = '';
         }
       } catch { window.location.href = '/'; }
 
@@ -478,6 +525,40 @@
       document.getElementById('viewContato').style.display = '';
       document.getElementById('formContatoWrap').style.display = 'none';
       document.getElementById('btnEditarContato').style.display = '';
+    }
+
+    // Auto-cadastro no efetivo: cria o registro de agente vinculado a este login.
+    async function virarAgente(e) {
+      e.preventDefault();
+      const nome      = document.getElementById('agNome').value.trim();
+      const matricula = document.getElementById('agMatricula').value.trim();
+      if (!nome || !matricula) { toast('Informe nome e matrícula.', 'erro'); return; }
+      const payload = {
+        nome, matricula,
+        cargo:   document.getElementById('agCargo').value.trim() || null,
+        lotacao: document.getElementById('agLotacao').value.trim() || null,
+        turno:   document.getElementById('agTurno').value || null,
+      };
+      const btn = e.target.querySelector('button[type="submit"]');
+      if (btn) { btn.disabled = true; btn.textContent = 'Registrando...'; }
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/agentes/meu`, {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          toast('Cadastro de agente criado! Você já aparece na escala.', 'ok');
+          setTimeout(() => window.location.reload(), 1200);
+        } else {
+          toast(data.error || 'Erro ao registrar como agente.', 'erro');
+          if (btn) { btn.disabled = false; btn.textContent = 'Registrar como agente'; }
+        }
+      } catch {
+        toast('Erro de conexão.', 'erro');
+        if (btn) { btn.disabled = false; btn.textContent = 'Registrar como agente'; }
+      }
     }
 
     async function salvarContato(e) {
