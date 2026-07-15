@@ -80,7 +80,8 @@ app.use(helmet({
       'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       'font-src': ["'self'", 'https://fonts.gstatic.com'],
       'img-src': ["'self'", 'data:'],
-      'connect-src': ["'self'"],
+      // Reverse-geocoding do botão "Usar localização atual" (frontend/assets/js/geolocalizacao.js).
+      'connect-src': ["'self'", 'https://nominatim.openstreetmap.org'],
       'object-src': ["'none'"],
       'frame-ancestors': ["'self'"],
       'form-action': ["'self'"],
