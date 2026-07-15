@@ -5,6 +5,7 @@ const validarBO = [
   body('dadosOcorrencia').notEmpty().withMessage('Dados da ocorrência são obrigatórios'),
   body('vitimas').isArray().withMessage('Vítimas deve ser um array'),
   body('suspeitos').isArray().withMessage('Suspeitos deve ser um array'),
+  body('testemunhas').optional().isArray().withMessage('Testemunhas deve ser um array'),
   body('relato').notEmpty().withMessage('Relato é obrigatório'),
   
   (req, res, next) => {
