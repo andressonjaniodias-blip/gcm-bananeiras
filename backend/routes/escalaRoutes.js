@@ -3,28 +3,11 @@ const router  = express.Router();
 const pool    = require('../config/db');
 const { verificarToken, verificarSupervisor, auditar } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
-const PDFDocument  = require('pdfkit');
-const { cabecalhoPDF, rodapePDF, assinaturasPDF, fmtData, NAVY } = require('../utils/pdfLayout');
-const { numeroFolga, trabalhaNoDia, escalaTrabalhaHoje, rankSetor, compararItensEscala } = require('../utils/escalaCalc');
-const { coletarPdfBuffer } = require('../utils/pdfBuffer');
+const { numeroFolga, trabalhaNoDia, escalaTrabalhaHoje, montarCalendarioMes, rankSetor, compararItensEscala } = require('../utils/escalaCalc');
+const { desenharPdfEscala, nomeMes } = require('../utils/escalaPdf');
 const { enviarPdfNotificacao } = require('../utils/email');
 
 const PATRULHAS = ['1', '2', '3', '4'];
-
-// Sufixo de horário exibido após o nome do agente. Usa o campo `horario`
-// (novo seletor único). Para itens antigos sem `horario`, cai no sufixo legado
-// derivado de `regime`/`turno`. Retorna '' quando não há nada a exibir.
-function sufixoHorario(i) {
-  if (i.horario) return ` (${i.horario})`;
-  if (i.regime === '12x36') return ` (12x36${i.turno ? '/' + i.turno[0].toUpperCase() : ''})`;
-  return '';
-}
-
-function nomeMes(mesRef) {
-  const [ano, mes] = String(mesRef).split('-');
-  const nomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  return `${nomes[parseInt(mes, 10) - 1] || mes}/${ano}`;
-}
 
 // ── Postos (lista configurável) ──────────────────────────────────────────────
 router.get('/postos', verificarToken, async (req, res) => {
@@ -224,7 +207,8 @@ router.delete('/:id', verificarToken, verificarSupervisor, async (req, res) => {
   } catch (err) { erroServidor(res, err); }
 });
 
-// Monta o PDF da escala mensal (colunas = Patrulhas 1..4 + bloco Seg–Sex)
+// Monta o PDF da escala mensal (calendário dia a dia). Busca os dados no banco e
+// delega o desenho a desenharPdfEscala (separado para permitir teste sem banco).
 async function construirPdfEscala(escala) {
   const { rows: itens } = await pool.query(
     `SELECT ei.*, COALESCE(NULLIF(a.usuario, ''), ei.nome) AS nome_exibicao
@@ -234,7 +218,6 @@ async function construirPdfEscala(escala) {
       ORDER BY ei.patrulha, ei.nome`,
     [escala.id]
   );
-  itens.sort(compararItensEscala);
 
   const mes = escala.mes_referencia;
   const inicioMes = `${mes}-01`;
@@ -245,105 +228,46 @@ async function construirPdfEscala(escala) {
     [inicioMes, fimMes]
   );
 
-  const doc = new PDFDocument({ margins: { top: 55, bottom: 65, left: 40, right: 40 }, size: 'A4', layout: 'landscape', bufferPages: true });
-  const bufferPromise = coletarPdfBuffer(doc);
-
-  {
-    const margem = cabecalhoPDF(doc, { titulo: `Escala de Serviço — ${nomeMes(escala.mes_referencia)}`, subtitulo: escala.titulo || 'Guarda Civil Municipal de Bananeiras/PB' });
-    const pageW  = doc.page.width;
-    const conteudoW = pageW - margem * 2;
-
-    // 4 colunas para as patrulhas
-    const colGap = 10;
-    const colW   = (conteudoW - colGap * 3) / 4;
-    const topY   = doc.y + 4;
-    let maxColY  = topY;
-
-    PATRULHAS.forEach((p, idx) => {
-      const x = margem + idx * (colW + colGap);
-      let y = topY;
-      // Cabeçalho da coluna
-      doc.rect(x, y, colW, 22).fill(NAVY);
-      const rotulo = String(escala.patrulha_dia1 || '1') === p ? `PATRULHA ${p} (dia 1)` : `PATRULHA ${p}`;
-      doc.fillColor('#fff').fontSize(11).font('Helvetica-Bold')
-         .text(rotulo, x, y + 6, { width: colW, align: 'center' });
-      y += 26;
-
-      const itensP = itens.filter(i => i.patrulha === p);
-      // Agrupa por posto
-      const porPosto = {};
-      itensP.forEach(i => { (porPosto[i.posto] = porPosto[i.posto] || []).push(i); });
-      const postos = Object.keys(porPosto);
-      if (!postos.length) {
-        doc.fillColor('#999').fontSize(8).font('Helvetica-Oblique')
-           .text('(sem lançamentos)', x, y + 2, { width: colW, align: 'center' });
-      }
-      postos.forEach(posto => {
-        doc.fillColor(NAVY).fontSize(8.5).font('Helvetica-Bold')
-           .text(posto.toUpperCase(), x + 2, y, { width: colW - 4 });
-        y = doc.y + 1;
-        porPosto[posto].forEach(i => {
-          doc.fillColor('#222').fontSize(8).font('Helvetica')
-             .text(`• ${i.nome_exibicao || i.nome}${sufixoHorario(i)}`, x + 4, y, { width: colW - 6 });
-          y = doc.y + 0.5;
-        });
-        y += 2;
-      });
-      maxColY = Math.max(maxColY, y);
-    });
-
-    // Bloco administrativo Seg–Sex (patrulha = 'ADM'), logo após a coluna
-    // mais alta — não um deslocamento fixo, para ficar colado ao corpo da escala.
-    const adm = itens.filter(i => i.patrulha === 'ADM');
-    if (adm.length) {
-      doc.y = maxColY;
-      doc.moveDown(0.5);
-      doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold')
-         .text('ADMINISTRATIVO — SEGUNDA A SEXTA', margem, doc.y, { width: conteudoW });
-      doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(0.8).stroke(NAVY);
-      doc.moveDown(0.4);
-      const porPosto = {};
-      adm.forEach(i => { (porPosto[i.posto] = porPosto[i.posto] || []).push(i); });
-      Object.keys(porPosto).forEach(posto => {
-        const nomes = porPosto[posto].map(i => `${i.nome_exibicao || i.nome}${sufixoHorario(i)}`).join(', ');
-        doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text(`${posto}: `, { continued: true })
-           .fillColor('#222').font('Helvetica').text(nomes);
-      });
-    }
-
-    // Bloco de observações (férias + observações gerais), separado do
-    // quadro de escala e do bloco administrativo por um título e linha próprios.
-    if (ferias.length || escala.obs) {
-      if (!adm.length) doc.y = maxColY;
-      doc.moveDown(0.9);
-      doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold')
-         .text('OBSERVAÇÕES', margem, doc.y, { width: conteudoW });
-      doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(0.8).stroke(NAVY);
-      doc.moveDown(0.4);
-
-      if (ferias.length) {
-        doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text('Férias no mês: ', { continued: true })
-           .fillColor('#222').font('Helvetica')
-           .text(ferias.map(f => `${f.nome}${f.matricula ? ' (' + f.matricula + ')' : ''} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}`).join('; '));
-      }
-
-      if (escala.obs) {
-        if (ferias.length) doc.moveDown(0.4);
-        doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text('Observações gerais: ', { continued: true })
-           .fillColor('#222').font('Helvetica').text(escala.obs);
-      }
-    }
-
-    assinaturasPDF(doc);
-
-    rodapePDF(doc, { info: `Escala ${escala.numero || ''} — ${nomeMes(escala.mes_referencia)} — Bananeiras/PB` });
-    doc.end();
-  }
-
-  return bufferPromise;
+  return desenharPdfEscala(escala, itens, ferias);
 }
 
-// ── PDF da escala (colunas = Patrulhas 1..4 + bloco Seg–Sex) ─────────────────
+// ── Calendário dia a dia da escala (mesma expansão do PDF, para a visualização) ──
+router.get('/:id/calendario', verificarToken, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`SELECT * FROM escalas WHERE id = $1`, [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Escala não encontrada.' });
+    const escala = rows[0];
+
+    const { rows: itens } = await pool.query(
+      `SELECT ei.posto, ei.patrulha, ei.horario, ei.matricula,
+              COALESCE(NULLIF(a.usuario, ''), ei.nome) AS nome
+         FROM escala_itens ei
+         LEFT JOIN agentes a ON a.id = ei.agente_id
+        WHERE ei.escala_id = $1`,
+      [escala.id]
+    );
+
+    const mes = escala.mes_referencia;
+    const inicioMes = `${mes}-01`;
+    const [anoFim, mesFim] = mes.split('-');
+    const fimMes = `${mes}-${String(new Date(parseInt(anoFim, 10), parseInt(mesFim, 10), 0).getDate()).padStart(2, '0')}`;
+    const { rows: ferias } = await pool.query(
+      `SELECT nome, matricula, data_inicio, data_fim FROM ferias
+        WHERE data_inicio <= $2 AND data_fim >= $1 ORDER BY data_inicio, nome`,
+      [inicioMes, fimMes]
+    );
+
+    const diasCal = montarCalendarioMes(itens, mes, escala.patrulha_dia1);
+    res.json({
+      escala: { id: escala.id, numero: escala.numero, mes_referencia: escala.mes_referencia, titulo: escala.titulo, patrulha_dia1: escala.patrulha_dia1, criado_por: escala.criado_por },
+      dias: diasCal,
+      ferias,
+      obs: escala.obs || null,
+    });
+  } catch (err) { erroServidor(res, err); }
+});
+
+// ── PDF da escala (calendário dia a dia) ─────────────────────────────────────
 router.get('/:id/pdf', verificarToken, verificarSupervisor, async (req, res) => {
   try {
     const { rows } = await pool.query(`SELECT * FROM escalas WHERE id = $1`, [req.params.id]);
