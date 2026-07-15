@@ -118,15 +118,15 @@ async function construirPdfFerias(rows, subtitulo) {
     ].map(c => ({ ...c, px: c.w * conteudoW }));
 
     let y = doc.y + 4;
-    const rowH = 20;
+    const rowH = 24;
     const row = (vals, opts = {}) => {
       let x = margem;
       if (opts.header) doc.rect(margem, y, conteudoW, rowH).fill(NAVY);
       else if (opts.zebra) doc.rect(margem, y, conteudoW, rowH).fill('#f2f5fa');
       cols.forEach((c, i) => {
         doc.fillColor(opts.header ? '#fff' : '#222')
-           .font(opts.header ? 'Helvetica-Bold' : 'Helvetica').fontSize(9)
-           .text(String(vals[i] ?? ''), x + 4, y + 6, { width: c.px - 8, align: c.num ? 'right' : 'left', lineBreak: false });
+           .font(opts.header ? 'Helvetica-Bold' : 'Helvetica').fontSize(12)
+           .text(String(vals[i] ?? ''), x + 4, y + 7, { width: c.px - 8, align: c.num ? 'right' : 'left', lineBreak: false });
         x += c.px;
       });
       y += rowH;
@@ -134,7 +134,7 @@ async function construirPdfFerias(rows, subtitulo) {
 
     row(cols.map(c => c.t), { header: true });
     if (!rows.length) {
-      doc.fillColor('#999').font('Helvetica-Oblique').fontSize(10)
+      doc.fillColor('#999').font('Helvetica-Oblique').fontSize(12)
          .text('Nenhuma férias registrada.', margem, y + 8, { width: conteudoW, align: 'center' });
     } else {
       rows.forEach((r, idx) => {
