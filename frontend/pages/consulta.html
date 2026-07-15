@@ -127,9 +127,10 @@
       display: inline-block; padding: 2px 8px;
       border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 700;
     }
-    .badge-vitima   { background: var(--color-warning-bg); color: var(--color-warning-text); }
-    .badge-suspeito { background: var(--color-danger-bg); color: var(--color-danger-text); }
-    .badge-zero     { color: var(--color-hint); }
+    .badge-vitima     { background: var(--color-warning-bg); color: var(--color-warning-text); }
+    .badge-suspeito   { background: var(--color-danger-bg); color: var(--color-danger-text); }
+    .badge-testemunha { background: var(--color-info-bg, var(--color-row-alt)); color: var(--color-info-text, var(--color-text-muted)); }
+    .badge-zero       { color: var(--color-hint); }
     .badge-sensivel {
       display: inline-block; padding: 2px 8px; margin-left: 4px;
       border-radius: var(--radius-pill); font-size: 0.72rem; font-weight: 700;
@@ -388,7 +389,9 @@
           <div style="font-size:0.78rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-label);margin-bottom:8px;">Vítimas</div>
           <div id="bdVitimas" style="margin-bottom:16px;"></div>
           <div style="font-size:0.78rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-label);margin-bottom:8px;">Suspeitos</div>
-          <div id="bdSuspeitos"></div>
+          <div id="bdSuspeitos" style="margin-bottom:16px;"></div>
+          <div style="font-size:0.78rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-label);margin-bottom:8px;">Testemunhas</div>
+          <div id="bdTestemunhas"></div>
         </div>
         <!-- Ações -->
         <div id="boDetailAcoes">
@@ -538,6 +541,7 @@
             oc.tipificacao, oc.rua, oc.complemento, oc.cidade, oc.viatura, oc.comandante,
             ...vitimas.flatMap(v => [v.nome, v.cpf, v.alcunha]),
             ...suspeitos.flatMap(s => [s.nome, s.cpf, s.alcunha, s.rg]),
+            ...(d.testemunhas || []).flatMap(t => [t.nome, t.cpf]),
             relato,
           ].join(' ').toLowerCase();
           if (!haystack.includes(f.rapido)) return false;
@@ -585,8 +589,9 @@
         const d   = parseDados(bo);
         const oc  = d.dadosOcorrencia  || {};
         const sol = d.dadosSolicitacao || {};
-        const vitimas   = (d.vitimas   || []).filter(v => v.nome);
-        const suspeitos = (d.suspeitos || []).filter(s => s.nome);
+        const vitimas     = (d.vitimas     || []).filter(v => v.nome);
+        const suspeitos   = (d.suspeitos   || []).filter(s => s.nome);
+        const testemunhas = (d.testemunhas || []).filter(t => t.nome);
         const tip   = oc.tipificacao || sol.natureza || '—';
         // Em BO sensível o local vem censurado (placeholder repetido) — dedupe.
         const local = [...new Set([oc.rua, oc.complemento].filter(Boolean))].join(', ') || '—';
@@ -596,8 +601,9 @@
           ? '<span class="badge-sensivel" title="Ocorrência sensível — dados pessoais restritos ao comando">🔒 Sensível</span>'
           : '';
         const envBadges = [
-          vitimas.length   ? `<span class="badge-count badge-vitima">${vitimas.length} vít.</span>`     : '',
-          suspeitos.length ? `<span class="badge-count badge-suspeito">${suspeitos.length} susp.</span>` : '',
+          vitimas.length     ? `<span class="badge-count badge-vitima">${vitimas.length} vít.</span>`         : '',
+          suspeitos.length   ? `<span class="badge-count badge-suspeito">${suspeitos.length} susp.</span>`     : '',
+          testemunhas.length ? `<span class="badge-count badge-testemunha">${testemunhas.length} test.</span>` : '',
         ].filter(Boolean).join(' ') || '';
         return `<div class="hist-item" onclick="abrirBODetail(${bo.id})">
           <div class="hist-item-icon">🚨</div>
@@ -627,8 +633,9 @@
       const d   = parseDados(bo);
       const oc  = d.dadosOcorrencia  || {};
       const sol = d.dadosSolicitacao || {};
-      const vitimas   = (d.vitimas   || []).filter(v => v.nome);
-      const suspeitos = (d.suspeitos || []).filter(s => s.nome);
+      const vitimas     = (d.vitimas     || []).filter(v => v.nome);
+      const suspeitos   = (d.suspeitos   || []).filter(s => s.nome);
+      const testemunhas = (d.testemunhas || []).filter(t => t.nome);
       const relato    = d.relato || '';
 
       const dataOc  = dataOcorrencia(d);
@@ -677,6 +684,15 @@
             <span>${[s.cpf, s.rg].filter(Boolean).join(' · ') || 'Sem dados adicionais'}</span>
           </div>`).join('')
         : '<p style="color:var(--color-hint);font-size:0.85rem;">Nenhum suspeito registrado.</p>';
+
+      // Testemunhas
+      const tes = document.getElementById('bdTestemunhas');
+      tes.innerHTML = testemunhas.length
+        ? testemunhas.map(t => `<div class="detail-envolvido">
+            <strong>${t.nome}</strong>
+            <span>${[t.cpf, t.telefone].filter(Boolean).join(' · ') || 'Sem dados adicionais'}</span>
+          </div>`).join('')
+        : '<p style="color:var(--color-hint);font-size:0.85rem;">Nenhuma testemunha registrada.</p>';
 
       // Ações
       document.getElementById('bdAcoesNum').textContent = bo.numero;
@@ -802,7 +818,8 @@
           const haystack = [bo.numero, bo.criado_por, sol.natureza, sol.nomeSolicitante, sol.canal,
             oc.tipificacao, oc.rua, oc.complemento, oc.cidade, oc.viatura, oc.comandante,
             ...vitimas.flatMap(v => [v.nome, v.cpf, v.alcunha]),
-            ...suspeitos.flatMap(s => [s.nome, s.cpf, s.alcunha, s.rg]), relato,
+            ...suspeitos.flatMap(s => [s.nome, s.cpf, s.alcunha, s.rg]),
+            ...(d.testemunhas || []).flatMap(t => [t.nome, t.cpf]), relato,
           ].join(' ').toLowerCase();
           if (!haystack.includes(f.rapido)) return false;
         }
