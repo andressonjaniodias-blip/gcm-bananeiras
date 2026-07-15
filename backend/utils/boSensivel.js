@@ -101,7 +101,7 @@ function coletarIdentificadores(dados) {
   const oc = dados.dadosOcorrencia || {};
   push(oc.rua); push(oc.complemento); push(oc.cidade);
 
-  for (const arr of [dados.vitimas, dados.suspeitos]) {
+  for (const arr of [dados.vitimas, dados.suspeitos, dados.testemunhas]) {
     (arr || []).forEach(p => {
       if (!p) return;
       pushNome(p.nome); pushNome(p.alcunha); pushNome(p.nomePai); pushNome(p.nomeMae);
@@ -163,8 +163,9 @@ function censurarBOParaAgente(dados) {
   const restringir = arr => arr.map(p =>
     (p && Object.values(p).some(v => v)) ? { nome: PLACEHOLDER } : p
   );
-  if (Array.isArray(copia.vitimas))   copia.vitimas   = restringir(copia.vitimas);
-  if (Array.isArray(copia.suspeitos)) copia.suspeitos = restringir(copia.suspeitos);
+  if (Array.isArray(copia.vitimas))     copia.vitimas     = restringir(copia.vitimas);
+  if (Array.isArray(copia.suspeitos))   copia.suspeitos   = restringir(copia.suspeitos);
+  if (Array.isArray(copia.testemunhas)) copia.testemunhas = restringir(copia.testemunhas);
 
   if (copia.relato) copia.relato = redigirRelato(copia.relato, identificadores);
 
