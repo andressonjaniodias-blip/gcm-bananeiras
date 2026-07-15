@@ -1,4 +1,4 @@
-const { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, rankSetor, compararItensEscala } = require('../utils/escalaCalc');
+const { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, montarCalendarioMes, rankSetor, compararItensEscala } = require('../utils/escalaCalc');
 
 describe('escalaCalc — rotação 24x72', () => {
   test('cada dia tem exatamente uma patrulha em serviço', () => {
@@ -73,12 +73,72 @@ describe('escalaCalc — distribuição por horário (escalaTrabalhaHoje)', () =
     expect(escalaTrabalhaHoje('Sábado e Domingo (12x36)', '1', 10, 3)).toBe(false); // quarta
   });
 
-  test('24x72 / 12x36 / vazio seguem o rodízio da patrulha (independe do dia da semana)', () => {
+  test('24x72 / vazio seguem o rodízio da patrulha (independe do dia da semana)', () => {
     // Patrulha 1 trabalha no dia 1 e folga 2/3/4 (patrulhaDia1 padrão)
     expect(escalaTrabalhaHoje('24x72', '1', 1, 4)).toBe(true);
     expect(escalaTrabalhaHoje('24x72', '1', 2, 5)).toBe(false);
-    expect(escalaTrabalhaHoje('12x36 Diurno', '1', 5, 1)).toBe(true);
     expect(escalaTrabalhaHoje('', '1', 1, 0)).toBe(true);   // vazio → rodízio
+  });
+
+  test('12x36 alterna por paridade da patrulha (patrulha ímpar → dias ímpares)', () => {
+    // Patrulha 1 (ímpar) trabalha dias ímpares; independe do dia da semana
+    expect(escalaTrabalhaHoje('12x36 Diurno', '1', 1, 3)).toBe(true);
+    expect(escalaTrabalhaHoje('12x36 Diurno', '1', 2, 4)).toBe(false);
+    expect(escalaTrabalhaHoje('12x36 Diurno', '1', 3, 5)).toBe(true);
+    expect(escalaTrabalhaHoje('12x36 Noturno', '3', 1, 0)).toBe(true);  // patrulha 3 = ímpar
+    // Patrulha 2 (par) trabalha dias pares
+    expect(escalaTrabalhaHoje('12x36 Diurno', '2', 1, 3)).toBe(false);
+    expect(escalaTrabalhaHoje('12x36 Diurno', '2', 2, 4)).toBe(true);
+    expect(escalaTrabalhaHoje('12x36 Noturno', '4', 2, 6)).toBe(true);  // patrulha 4 = par
+  });
+
+  test('"Sábado e Domingo (12x36)" cai no ramo de fim de semana, não no de 12x36', () => {
+    // Contém "12x36" mas o ramo sábado/domingo vem antes: paridade da patrulha é ignorada
+    expect(escalaTrabalhaHoje('Sábado e Domingo (12x36)', '1', 4, 6)).toBe(true);  // sábado, dia par
+    expect(escalaTrabalhaHoje('Sábado e Domingo (12x36)', '2', 5, 0)).toBe(true);  // domingo, dia ímpar
+    expect(escalaTrabalhaHoje('Sábado e Domingo (12x36)', '1', 1, 3)).toBe(false); // quarta
+  });
+});
+
+describe('escalaCalc — expansão mensal (montarCalendarioMes)', () => {
+  // Julho/2026: dia 1 = quarta-feira (diaSemana 3). 31 dias.
+  const itens = [
+    { posto: 'Ronda / Viatura', nome: 'Ana',   patrulha: '1', horario: '24x72' },
+    { posto: 'Ação Social',     nome: 'Bruno', patrulha: 'ADM', horario: 'Segunda a Sexta' },
+    { posto: 'Ronda / Viatura', nome: 'Caio',  patrulha: '1', horario: '12x36 Diurno' },
+    { posto: 'Praça',           nome: 'Duda',  patrulha: '4', horario: 'Sábado e Domingo (12x36)' },
+  ];
+
+  test('tem uma entrada por dia do mês', () => {
+    expect(montarCalendarioMes(itens, '2026-07', '1')).toHaveLength(31);
+    expect(montarCalendarioMes(itens, '2026-02', '1')).toHaveLength(28);
+  });
+
+  test('cada dia traz diaSemana e fimDeSemana corretos', () => {
+    const dias = montarCalendarioMes(itens, '2026-07', '1');
+    expect(dias[0]).toMatchObject({ dia: 1, diaSemana: 3, fimDeSemana: false }); // qua
+    expect(dias[3]).toMatchObject({ dia: 4, diaSemana: 6, fimDeSemana: true });  // sáb
+    expect(dias[4]).toMatchObject({ dia: 5, diaSemana: 0, fimDeSemana: true });  // dom
+  });
+
+  test('distribui cada horário nos dias certos', () => {
+    const dias = montarCalendarioMes(itens, '2026-07', '1');
+    const nomesDoDia = d => dias[d - 1].itens.map(i => i.nome);
+
+    // Dia 1 (qua, ímpar): Ana (24x72 patrulha 1 trabalha dia 1), Bruno (seg-sex), Caio (12x36 ímpar)
+    expect(nomesDoDia(1).sort()).toEqual(['Ana', 'Bruno', 'Caio']);
+    // Dia 2 (qui, par): Bruno (seg-sex). Ana folga (24x72), Caio folga (12x36 ímpar)
+    expect(nomesDoDia(2)).toEqual(['Bruno']);
+    // Dia 4 (sáb): só Duda (fim de semana); Bruno não trabalha sábado
+    expect(nomesDoDia(4)).toEqual(['Duda']);
+    // Dia 5 (dom, ímpar): Ana (24x72 patrulha 1 volta no dia 5), Caio (12x36 ímpar) e Duda (fim de semana)
+    expect(nomesDoDia(5).sort()).toEqual(['Ana', 'Caio', 'Duda']);
+  });
+
+  test('itens de cada dia vêm ordenados por setor (rankSetor → posto → nome)', () => {
+    const dias = montarCalendarioMes(itens, '2026-07', '1');
+    // Dia 1: Ronda/Viatura (rank 0: Ana e Caio, desempate por nome) antes de Ação Social (rank 4: Bruno)
+    expect(dias[0].itens.map(i => i.nome)).toEqual(['Ana', 'Caio', 'Bruno']);
   });
 });
 
