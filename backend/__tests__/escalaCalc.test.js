@@ -1,4 +1,4 @@
-const { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, montarCalendarioMes, rankSetor, compararItensEscala } = require('../utils/escalaCalc');
+const { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, montarCalendarioMes, montarResumoEscala, rankSetor, compararItensEscala } = require('../utils/escalaCalc');
 
 describe('escalaCalc — rotação 24x72', () => {
   test('cada dia tem exatamente uma patrulha em serviço', () => {
@@ -194,5 +194,51 @@ describe('escalaCalc — ordem dos setores (rankSetor / compararItensEscala)', (
     ];
     const ordenados = [...itens].sort(compararItensEscala).map(i => i.posto);
     expect(ordenados).toEqual(['Base Norte', 'Praça Central']);
+  });
+});
+
+describe('escalaCalc — resumo por tipo de escala (montarResumoEscala)', () => {
+  const itens = [
+    { posto: 'Ronda / Viatura', patrulha: '1', horario: '24x72', nome: 'Ana' },
+    { posto: 'Hospital',        patrulha: '2', horario: '24x72', nome: 'Bruno' },
+    { posto: 'Trânsito',        patrulha: '1', horario: 'Segunda a Sexta', nome: 'Caio' },
+    { posto: 'Base',            patrulha: '1', horario: '12x36 Diurno',  nome: 'Davi' },   // ímpar → equipe 1
+    { posto: 'Base',            patrulha: '2', horario: '12x36 Diurno',  nome: 'Elis' },   // par  → equipe 2
+    { posto: 'Base',            patrulha: '3', horario: '12x36 Noturno', nome: 'Fábio' },  // ímpar → equipe 1
+    { posto: 'Base',            patrulha: '4', horario: '12x36 Noturno', nome: 'Gina' },   // par  → equipe 2
+    { posto: 'Praça',           patrulha: '4', horario: 'Sábado e Domingo (12x36)', nome: 'Hugo' },
+    { posto: 'Apoio',           patrulha: 'ADM', horario: '', nome: 'Ivo' }, // legado sem horário → segSex
+  ];
+  const r = montarResumoEscala(itens);
+  const nomes = arr => arr.map(i => i.nome);
+
+  test('24x72 vai para a coluna da sua patrulha', () => {
+    expect(nomes(r.patrulhas['1'])).toEqual(['Ana']);
+    expect(nomes(r.patrulhas['2'])).toEqual(['Bruno']);
+    expect(nomes(r.patrulhas['3'])).toEqual([]);
+  });
+
+  test('Segunda a Sexta (e ADM legado sem horário) vão para segSex', () => {
+    expect(nomes(r.segSex).sort()).toEqual(['Caio', 'Ivo']);
+  });
+
+  test('12x36 Diurno/Noturno separados, por equipe de paridade da patrulha', () => {
+    expect(nomes(r.diurno[1])).toEqual(['Davi']);   // patrulha 1 (ímpar)
+    expect(nomes(r.diurno[2])).toEqual(['Elis']);   // patrulha 2 (par)
+    expect(nomes(r.noturno[1])).toEqual(['Fábio']); // patrulha 3 (ímpar)
+    expect(nomes(r.noturno[2])).toEqual(['Gina']);  // patrulha 4 (par)
+  });
+
+  test('Sábado e Domingo vai para fimDeSemana (não confunde com 12x36)', () => {
+    expect(nomes(r.fimDeSemana)).toEqual(['Hugo']);
+  });
+
+  test('cada lista vem ordenada por setor (rankSetor → posto → nome)', () => {
+    const misto = [
+      { posto: 'Hospital',        patrulha: '1', horario: '24x72', nome: 'Zeca' },   // rank 1
+      { posto: 'Ronda / Viatura', patrulha: '1', horario: '24x72', nome: 'Bia' },    // rank 0
+      { posto: 'Ronda / Viatura', patrulha: '1', horario: '24x72', nome: 'Ana' },    // rank 0
+    ];
+    expect(montarResumoEscala(misto).patrulhas['1'].map(i => i.nome)).toEqual(['Ana', 'Bia', 'Zeca']);
   });
 });
