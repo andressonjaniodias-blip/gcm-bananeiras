@@ -71,6 +71,19 @@
     .cal-posto { font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--color-primary); margin:5px 0 1px; letter-spacing:0.03em; }
     .cal-posto:first-child { margin-top:0; }
     .cal-nomes { font-size:0.8rem; color:var(--color-text); line-height:1.3; }
+    /* Entrada por agente: nome+matrícula em cima, setor·horário embaixo */
+    .cal-ag { margin:3px 0; }
+    .cal-ag:first-child { margin-top:0; }
+    .cal-nome { font-size:0.8rem; font-weight:600; color:var(--color-text); line-height:1.2; }
+    .cal-setor { font-size:0.72rem; color:var(--color-hint); line-height:1.2; }
+    .cal-subrotulo { font-size:0.75rem; font-weight:700; font-style:italic; color:var(--color-text-muted,#555); margin:6px 0 2px; }
+    /* Alternador Calendário/Resumo + baixar PDF */
+    .view-toolbar { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 16px; border-bottom:1px solid var(--color-border); flex-wrap:wrap; }
+    .view-seg { display:inline-flex; border:1px solid var(--color-border); border-radius:var(--radius-sm); overflow:hidden; }
+    .view-seg-btn { border:none; background:transparent; color:var(--color-text); padding:6px 14px; font-size:0.85rem; cursor:pointer; }
+    .view-seg-btn.ativo { background:var(--color-primary); color:#fff; font-weight:700; }
+    .view-dl-btn { border:1px solid var(--color-border); background:transparent; color:var(--color-text); padding:6px 12px; border-radius:var(--radius-sm); font-size:0.85rem; cursor:pointer; }
+    .view-dl-btn:hover { background:var(--color-surface-2,rgba(0,0,0,0.05)); }
 
     /* Férias e Postos (cards no padrão do sistema) */
     .fer-item, .posto-item { display:flex; align-items:center; gap:10px; padding:10px 12px;
@@ -184,6 +197,13 @@
           <div class="detail-modal-subtitle" id="viewSub">—</div>
         </div>
         <button class="detail-modal-close" onclick="fecharView()">×</button>
+      </div>
+      <div class="view-toolbar">
+        <div class="view-seg">
+          <button type="button" id="btnViewCal" class="view-seg-btn ativo" onclick="setViewModo('cal')">Calendário</button>
+          <button type="button" id="btnViewResumo" class="view-seg-btn" onclick="setViewModo('resumo')">Resumo</button>
+        </div>
+        <button type="button" class="view-dl-btn" onclick="baixarViewPDF()">⬇️ Baixar PDF</button>
       </div>
       <div class="detail-modal-body" id="viewBody"></div>
     </div>
@@ -478,34 +498,77 @@
       }catch{ cont.innerHTML='<p style="color:var(--color-danger);text-align:center;">Erro.</p>'; }
     }
 
-    // ── Visualização da escala no sistema (sem PDF) ───────────────────────────
+    // ── Visualização da escala no sistema (calendário + resumo) ───────────────
     const DIAS_SEMANA=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    let VIEW_DATA=null, VIEW_ID=null, VIEW_MES='', VIEW_MODO='cal';
+
+    // Entrada por agente: "Nome — matrícula" em cima, "Setor · horário" embaixo.
+    function agenteHTML(i){
+      const nome=(i.nome_exibicao||i.nome||'')+(i.matricula?` — ${i.matricula}`:'');
+      const h=sufHorario(i);
+      const setor=`${i.posto||''}${h?` · ${h}`:''}`;
+      return `<div class="cal-ag"><div class="cal-nome">${nome}</div><div class="cal-setor">${setor}</div></div>`;
+    }
+
+    function renderCalendarioHTML(data){
+      let html='<div class="cal-grid">';
+      (data.dias||[]).forEach(d=>{
+        const body = (d.itens&&d.itens.length) ? d.itens.map(agenteHTML).join('') : '<div class="cal-dia-vazio">(sem serviço)</div>';
+        html+=`<div class="cal-dia${d.fimDeSemana?' fds':''}"><div class="cal-dia-head">Dia ${String(d.dia).padStart(2,'0')} — ${DIAS_SEMANA[d.diaSemana]}</div><div class="cal-dia-body">${body}</div></div>`;
+      });
+      return html+'</div>';
+    }
+
+    function renderResumoHTML(data){
+      const r=data.resumo||{}; const dia1=String(data.escala.patrulha_dia1||'1');
+      let html='<div class="view-grid">';
+      ['1','2','3','4'].forEach(p=>{
+        const its=(r.patrulhas&&r.patrulhas[p])||[];
+        const body=its.length? its.map(agenteHTML).join('') : '<div class="cal-dia-vazio">(sem lançamentos)</div>';
+        html+=`<div class="view-col"><div class="view-col-head">Patrulha ${p}${p===dia1?' (dia 1)':''}</div><div class="view-col-body">${body}</div></div>`;
+      });
+      html+='</div>';
+      const bloco=(titulo,itens)=> (!itens||!itens.length)?'':`<div class="view-obs"><div class="view-posto">${titulo}</div>${itens.map(agenteHTML).join('')}</div>`;
+      const bloco12=(titulo,e1,e2)=>{ e1=e1||[]; e2=e2||[]; if(!e1.length&&!e2.length) return '';
+        let h=`<div class="view-obs"><div class="view-posto">${titulo}</div>`;
+        if(e1.length) h+=`<div class="cal-subrotulo">Equipe 1 — dias ímpares</div>${e1.map(agenteHTML).join('')}`;
+        if(e2.length) h+=`<div class="cal-subrotulo">Equipe 2 — dias pares</div>${e2.map(agenteHTML).join('')}`;
+        return h+'</div>'; };
+      html+=bloco('Segunda a Sexta', r.segSex);
+      html+=bloco12('12x36 Diurno', r.diurno&&r.diurno[1], r.diurno&&r.diurno[2]);
+      html+=bloco12('12x36 Noturno', r.noturno&&r.noturno[1], r.noturno&&r.noturno[2]);
+      html+=bloco('Fim de semana', r.fimDeSemana);
+      return html;
+    }
+
+    function footerViewHTML(data){
+      let html='';
+      if((data.ferias||[]).length){ html+='<div class="view-obs"><div class="view-posto">Férias no mês</div>'+
+        data.ferias.map(f=>`<div class="view-agente">• ${f.nome}${f.matricula?` — ${f.matricula}`:''} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}</div>`).join('')+'</div>'; }
+      if(data.obs){ html+=`<div class="view-obs"><strong>Observações:</strong> ${data.obs}</div>`; }
+      return html;
+    }
+
+    function renderView(){
+      if(!VIEW_DATA) return;
+      const corpo=(VIEW_MODO==='resumo')?renderResumoHTML(VIEW_DATA):renderCalendarioHTML(VIEW_DATA);
+      document.getElementById('viewBody').innerHTML=corpo+footerViewHTML(VIEW_DATA);
+      document.getElementById('btnViewCal').classList.toggle('ativo',VIEW_MODO!=='resumo');
+      document.getElementById('btnViewResumo').classList.toggle('ativo',VIEW_MODO==='resumo');
+    }
+    window.setViewModo=function(m){ VIEW_MODO=m; renderView(); };
+    window.baixarViewPDF=function(){ if(!VIEW_ID) return;
+      const fmt=(VIEW_MODO==='resumo')?'resumo':'calendario'; const suf=fmt==='resumo'?'-resumo':'';
+      baixarPDF(`${API_BASE_URL}/api/escala/${VIEW_ID}/pdf?formato=${fmt}`,`escala-${VIEW_MES}${suf}.pdf`); };
+
     async function visualizarEscala(id){
       try{
-        const r=await fetch(`${API_BASE_URL}/api/escala/${id}/calendario`,{credentials:'include'});
+        const r=await fetch(`${API_BASE_URL}/api/escala/${id}/visualizacao`,{credentials:'include'});
         if(!r.ok){ alert('Erro ao carregar escala.'); return; }
-        const {escala,dias,ferias,obs}=await r.json();
-        document.getElementById('viewTitle').textContent='Escala '+(escala.titulo?escala.titulo+' — ':'')+escala.mes_referencia;
-        document.getElementById('viewSub').textContent=(escala.numero||'')+' · por '+(escala.criado_por||'—');
-
-        // Calendário dia a dia: cada agente aparece automaticamente nos dias que trabalha.
-        let html='<div class="cal-grid">';
-        (dias||[]).forEach(d=>{
-          const byPosto={}; const ordem=[];
-          (d.itens||[]).forEach(i=>{ if(!byPosto[i.posto]){byPosto[i.posto]=[];ordem.push(i.posto);} byPosto[i.posto].push(i); });
-          let body = ordem.length ? '' : '<div class="cal-dia-vazio">(sem serviço)</div>';
-          ordem.forEach(posto=>{
-            const nomes=byPosto[posto].map(i=>{ const h=sufHorario(i); return (i.nome_exibicao||i.nome)+(h?` (${h})`:''); }).join(', ');
-            body+=`<div class="cal-posto">${posto}</div><div class="cal-nomes">${nomes}</div>`;
-          });
-          html+=`<div class="cal-dia${d.fimDeSemana?' fds':''}"><div class="cal-dia-head">Dia ${String(d.dia).padStart(2,'0')} — ${DIAS_SEMANA[d.diaSemana]}</div><div class="cal-dia-body">${body}</div></div>`;
-        });
-        html+='</div>';
-
-        if((ferias||[]).length){ html+='<div class="view-obs"><div class="view-posto">Férias no mês</div>'+
-          ferias.map(f=>`<div class="view-agente">• ${f.nome} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}</div>`).join('')+'</div>'; }
-        if(obs){ html+=`<div class="view-obs"><strong>Observações:</strong> ${obs}</div>`; }
-        document.getElementById('viewBody').innerHTML=html;
+        VIEW_DATA=await r.json(); VIEW_ID=id; VIEW_MES=VIEW_DATA.escala.mes_referencia; VIEW_MODO='cal';
+        document.getElementById('viewTitle').textContent='Escala '+(VIEW_DATA.escala.titulo?VIEW_DATA.escala.titulo+' — ':'')+VIEW_DATA.escala.mes_referencia;
+        document.getElementById('viewSub').textContent=(VIEW_DATA.escala.numero||'')+' · por '+(VIEW_DATA.escala.criado_por||'—');
+        renderView();
         document.getElementById('viewOverlay').classList.add('aberto');
       }catch{ alert('Erro ao carregar escala.'); }
     }
