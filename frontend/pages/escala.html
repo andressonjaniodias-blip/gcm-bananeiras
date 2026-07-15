@@ -61,6 +61,16 @@
       margin:7px 0 2px; letter-spacing:0.03em; }
     .view-agente { font-size:0.82rem; padding:1px 0; color:var(--color-text); }
     .view-obs { margin-top:14px; font-size:0.85rem; color:var(--color-text); }
+    /* Calendário dia a dia (visualização da escala) */
+    .cal-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
+    .cal-dia { border:1px solid var(--color-border); border-radius:var(--radius-sm); overflow:hidden; break-inside:avoid; }
+    .cal-dia-head { background:var(--color-primary); color:#fff; font-weight:700; padding:5px 8px; font-size:0.8rem; letter-spacing:0.02em; }
+    .cal-dia.fds .cal-dia-head { background:#8b1e3f; }
+    .cal-dia-body { padding:6px 8px 8px; }
+    .cal-dia-vazio { font-size:0.78rem; color:var(--color-hint); font-style:italic; }
+    .cal-posto { font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--color-primary); margin:5px 0 1px; letter-spacing:0.03em; }
+    .cal-posto:first-child { margin-top:0; }
+    .cal-nomes { font-size:0.8rem; color:var(--color-text); line-height:1.3; }
 
     /* Férias e Postos (cards no padrão do sistema) */
     .fer-item, .posto-item { display:flex; align-items:center; gap:10px; padding:10px 12px;
@@ -391,8 +401,9 @@
       }
       if(!posto){ alert('Selecione o posto.'); return; }
       if(!agenteId){ alert('Selecione um agente da lista.'); return; }
-      const a=AGENTES.find(x=>String(x.id)===String(agenteId));
       const horario=document.getElementById(`form_horario_${colKey}`).value;
+      if(!horario){ alert('Selecione o horário (define em que dias o agente entra na escala).'); return; }
+      const a=AGENTES.find(x=>String(x.id)===String(agenteId));
       ITENS.push({patrulha:colKey,posto,agente_id:Number(agenteId),nome:a?a.nome:'',matricula:a?a.matricula:'',regime:'24x72',turno:'',horario});
       renderGrid();
     }
@@ -468,44 +479,32 @@
     }
 
     // ── Visualização da escala no sistema (sem PDF) ───────────────────────────
+    const DIAS_SEMANA=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     async function visualizarEscala(id){
       try{
-        const r=await fetch(`${API_BASE_URL}/api/escala/${id}`,{credentials:'include'});
+        const r=await fetch(`${API_BASE_URL}/api/escala/${id}/calendario`,{credentials:'include'});
         if(!r.ok){ alert('Erro ao carregar escala.'); return; }
-        const {escala,itens}=await r.json();
+        const {escala,dias,ferias,obs}=await r.json();
         document.getElementById('viewTitle').textContent='Escala '+(escala.titulo?escala.titulo+' — ':'')+escala.mes_referencia;
         document.getElementById('viewSub').textContent=(escala.numero||'')+' · por '+(escala.criado_por||'—');
-        const dia1View=String(escala.patrulha_dia1||'1');
-        let html='<div class="view-grid">';
-        PATRULHAS.forEach(p=>{
-          const its=itens.filter(i=>String(i.patrulha)===p);
-          const byPosto={}; its.forEach(i=>{(byPosto[i.posto]=byPosto[i.posto]||[]).push(i);});
-          const postos=Object.keys(byPosto);
-          let colBody = postos.length ? '' : '<div style="color:var(--color-hint);font-size:0.8rem;">(sem lançamentos)</div>';
-          postos.forEach(posto=>{
-            colBody+=`<div class="view-posto">${posto}</div>`;
-            byPosto[posto].forEach(i=>{ const h=sufHorario(i); const reg=h?` <span style="color:var(--color-hint)">(${h})</span>`:'';
-              colBody+=`<div class="view-agente">• ${i.nome_exibicao||i.nome}${reg}</div>`; });
+
+        // Calendário dia a dia: cada agente aparece automaticamente nos dias que trabalha.
+        let html='<div class="cal-grid">';
+        (dias||[]).forEach(d=>{
+          const byPosto={}; const ordem=[];
+          (d.itens||[]).forEach(i=>{ if(!byPosto[i.posto]){byPosto[i.posto]=[];ordem.push(i.posto);} byPosto[i.posto].push(i); });
+          let body = ordem.length ? '' : '<div class="cal-dia-vazio">(sem serviço)</div>';
+          ordem.forEach(posto=>{
+            const nomes=byPosto[posto].map(i=>{ const h=sufHorario(i); return (i.nome_exibicao||i.nome)+(h?` (${h})`:''); }).join(', ');
+            body+=`<div class="cal-posto">${posto}</div><div class="cal-nomes">${nomes}</div>`;
           });
-          html+=`<div class="view-col"><div class="view-col-head">Patrulha ${p}${p===dia1View?' (dia 1)':''}</div><div class="view-col-body">${colBody}</div></div>`;
+          html+=`<div class="cal-dia${d.fimDeSemana?' fds':''}"><div class="cal-dia-head">Dia ${String(d.dia).padStart(2,'0')} — ${DIAS_SEMANA[d.diaSemana]}</div><div class="cal-dia-body">${body}</div></div>`;
         });
         html+='</div>';
-        const adm=itens.filter(i=>i.patrulha==='ADM');
-        if(adm.length){
-          const byPosto={}; adm.forEach(i=>{(byPosto[i.posto]=byPosto[i.posto]||[]).push(i);});
-          html+='<div class="view-obs"><div class="view-posto">Administrativo — Segunda a Sexta</div>';
-          Object.keys(byPosto).forEach(posto=>{ html+=`<div class="view-agente"><strong>${posto}:</strong> ${byPosto[posto].map(i=>{const h=sufHorario(i);return (i.nome_exibicao||i.nome)+(h?' ('+h+')':'');}).join(', ')}</div>`; });
-          html+='</div>';
-        }
-        // Férias do mês na visualização
-        try{
-          const rf=await fetch(`${API_BASE_URL}/api/ferias?mes=${escala.mes_referencia}`,{credentials:'include'});
-          if(rf.ok){ const fer=await rf.json();
-            if(fer.length){ html+='<div class="view-obs"><div class="view-posto">Férias no mês</div>'+
-              fer.map(f=>`<div class="view-agente">• ${f.nome} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}</div>`).join('')+'</div>'; }
-          }
-        }catch{}
-        if(escala.obs){ html+=`<div class="view-obs"><strong>Observações:</strong> ${escala.obs}</div>`; }
+
+        if((ferias||[]).length){ html+='<div class="view-obs"><div class="view-posto">Férias no mês</div>'+
+          ferias.map(f=>`<div class="view-agente">• ${f.nome} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}</div>`).join('')+'</div>'; }
+        if(obs){ html+=`<div class="view-obs"><strong>Observações:</strong> ${obs}</div>`; }
         document.getElementById('viewBody').innerHTML=html;
         document.getElementById('viewOverlay').classList.add('aberto');
       }catch{ alert('Erro ao carregar escala.'); }
