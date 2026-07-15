@@ -26,8 +26,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Dashboard: inicia com um form de cada seção
   const isDashboard = window.location.pathname.includes('dashboard');
   if (isDashboard) {
-    adicionarVitima();
-    adicionarSuspeito();
+    adicionarEnvolvido();
     adicionarObjeto();
     iniciarAutosave();
     _updateNavBtns();
@@ -91,7 +90,7 @@ async function _checarRascunhoBO() {
 }
 
 // ── Navegação de abas ────────────────────────────────────────────────────────
-const TAB_ORDER = ['solicitacao','ocorrencia','vitima','suspeito','relato','anexos','objetos','autoridade'];
+const TAB_ORDER = ['solicitacao','ocorrencia','envolvidos','relato','anexos','objetos','autoridade'];
 
 function _validarAbaAtual() {
   const current = document.querySelector('.tab-content:not(.hidden)');
@@ -297,12 +296,16 @@ function mascararTelefone(input) {
 }
 
 // ── Blocos dinâmicos ─────────────────────────────────────────────────────────
-function htmlPessoa(tipo, idx) {
+function htmlPessoa(idx) {
   return `
-  <div class="bloco-pessoa" data-tipo="${tipo}">
+  <div class="bloco-pessoa">
     <div class="bloco-header">
-      <h4>${tipo} ${idx}</h4>
+      <h4>Envolvido ${idx}</h4>
     </div>
+    <div class="campo-group"><label>Grau de Participação</label>
+      <select name="grau">
+        <option>Vítima</option><option>Suspeito</option><option>Testemunha</option>
+      </select></div>
     <div class="campo-group"><label>Nome</label>
       <input type="text" name="nome" placeholder="Nome completo" maxlength="150"></div>
     <div class="campo-group"><label>Alcunha</label>
@@ -370,18 +373,12 @@ function htmlObjeto(idx) {
   </div>`;
 }
 
-let countVitimas = 0, countSuspeitos = 0, countObjetos = 0;
+let countEnvolvidos = 0, countObjetos = 0;
 
-function adicionarVitima() {
-  countVitimas++;
-  document.getElementById('vitimas-list').insertAdjacentHTML('beforeend', htmlPessoa('Vítima', countVitimas));
-  atualizarBotaoRemover('vitimas-list', 'btnRemoverVitima');
-}
-
-function adicionarSuspeito() {
-  countSuspeitos++;
-  document.getElementById('suspeitos-list').insertAdjacentHTML('beforeend', htmlPessoa('Suspeito', countSuspeitos));
-  atualizarBotaoRemover('suspeitos-list', 'btnRemoverSuspeito');
+function adicionarEnvolvido() {
+  countEnvolvidos++;
+  document.getElementById('envolvidos-list').insertAdjacentHTML('beforeend', htmlPessoa(countEnvolvidos));
+  atualizarBotaoRemover('envolvidos-list', 'btnRemoverEnvolvido');
 }
 
 function adicionarObjeto() {
@@ -390,8 +387,7 @@ function adicionarObjeto() {
   atualizarBotaoRemover('objetos-list', 'btnRemoverObjeto');
 }
 
-function removerUltimoVitima()  { removerUltimoDe('vitimas-list',   'btnRemoverVitima'); }
-function removerUltimoSuspeito(){ removerUltimoDe('suspeitos-list', 'btnRemoverSuspeito'); }
+function removerUltimoEnvolvido(){ removerUltimoDe('envolvidos-list', 'btnRemoverEnvolvido'); }
 function removerUltimoObjeto()  { removerUltimoDe('objetos-list',   'btnRemoverObjeto'); }
 
 function removerUltimoDe(containerId, btnId) {
@@ -430,12 +426,34 @@ function coletarBlocos(containerId) {
   }).filter(obj => Object.keys(obj).length > 0);
 }
 
+// Separa a lista única de envolvidos nas três listas nomeadas conforme o grau
+// de participação. Blocos sem dados pessoais (só com o grau) são descartados —
+// isso evita registros fantasmas e dispensa marcar o grau como obrigatório.
+function coletarEnvolvidos() {
+  const vitimas = [], suspeitos = [], testemunhas = [];
+  document.querySelectorAll('#envolvidos-list > div').forEach(bloco => {
+    const obj = {};
+    let grau = 'Vítima';
+    bloco.querySelectorAll('input, textarea, select').forEach(el => {
+      if (!el.name) return;
+      const v = el.value.trim();
+      if (el.name === 'grau') { if (v) grau = v; return; }
+      if (v) obj[el.name] = v;
+    });
+    if (Object.keys(obj).length === 0) return; // sem dados pessoais → ignora
+    const g = grau.toLowerCase();
+    if (g.startsWith('test')) testemunhas.push(obj);
+    else if (g.startsWith('susp')) suspeitos.push(obj);
+    else vitimas.push(obj);
+  });
+  return { vitimas, suspeitos, testemunhas };
+}
+
 function coletarDadosBO() {
   return {
     dadosSolicitacao: coletarSecao('#solicitacao'),
     dadosOcorrencia:  coletarSecao('#ocorrencia'),
-    vitimas:   coletarBlocos('vitimas-list'),
-    suspeitos: coletarBlocos('suspeitos-list'),
+    ...coletarEnvolvidos(),
     objetos:   coletarBlocos('objetos-list'),
     relato:    document.querySelector('#relato textarea')?.value.trim() || '',
     autoridade: coletarSecao('#autoridade'),
