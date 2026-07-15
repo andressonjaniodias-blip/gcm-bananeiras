@@ -59,8 +59,17 @@ function quinzenaDe(dataStr) {
 }
 
 // Um lançamento (agente/posto) está de serviço no dia? O horário selecionado na
-// montagem decide a distribuição: 'Segunda a Sexta' → dias úteis; 'Sábado e Domingo'
-// → fim de semana; os demais (24x72, 12x36, vazio) seguem o rodízio da patrulha.
+// montagem decide a distribuição:
+//   'Segunda a Sexta'          → dias úteis (independe da patrulha);
+//   'Sábado e Domingo (12x36)' → fim de semana (independe da patrulha);
+//   '12x36 Diurno/Noturno'     → alterna por paridade do dia ancorada na patrulha:
+//                                patrulha ímpar (1,3) trabalha dias ímpares; par (2,4)
+//                                dias pares. Diurno e Noturno são turnos distintos
+//                                (itens/horários separados) e seguem a mesma paridade,
+//                                então convivem no mesmo dia com pessoas diferentes;
+//   24x72 (ou vazio)           → segue o rodízio de 4 patrulhas (trabalhaNoDia).
+// A ordem dos ifs importa: 'Sábado e Domingo (12x36)' contém '12x36' mas deve cair no
+// ramo de fim de semana, que vem antes.
 // diaSemana: 0=domingo … 6=sábado (Date.getDay()).
 function escalaTrabalhaHoje(horario, patrulha, dia, diaSemana, patrulhaDia1 = '1') {
   const h = (horario || '').toLowerCase();
@@ -68,7 +77,39 @@ function escalaTrabalhaHoje(horario, patrulha, dia, diaSemana, patrulhaDia1 = '1
   if (h.includes('sábado') || h.includes('sabado') || h.includes('domingo')) {
     return diaSemana === 0 || diaSemana === 6;
   }
+  if (h.includes('12x36')) {
+    const p = parseInt(patrulha, 10) || 1;
+    return (dia + p) % 2 === 0; // patrulha ímpar → dias ímpares; par → dias pares
+  }
   return trabalhaNoDia(patrulha, dia, patrulhaDia1);
+}
+
+// Ordena os itens de serviço de um dia na ordem operacional dos setores
+// (rankSetor → posto → nome), sem coluna de patrulha — mesma lógica do quadro /hoje.
+function _compararItensDoDia(a, b) {
+  return (rankSetor(a.posto, a.horario) - rankSetor(b.posto, b.horario)) ||
+    String(a.posto || '').localeCompare(String(b.posto || ''), 'pt-BR') ||
+    String(a.nome_exibicao || a.nome || '').localeCompare(String(b.nome_exibicao || b.nome || ''), 'pt-BR');
+}
+
+// Expande a escala mensal (template por patrulha) em dias. Para cada dia do mês
+// retorna { dia, diaSemana, fimDeSemana, itens } com os lançamentos de serviço já
+// ordenados por setor. Reusada pelo PDF e pelo endpoint de calendário.
+// mesRef: 'YYYY-MM'.
+function montarCalendarioMes(itens, mesRef, patrulhaDia1 = '1') {
+  const ano = parseInt(String(mesRef).slice(0, 4), 10);
+  const mes = parseInt(String(mesRef).slice(5, 7), 10);
+  const ultimoDia = new Date(ano, mes, 0).getDate();
+  const dias = [];
+  for (let dia = 1; dia <= ultimoDia; dia++) {
+    const dd = String(dia).padStart(2, '0');
+    const diaSemana = new Date(`${mesRef}-${dd}T12:00:00`).getDay(); // TZ-safe, igual a /hoje
+    const doDia = (itens || [])
+      .filter(i => escalaTrabalhaHoje(i.horario, i.patrulha, dia, diaSemana, patrulhaDia1))
+      .sort(_compararItensDoDia);
+    dias.push({ dia, diaSemana, fimDeSemana: diaSemana === 0 || diaSemana === 6, itens: doDia });
+  }
+  return dias;
 }
 
 // ── Ordenação dos setores (posto) na escala ──────────────────────────────────
@@ -125,4 +166,4 @@ function compararItensEscala(a, b) {
   return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
 }
 
-module.exports = { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, rankSetor, compararItensEscala };
+module.exports = { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, montarCalendarioMes, rankSetor, compararItensEscala };
