@@ -1981,6 +1981,26 @@ body.has-sidebar .header {
   white-space: nowrap;
 }
 
+/* No formulário de novo BO (dashboard) as setas Anterior/Próximo aparecem também
+   no desktop, junto das abas — a mesma navegação já usada no celular. As demais
+   telas não têm <main class="dashboard">, então não são afetadas. */
+main.dashboard .mobile-tab-nav { display: flex; }
+
+/* ── Typeahead de agente (busca por nome/matrícula) — escala e novo BO ─────── */
+.ta { position: relative; margin-bottom: 5px; }
+.ta > input[type=text] { margin-bottom: 0; }
+.ta-list {
+  position: absolute; z-index: 30; left: 0; right: 0; top: 100%; margin-top: 2px;
+  background: var(--bg-card); border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm); max-height: 210px; overflow-y: auto;
+  display: none; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.ta-list.aberta { display: block; }
+.ta-item { padding: 6px 9px; cursor: pointer; font-size: 0.8rem; color: var(--color-text); line-height: 1.25; }
+.ta-item:hover, .ta-item.ativo { background: var(--color-row-alt); }
+.ta-item .ta-mat { color: var(--color-text-muted); font-size: 0.72rem; }
+.ta-empty { padding: 6px 9px; font-size: 0.76rem; color: var(--color-text-muted); }
+
 @media (max-width: 768px) {
   .tabs { display: none; }
   .mobile-tab-nav { display: flex; }
