@@ -697,7 +697,7 @@
                 <div class="ac-resumo-lista">
                   ${equipe.map(i => `
                     <div class="ac-rl-item">
-                      <span class="ac-rl-nome">${i.nome}</span>
+                      <span class="ac-rl-nome">${i.nome}${i.matricula ? ' — ' + i.matricula : ''}</span>
                       <span class="ac-rl-meta">${i.posto || ''}${i.horario ? ' · ' + i.horario : ''}</span>
                     </div>`).join('')}
                 </div>`;
