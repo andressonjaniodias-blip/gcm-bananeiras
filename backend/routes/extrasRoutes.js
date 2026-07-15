@@ -349,15 +349,15 @@ async function construirPdfDia(dataStr, vagas, redigido = false) {
     ].map(c => ({ ...c, px: c.w * conteudoW }));
 
     let y = doc.y + 4;
-    const rowH = 20;
+    const rowH = 24;
     const drawRow = (vals, opts = {}) => {
       let x = margem;
       if (opts.header) { doc.rect(margem, y, conteudoW, rowH).fill(NAVY); }
       else if (opts.zebra) { doc.rect(margem, y, conteudoW, rowH).fill('#f2f5fa'); }
       cols.forEach((c, i) => {
         doc.fillColor(opts.header ? '#fff' : '#222')
-           .font(opts.header ? 'Helvetica-Bold' : 'Helvetica').fontSize(8.5)
-           .text(String(vals[i] ?? ''), x + 3, y + 6, { width: c.px - 6, align: c.num ? 'right' : 'left', lineBreak: false });
+           .font(opts.header ? 'Helvetica-Bold' : 'Helvetica').fontSize(12)
+           .text(String(vals[i] ?? ''), x + 3, y + 7, { width: c.px - 6, align: c.num ? 'right' : 'left', lineBreak: false });
         x += c.px;
       });
       y += rowH;
@@ -365,7 +365,7 @@ async function construirPdfDia(dataStr, vagas, redigido = false) {
 
     drawRow(cols.map(c => c.t), { header: true });
     if (!vagas.length) {
-      doc.fillColor('#999').font('Helvetica-Oblique').fontSize(10)
+      doc.fillColor('#999').font('Helvetica-Oblique').fontSize(12)
          .text('Nenhum plantão extra lançado para este dia.', margem, y + 8, { width: conteudoW, align: 'center' });
     } else {
       vagas.forEach((v, idx) => {
@@ -377,11 +377,11 @@ async function construirPdfDia(dataStr, vagas, redigido = false) {
       });
       doc.moveDown(0.5);
       if (redigido) {
-        doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(10)
+        doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(12)
            .text(`Total do dia: ${vagas.length} plantão(ões)`, margem, y + 8, { width: conteudoW, align: 'right' });
       } else {
         const total = vagas.reduce((a, v) => a + Number(v.valor || 0), 0);
-        doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(10)
+        doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(12)
            .text(`Total do dia: ${vagas.length} plantão(ões) — R$ ${total.toFixed(2)}`, margem, y + 8, { width: conteudoW, align: 'right' });
       }
     }
@@ -488,15 +488,15 @@ router.get('/relatorio/pdf', verificarToken, verificarSupervisor, async (req, re
     ].map(c => ({ ...c, px: c.w * conteudoW }));
 
     let y = doc.y + 4;
-    const rowH = 20;
+    const rowH = 24;
     const row = (vals, opts = {}) => {
       let x = margem;
       if (opts.header) doc.rect(margem, y, conteudoW, rowH).fill(NAVY);
       else if (opts.zebra) doc.rect(margem, y, conteudoW, rowH).fill('#f2f5fa');
       cols.forEach((c, i) => {
         doc.fillColor(opts.header ? '#fff' : '#222')
-           .font(opts.header || opts.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(9)
-           .text(String(vals[i] ?? ''), x + 4, y + 6, { width: c.px - 8, align: c.num ? 'right' : 'left', lineBreak: false });
+           .font(opts.header || opts.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(12)
+           .text(String(vals[i] ?? ''), x + 4, y + 7, { width: c.px - 8, align: c.num ? 'right' : 'left', lineBreak: false });
         x += c.px;
       });
       y += rowH;
@@ -504,7 +504,7 @@ router.get('/relatorio/pdf', verificarToken, verificarSupervisor, async (req, re
 
     row(cols.map(c => c.t), { header: true });
     if (!rows.length) {
-      doc.fillColor('#999').font('Helvetica-Oblique').fontSize(10)
+      doc.fillColor('#999').font('Helvetica-Oblique').fontSize(12)
          .text('Nenhum plantão no período.', margem, y + 8, { width: conteudoW, align: 'center' });
     } else {
       rows.forEach((r, idx) => {
