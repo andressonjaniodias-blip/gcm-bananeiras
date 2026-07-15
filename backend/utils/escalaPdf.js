@@ -28,7 +28,7 @@ function nomeMes(mesRef) {
 }
 
 // ── Entrada por agente (2 linhas): "Nome — matrícula" / "Setor · horário" ──────
-const AGENTE_GAP = 3;
+const AGENTE_GAP = 5;
 
 function entradaAgente(i) {
   const nome = i.nome_exibicao || i.nome || '';
@@ -40,18 +40,18 @@ function entradaAgente(i) {
 
 function medirAgente(doc, i, w) {
   const e = entradaAgente(i);
-  doc.fontSize(8).font('Helvetica-Bold');
+  doc.fontSize(12).font('Helvetica-Bold');
   let h = doc.heightOfString(e.linha1, { width: w });
-  if (e.linha2) { doc.fontSize(7).font('Helvetica-Oblique'); h += doc.heightOfString(e.linha2, { width: w }); }
+  if (e.linha2) { doc.fontSize(11).font('Helvetica-Oblique'); h += doc.heightOfString(e.linha2, { width: w }); }
   return h + AGENTE_GAP;
 }
 
 function desenharAgente(doc, i, x, y, w) {
   const e = entradaAgente(i);
-  doc.fillColor('#1a1a1a').fontSize(8).font('Helvetica-Bold').text(e.linha1, x, y, { width: w });
+  doc.fillColor('#1a1a1a').fontSize(12).font('Helvetica-Bold').text(e.linha1, x, y, { width: w });
   let yy = doc.y;
   if (e.linha2) {
-    doc.fillColor('#666').fontSize(7).font('Helvetica-Oblique').text(e.linha2, x, yy, { width: w });
+    doc.fillColor('#666').fontSize(11).font('Helvetica-Oblique').text(e.linha2, x, yy, { width: w });
     yy = doc.y;
   }
   return yy + AGENTE_GAP;
@@ -60,21 +60,21 @@ function desenharAgente(doc, i, x, y, w) {
 // Bloco de OBSERVAÇÕES (férias + observações gerais). Compartilhado pelos dois PDFs.
 function desenharObservacoes(doc, { escala, ferias, margem, conteudoW, pageW }) {
   if (!(ferias.length || escala.obs)) return;
-  if (doc.y > doc.page.height - doc.page.margins.bottom - 70) { doc.addPage(); doc.y = doc.page.margins.top; }
+  if (doc.y > doc.page.height - doc.page.margins.bottom - 85) { doc.addPage(); doc.y = doc.page.margins.top; }
   doc.moveDown(0.9);
-  doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold')
+  doc.fillColor(NAVY).fontSize(16).font('Helvetica-Bold')
      .text('OBSERVAÇÕES', margem, doc.y, { width: conteudoW });
   doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(0.8).stroke(NAVY);
   doc.moveDown(0.4);
 
   if (ferias.length) {
-    doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text('Férias no mês: ', { continued: true })
+    doc.fillColor(NAVY).fontSize(13).font('Helvetica-Bold').text('Férias no mês: ', { continued: true })
        .fillColor('#222').font('Helvetica')
        .text(ferias.map(f => `${f.nome}${f.matricula ? ' (' + f.matricula + ')' : ''} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}`).join('; '));
   }
   if (escala.obs) {
     if (ferias.length) doc.moveDown(0.4);
-    doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text('Observações gerais: ', { continued: true })
+    doc.fillColor(NAVY).fontSize(13).font('Helvetica-Bold').text('Observações gerais: ', { continued: true })
        .fillColor('#222').font('Helvetica').text(escala.obs);
   }
 }
@@ -84,7 +84,7 @@ function novoDoc() {
 }
 
 // ── PDF calendário dia a dia ──────────────────────────────────────────────────
-const TITULO_H = 16, PAD_TOP = 3, CARD_BOTTOM = 6;
+const TITULO_H = 24, PAD_TOP = 5, CARD_BOTTOM = 9;
 
 function desenharPdfEscala(escala, itens, ferias) {
   const doc = novoDoc();
@@ -109,7 +109,7 @@ function desenharPdfEscala(escala, itens, ferias) {
 
   function quebrarPagina() {
     doc.addPage();
-    doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold')
+    doc.fillColor(NAVY).fontSize(16).font('Helvetica-Bold')
        .text(`Escala de Serviço — ${nomeMes(escala.mes_referencia)} (continuação)`,
              margem, doc.page.margins.top, { width: conteudoW, align: 'center' });
     topY = doc.y + 6;
@@ -120,7 +120,7 @@ function desenharPdfEscala(escala, itens, ferias) {
   function medirCard(d) {
     let h = TITULO_H + PAD_TOP;
     if (!d.itens.length) {
-      doc.fontSize(8).font('Helvetica-Oblique');
+      doc.fontSize(12).font('Helvetica-Oblique');
       h += doc.heightOfString('(sem serviço)', { width: colW - 10 });
     }
     d.itens.forEach(i => { h += medirAgente(doc, i, colW - 10); });
@@ -130,11 +130,11 @@ function desenharPdfEscala(escala, itens, ferias) {
   function desenharCard(d, x, y) {
     const cor = d.fimDeSemana ? '#8b1e3f' : NAVY;
     doc.rect(x, y, colW, TITULO_H).fill(cor);
-    doc.fillColor('#fff').fontSize(9).font('Helvetica-Bold')
-       .text(`DIA ${String(d.dia).padStart(2, '0')} — ${DIAS_SEM[d.diaSemana]}`, x + 5, y + 4, { width: colW - 10 });
+    doc.fillColor('#fff').fontSize(13).font('Helvetica-Bold')
+       .text(`DIA ${String(d.dia).padStart(2, '0')} — ${DIAS_SEM[d.diaSemana]}`, x + 5, y + 6, { width: colW - 10 });
     let yy = y + TITULO_H + PAD_TOP;
     if (!d.itens.length) {
-      doc.fillColor('#999').fontSize(8).font('Helvetica-Oblique')
+      doc.fillColor('#999').fontSize(12).font('Helvetica-Oblique')
          .text('(sem serviço)', x + 5, yy, { width: colW - 10 });
       return doc.y + CARD_BOTTOM;
     }
@@ -183,13 +183,13 @@ function desenharPdfResumo(escala, resumo, ferias) {
   ['1', '2', '3', '4'].forEach((p, idx) => {
     const x = margem + idx * (colW4 + gap4);
     let y = topY;
-    doc.rect(x, y, colW4, 20).fill(NAVY);
-    doc.fillColor('#fff').fontSize(10).font('Helvetica-Bold')
-       .text(`PATRULHA ${p}${p === dia1 ? ' (dia 1)' : ''}`, x, y + 5, { width: colW4, align: 'center' });
-    y += 24;
+    doc.rect(x, y, colW4, 30).fill(NAVY);
+    doc.fillColor('#fff').fontSize(15).font('Helvetica-Bold')
+       .text(`PATRULHA ${p}${p === dia1 ? ' (dia 1)' : ''}`, x, y + 8, { width: colW4, align: 'center' });
+    y += 34;
     const its = resumo.patrulhas[p];
     if (!its.length) {
-      doc.fillColor('#999').fontSize(8).font('Helvetica-Oblique')
+      doc.fillColor('#999').fontSize(12).font('Helvetica-Oblique')
          .text('(sem lançamentos)', x, y + 2, { width: colW4, align: 'center' });
       y = doc.y;
     }
@@ -200,16 +200,16 @@ function desenharPdfResumo(escala, resumo, ferias) {
 
   // Título de bloco (largura total), com quebra de página se necessário.
   function tituloBloco(texto) {
-    if (doc.y > bottomLimit - 46) { doc.addPage(); doc.y = doc.page.margins.top; }
+    if (doc.y > bottomLimit - 54) { doc.addPage(); doc.y = doc.page.margins.top; }
     doc.moveDown(0.7);
-    doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold').text(texto, margem, doc.y, { width: conteudoW });
+    doc.fillColor(NAVY).fontSize(16).font('Helvetica-Bold').text(texto, margem, doc.y, { width: conteudoW });
     doc.moveTo(margem, doc.y + 1).lineTo(pageW - margem, doc.y + 1).lineWidth(0.8).stroke(NAVY);
     doc.moveDown(0.3);
   }
 
   function subRotulo(texto) {
-    if (doc.y > bottomLimit - 20) { doc.addPage(); doc.y = doc.page.margins.top; }
-    doc.fillColor('#555').fontSize(9).font('Helvetica-BoldOblique').text(texto, margem, doc.y, { width: conteudoW });
+    if (doc.y > bottomLimit - 26) { doc.addPage(); doc.y = doc.page.margins.top; }
+    doc.fillColor('#555').fontSize(13).font('Helvetica-BoldOblique').text(texto, margem, doc.y, { width: conteudoW });
     doc.y = doc.y + 2;
   }
 
