@@ -131,7 +131,7 @@ async function usarLocalizacaoAtual({ tipo = 'local', campos = {}, campo, btn } 
   }
 }
 
-// Conveniência para blocos dinâmicos de vítima/suspeito (gerados por htmlPessoa em main.js)
+// Conveniência para blocos dinâmicos de envolvidos (gerados por htmlPessoa em main.js)
 function usarLocalizacaoPessoa(btn) {
   const bloco = btn.closest('.bloco-pessoa');
   if (!bloco) return;
