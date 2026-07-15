@@ -5,6 +5,7 @@ class Boletim {
     dadosOcorrencia,
     vitimas = [],
     suspeitos = [],
+    testemunhas = [],
     relato,
     objetos = [],
     autoridade,
@@ -15,6 +16,7 @@ class Boletim {
     this.dadosOcorrencia = dadosOcorrencia;
     this.vitimas = vitimas;
     this.suspeitos = suspeitos;
+    this.testemunhas = testemunhas;
     this.relato = relato;
     this.objetos = objetos;
     this.autoridade = autoridade;
