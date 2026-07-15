@@ -53,8 +53,7 @@
         <nav class="tabs">
           <button onclick="showTab('solicitacao')" class="tab-btn active" data-tab="solicitacao">Dados da Solicitação</button>
           <button onclick="showTab('ocorrencia')" class="tab-btn" data-tab="ocorrencia">Dados da Ocorrência</button>
-          <button onclick="showTab('vitima')" class="tab-btn" data-tab="vitima">Vítimas</button>
-          <button onclick="showTab('suspeito')" class="tab-btn" data-tab="suspeito">Suspeitos</button>
+          <button onclick="showTab('envolvidos')" class="tab-btn" data-tab="envolvidos">Envolvidos</button>
           <button onclick="showTab('relato')" class="tab-btn" data-tab="relato">Relato</button>
           <button onclick="showTab('anexos')" class="tab-btn" data-tab="anexos">Anexos</button>
           <button onclick="showTab('objetos')" class="tab-btn" data-tab="objetos">Objetos</button>
@@ -130,73 +129,51 @@
         <label class="obrigatorio">Código da Viatura</label>
         <input type="text" name="viatura" placeholder="Ex: GCM-01" required maxlength="20">
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <div class="campo-group">
-          <label class="obrigatorio">Comandante</label>
-          <input type="text" name="comandante" id="ag-cmd-nome" placeholder="Nome do comandante" required maxlength="150"
-            onblur="agAutoNome('ag-cmd-nome','ag-cmd-mat')">
-        </div>
-        <div class="campo-group">
-          <label>Matrícula</label>
-          <input type="text" name="matriculaComandante" id="ag-cmd-mat" placeholder="Ex: GCM-001" maxlength="30"
-            onblur="agAutoMat('ag-cmd-mat','ag-cmd-nome')">
+      <div class="campo-group">
+        <label class="obrigatorio">Comandante</label>
+        <div class="ta">
+          <input type="text" name="comandante" id="ag-cmd-nome" autocomplete="off" placeholder="Digite o nome do comandante" required maxlength="150"
+            oninput="filtrarAgentesBO(this)" onfocus="filtrarAgentesBO(this)" onkeydown="navAgentesBO(event,this)" onblur="fecharAgentesBO(this)">
+          <div class="ta-list"></div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <div class="campo-group">
-          <label>Motorista</label>
-          <input type="text" name="motorista" id="ag-mt-nome" placeholder="Nome do motorista" maxlength="150"
-            onblur="agAutoNome('ag-mt-nome','ag-mt-mat')">
-        </div>
-        <div class="campo-group">
-          <label>Matrícula</label>
-          <input type="text" name="matriculaMotorista" id="ag-mt-mat" placeholder="Ex: GCM-002" maxlength="30"
-            onblur="agAutoMat('ag-mt-mat','ag-mt-nome')">
+      <div class="campo-group">
+        <label>Motorista</label>
+        <div class="ta">
+          <input type="text" name="motorista" id="ag-mt-nome" autocomplete="off" placeholder="Digite o nome do motorista" maxlength="150"
+            oninput="filtrarAgentesBO(this)" onfocus="filtrarAgentesBO(this)" onkeydown="navAgentesBO(event,this)" onblur="fecharAgentesBO(this)">
+          <div class="ta-list"></div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <div class="campo-group">
-          <label>Patrulheiro I</label>
-          <input type="text" name="patrulheiroI" id="ag-p1-nome" placeholder="Nome" maxlength="150"
-            onblur="agAutoNome('ag-p1-nome','ag-p1-mat')">
-        </div>
-        <div class="campo-group">
-          <label>Matrícula</label>
-          <input type="text" name="matriculaPatrulheiroI" id="ag-p1-mat" placeholder="Ex: GCM-003" maxlength="30"
-            onblur="agAutoMat('ag-p1-mat','ag-p1-nome')">
+      <div class="campo-group">
+        <label>Patrulheiro I</label>
+        <div class="ta">
+          <input type="text" name="patrulheiroI" id="ag-p1-nome" autocomplete="off" placeholder="Digite o nome do patrulheiro" maxlength="150"
+            oninput="filtrarAgentesBO(this)" onfocus="filtrarAgentesBO(this)" onkeydown="navAgentesBO(event,this)" onblur="fecharAgentesBO(this)">
+          <div class="ta-list"></div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <div class="campo-group">
-          <label>Patrulheiro II</label>
-          <input type="text" name="patrulheiroII" id="ag-p2-nome" placeholder="Nome" maxlength="150"
-            onblur="agAutoNome('ag-p2-nome','ag-p2-mat')">
-        </div>
-        <div class="campo-group">
-          <label>Matrícula</label>
-          <input type="text" name="matriculaPatrulheiroII" id="ag-p2-mat" placeholder="Ex: GCM-004" maxlength="30"
-            onblur="agAutoMat('ag-p2-mat','ag-p2-nome')">
+      <div class="campo-group">
+        <label>Patrulheiro II</label>
+        <div class="ta">
+          <input type="text" name="patrulheiroII" id="ag-p2-nome" autocomplete="off" placeholder="Digite o nome do patrulheiro" maxlength="150"
+            oninput="filtrarAgentesBO(this)" onfocus="filtrarAgentesBO(this)" onkeydown="navAgentesBO(event,this)" onblur="fecharAgentesBO(this)">
+          <div class="ta-list"></div>
         </div>
       </div>
     </section>
 
-    <!-- Vítimas -->
-    <section id="vitima" class="tab-content hidden">
-      <h3>Dados das Vítimas</h3>
-      <div id="vitimas-list"></div>
+    <!-- Envolvidos (vítimas, suspeitos e testemunhas) -->
+    <section id="envolvidos" class="tab-content hidden">
+      <h3>Pessoas Envolvidas</h3>
+      <p style="font-size:0.85rem;color:var(--color-text-muted);margin-bottom:16px;">
+        Adicione cada pessoa envolvida na ocorrência e indique o grau de participação
+        (vítima, suspeito ou testemunha).
+      </p>
+      <div id="envolvidos-list"></div>
       <div class="add-remove-group">
-        <button type="button" class="btn-adicionar" onclick="adicionarVitima()">+ Adicionar Vítima</button>
-        <button type="button" class="btn-remover-ultimo" id="btnRemoverVitima" onclick="removerUltimoVitima()" style="display:none;">- Remover Última</button>
-      </div>
-    </section>
-
-    <!-- Suspeitos -->
-    <section id="suspeito" class="tab-content hidden">
-      <h3>Dados dos Suspeitos</h3>
-      <div id="suspeitos-list"></div>
-      <div class="add-remove-group">
-        <button type="button" class="btn-adicionar" onclick="adicionarSuspeito()">+ Adicionar Suspeito</button>
-        <button type="button" class="btn-remover-ultimo" id="btnRemoverSuspeito" onclick="removerUltimoSuspeito()" style="display:none;">- Remover Último</button>
+        <button type="button" class="btn-adicionar" onclick="adicionarEnvolvido()">+ Adicionar Envolvido</button>
+        <button type="button" class="btn-remover-ultimo" id="btnRemoverEnvolvido" onclick="removerUltimoEnvolvido()" style="display:none;">- Remover Último</button>
       </div>
     </section>
 
@@ -359,21 +336,67 @@
       } catch {}
     })();
 
-    function agAutoNome(nomeId, matId) {
-      const nomeEl = document.getElementById(nomeId);
-      const matEl  = document.getElementById(matId);
-      if (!nomeEl || !matEl || !nomeEl.value.trim()) return;
-      const ag = _agentesCache.find(a => a.nome.toLowerCase() === nomeEl.value.trim().toLowerCase());
-      if (ag) matEl.value = ag.matricula || '';
+    // ── Typeahead de agente (mesmo padrão da escala) ─────────────────────────
+    // O usuário digita o nome e escolhe na lista de agentes do banco; a matrícula
+    // não é mais pedida no formulário (vem do banco e só aparece no PDF).
+    function normNomeBO(s) {
+      return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    }
+    function _taBoxBO(inp) { return inp.closest('.ta')?.querySelector('.ta-list'); }
+
+    function filtrarAgentesBO(inp) {
+      const box = _taBoxBO(inp);
+      if (!box) return;
+      const q = normNomeBO(inp.value);
+      const achados = (q
+        ? _agentesCache.filter(a => normNomeBO(a.nome).includes(q) || String(a.matricula || '').toLowerCase().includes(q))
+        : _agentesCache).slice(0, 8);
+      if (!achados.length) {
+        box.innerHTML = '<div class="ta-empty">Nenhum agente encontrado.</div>';
+        box.classList.add('aberta');
+        return;
+      }
+      box.innerHTML = achados.map((a, i) =>
+        `<div class="ta-item${i === 0 ? ' ativo' : ''}" data-id="${a.id}" onmousedown="event.preventDefault();escolherAgenteBO('${inp.id}',${a.id})">${escHtml(a.nome)}${a.matricula ? ` <span class="ta-mat">${escHtml(a.matricula)}</span>` : ''}</div>`
+      ).join('');
+      box.classList.add('aberta');
     }
 
-    function agAutoMat(matId, nomeId) {
-      const matEl  = document.getElementById(matId);
-      const nomeEl = document.getElementById(nomeId);
-      if (!matEl || !nomeEl || !matEl.value.trim()) return;
-      const mat = matEl.value.trim().toLowerCase();
-      const ag  = _agentesCache.find(a => (a.matricula || '').toLowerCase() === mat);
-      if (ag) nomeEl.value = ag.nome;
+    function escolherAgenteBO(inputId, id) {
+      const inp = document.getElementById(inputId);
+      const a = _agentesCache.find(x => String(x.id) === String(id));
+      if (!inp || !a) return;
+      inp.value = a.nome;
+      const box = _taBoxBO(inp);
+      if (box) box.classList.remove('aberta');
+    }
+
+    function fecharAgentesBO(inp) {
+      setTimeout(() => { const b = _taBoxBO(inp); if (b) b.classList.remove('aberta'); }, 150);
+    }
+
+    function navAgentesBO(e, inp) {
+      const box = _taBoxBO(inp);
+      if (!box || !box.classList.contains('aberta')) return;
+      const itens = [...box.querySelectorAll('.ta-item')];
+      if (!itens.length) return;
+      let i = itens.findIndex(x => x.classList.contains('ativo'));
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (i >= 0) itens[i].classList.remove('ativo');
+        i = (i + 1) % itens.length;
+        itens[i].classList.add('ativo'); itens[i].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (i >= 0) itens[i].classList.remove('ativo');
+        i = (i <= 0 ? itens.length - 1 : i - 1);
+        itens[i].classList.add('ativo'); itens[i].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        const ativo = itens[i] || itens[0];
+        if (ativo) { e.preventDefault(); escolherAgenteBO(inp.id, ativo.dataset.id); }
+      } else if (e.key === 'Escape') {
+        box.classList.remove('aberta');
+      }
     }
   </script>
 </body>
