@@ -112,6 +112,48 @@ function montarCalendarioMes(itens, mesRef, patrulhaDia1 = '1') {
   return dias;
 }
 
+// Equipe de um lançamento 12x36 pela paridade da patrulha: patrulha ímpar (1,3)
+// cobre os dias ímpares (Equipe 1); par (2,4) cobre os pares (Equipe 2).
+function _equipe12x36(patrulha) {
+  const p = parseInt(patrulha, 10) || 1;
+  return (p % 2 === 1) ? 1 : 2;
+}
+
+// Monta o "resumo" da escala (template compacto, sem expandir por dia): classifica
+// cada lançamento pelo horário — mesma leitura de escalaTrabalhaHoje — em blocos:
+//   patrulhas['1'..'4'] → rodízio 24x72 (por patrulha)
+//   segSex              → 'Segunda a Sexta'
+//   diurno {1,2}        → '12x36 Diurno', por equipe (paridade da patrulha)
+//   noturno {1,2}       → '12x36 Noturno', por equipe
+//   fimDeSemana         → 'Sábado e Domingo'
+// Cada lista já vem ordenada por setor (rankSetor → posto → nome).
+function montarResumoEscala(itens) {
+  const resumo = {
+    patrulhas: { '1': [], '2': [], '3': [], '4': [] },
+    segSex: [],
+    diurno: { 1: [], 2: [] },
+    noturno: { 1: [], 2: [] },
+    fimDeSemana: [],
+  };
+  (itens || []).forEach(i => {
+    const h = (i.horario || '').toLowerCase();
+    if (h.includes('segunda a sexta')) { resumo.segSex.push(i); return; }
+    if (h.includes('sábado') || h.includes('sabado') || h.includes('domingo')) { resumo.fimDeSemana.push(i); return; }
+    if (h.includes('12x36')) {
+      const turno = h.includes('noturno') ? 'noturno' : 'diurno';
+      resumo[turno][_equipe12x36(i.patrulha)].push(i);
+      return;
+    }
+    const p = String(parseInt(i.patrulha, 10));
+    if (resumo.patrulhas[p]) resumo.patrulhas[p].push(i);
+    else resumo.segSex.push(i); // 24x72 sem patrulha válida (ex.: 'ADM' legado) → administrativo
+  });
+  const ord = a => a.sort(_compararItensDoDia);
+  ['1', '2', '3', '4'].forEach(p => ord(resumo.patrulhas[p]));
+  [resumo.segSex, resumo.fimDeSemana, resumo.diurno[1], resumo.diurno[2], resumo.noturno[1], resumo.noturno[2]].forEach(ord);
+  return resumo;
+}
+
 // ── Ordenação dos setores (posto) na escala ──────────────────────────────────
 // Ordem operacional fixa (não alfabética): setores nomeados primeiro, depois os
 // demais agrupados pelo horário do lançamento. Ver rankSetor().
@@ -166,4 +208,4 @@ function compararItensEscala(a, b) {
   return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
 }
 
-module.exports = { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, montarCalendarioMes, rankSetor, compararItensEscala };
+module.exports = { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, montarCalendarioMes, montarResumoEscala, rankSetor, compararItensEscala };
