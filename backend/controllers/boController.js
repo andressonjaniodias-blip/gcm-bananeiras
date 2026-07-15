@@ -393,12 +393,49 @@ async function construirPdfBO(row, opts = {}) {
       doc.moveDown(0.8);
     }
 
+    // ── Equipe da viatura: matrícula vinda do banco ───────────────────────────
+    // Os inputs de matrícula saíram do formulário; a matrícula de cada agente
+    // vem da tabela `agentes` e só aparece aqui no PDF. Uma única consulta para
+    // os quatro nomes; a matrícula é inserida logo após o nome do agente,
+    // preservando a ordem dos demais campos da seção.
+    const oc = dados.dadosOcorrencia;
+    if (oc && typeof oc === 'object') {
+      const paresAgente = [
+        ['comandante',    'matriculaComandante'],
+        ['motorista',     'matriculaMotorista'],
+        ['patrulheiroI',  'matriculaPatrulheiroI'],
+        ['patrulheiroII', 'matriculaPatrulheiroII'],
+      ];
+      const nomes = paresAgente
+        .map(([nk]) => oc[nk])
+        .filter(v => v && String(v).trim())
+        .map(v => String(v).trim().toLowerCase());
+      if (nomes.length) {
+        const { rows: agRows } = await db.query(
+          `SELECT nome, matricula FROM agentes WHERE ativo = true AND LOWER(nome) = ANY($1)`,
+          [nomes]
+        );
+        const mapaMatricula = new Map(agRows.map(r => [String(r.nome).toLowerCase(), r.matricula]));
+        const ocEnriquecido = {};
+        for (const [k, v] of Object.entries(oc)) {
+          ocEnriquecido[k] = v;
+          const par = paresAgente.find(([nk]) => nk === k);
+          if (par && v && String(v).trim()) {
+            const mat = oc[par[1]] || mapaMatricula.get(String(v).trim().toLowerCase());
+            if (mat) ocEnriquecido[par[1]] = mat;
+          }
+        }
+        dados.dadosOcorrencia = ocEnriquecido;
+      }
+    }
+
     // ── Seções do BO ──────────────────────────────────────────────────────────
     secao('Dados da Solicitação', dados.dadosSolicitacao);
     secao('Dados da Ocorrência',  dados.dadosOcorrencia);
-    secaoArray('Vítimas',              'Vítima',   dados.vitimas);
-    secaoArray('Suspeitos',            'Suspeito', dados.suspeitos);
-    secaoArray('Objetos Apreendidos',  'Objeto',   dados.objetos);
+    secaoArray('Vítimas',              'Vítima',      dados.vitimas);
+    secaoArray('Suspeitos',            'Suspeito',    dados.suspeitos);
+    secaoArray('Testemunhas',          'Testemunha',  dados.testemunhas);
+    secaoArray('Objetos Apreendidos',  'Objeto',      dados.objetos);
 
     if (dados.relato) {
       doc.moveDown(0.5);
