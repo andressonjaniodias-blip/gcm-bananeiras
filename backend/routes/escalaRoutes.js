@@ -3,8 +3,8 @@ const router  = express.Router();
 const pool    = require('../config/db');
 const { verificarToken, verificarSupervisor, auditar } = require('../middleware/auth');
 const erroServidor = require('../utils/erroServidor');
-const { numeroFolga, trabalhaNoDia, escalaTrabalhaHoje, montarCalendarioMes, rankSetor, compararItensEscala } = require('../utils/escalaCalc');
-const { desenharPdfEscala, nomeMes } = require('../utils/escalaPdf');
+const { numeroFolga, trabalhaNoDia, escalaTrabalhaHoje, montarCalendarioMes, montarResumoEscala, rankSetor, compararItensEscala } = require('../utils/escalaCalc');
+const { desenharPdfEscala, desenharPdfResumo, nomeMes } = require('../utils/escalaPdf');
 const { enviarPdfNotificacao } = require('../utils/email');
 
 const PATRULHAS = ['1', '2', '3', '4'];
@@ -207,9 +207,10 @@ router.delete('/:id', verificarToken, verificarSupervisor, async (req, res) => {
   } catch (err) { erroServidor(res, err); }
 });
 
-// Monta o PDF da escala mensal (calendário dia a dia). Busca os dados no banco e
-// delega o desenho a desenharPdfEscala (separado para permitir teste sem banco).
-async function construirPdfEscala(escala) {
+// Monta o PDF da escala mensal no formato pedido ('calendario' dia a dia ou
+// 'resumo' por blocos). Busca os dados no banco e delega o desenho ao escalaPdf
+// (separado para permitir teste sem banco).
+async function construirPdfEscala(escala, formato = 'calendario') {
   const { rows: itens } = await pool.query(
     `SELECT ei.*, COALESCE(NULLIF(a.usuario, ''), ei.nome) AS nome_exibicao
        FROM escala_itens ei
@@ -228,11 +229,13 @@ async function construirPdfEscala(escala) {
     [inicioMes, fimMes]
   );
 
-  return desenharPdfEscala(escala, itens, ferias);
+  return formato === 'resumo'
+    ? desenharPdfResumo(escala, montarResumoEscala(itens), ferias)
+    : desenharPdfEscala(escala, itens, ferias);
 }
 
-// ── Calendário dia a dia da escala (mesma expansão do PDF, para a visualização) ──
-router.get('/:id/calendario', verificarToken, async (req, res) => {
+// ── Visualização da escala (calendário dia a dia + resumo, para a tela) ───────
+router.get('/:id/visualizacao', verificarToken, async (req, res) => {
   try {
     const { rows } = await pool.query(`SELECT * FROM escalas WHERE id = $1`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Escala não encontrada.' });
@@ -257,27 +260,29 @@ router.get('/:id/calendario', verificarToken, async (req, res) => {
       [inicioMes, fimMes]
     );
 
-    const diasCal = montarCalendarioMes(itens, mes, escala.patrulha_dia1);
     res.json({
       escala: { id: escala.id, numero: escala.numero, mes_referencia: escala.mes_referencia, titulo: escala.titulo, patrulha_dia1: escala.patrulha_dia1, criado_por: escala.criado_por },
-      dias: diasCal,
+      dias: montarCalendarioMes(itens, mes, escala.patrulha_dia1),
+      resumo: montarResumoEscala(itens),
       ferias,
       obs: escala.obs || null,
     });
   } catch (err) { erroServidor(res, err); }
 });
 
-// ── PDF da escala (calendário dia a dia) ─────────────────────────────────────
+// ── PDF da escala (formato=calendario padrão | resumo) ───────────────────────
 router.get('/:id/pdf', verificarToken, verificarSupervisor, async (req, res) => {
   try {
     const { rows } = await pool.query(`SELECT * FROM escalas WHERE id = $1`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Escala não encontrada.' });
     const escala = rows[0];
 
-    const pdfBuffer = await construirPdfEscala(escala);
+    const formato = req.query.formato === 'resumo' ? 'resumo' : 'calendario';
+    const pdfBuffer = await construirPdfEscala(escala, formato);
+    const sufixo = formato === 'resumo' ? '-resumo' : '';
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="escala-${escala.mes_referencia}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="escala-${escala.mes_referencia}${sufixo}.pdf"`);
     res.end(pdfBuffer);
   } catch (err) { erroServidor(res, err); }
 });
