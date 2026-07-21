@@ -500,6 +500,11 @@
           <label>Nome Completo</label>
           <input type="text" id="editNome" maxlength="150">
         </div>
+        <div class="modal-field" style="grid-column:1/-1;">
+          <label>Nome de Guerra</label>
+          <input type="text" id="editNomeGuerra" maxlength="60" placeholder="Como o agente é citado nos documentos">
+          <small style="color:var(--color-hint);font-size:0.72rem;">Usado na escala, nos plantões extras, nas férias e no BO. Em branco, o documento sai com o nome completo.</small>
+        </div>
         <div class="modal-field">
           <label>CPF</label>
           <input type="text" id="editCpf" maxlength="14" oninput="mascaraCpf(this)">
@@ -794,7 +799,7 @@
       document.getElementById('editRole').value    = role;
 
       // Limpa campos do agente
-      ['editNome','editCpf','editRg','editNascimento','editMatricula',
+      ['editNome','editNomeGuerra','editCpf','editRg','editNascimento','editMatricula',
        'editCargo','editLotacao','editAdmissao','editEmail','editTelefone'].forEach(id => {
         document.getElementById(id).value = '';
       });
@@ -812,6 +817,7 @@
           if (ag) {
             document.getElementById('editAgenteId').value  = ag.id;
             document.getElementById('editNome').value      = ag.nome || '';
+            document.getElementById('editNomeGuerra').value= ag.nome_guerra || '';
             document.getElementById('editCpf').value       = ag.cpf || '';
             document.getElementById('editRg').value        = ag.rg || '';
             document.getElementById('editNascimento').value= ag.data_nascimento ? ag.data_nascimento.slice(0,10) : '';
@@ -868,6 +874,7 @@
       if (agenteId) {
         const payload = {
           nome:             document.getElementById('editNome').value.trim() || null,
+          nome_guerra:      document.getElementById('editNomeGuerra').value.trim() || null,
           cpf:              document.getElementById('editCpf').value.trim() || null,
           rg:               document.getElementById('editRg').value.trim() || null,
           data_nascimento:  document.getElementById('editNascimento').value || null,
