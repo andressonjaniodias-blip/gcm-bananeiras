@@ -56,9 +56,15 @@
     @media (max-width:520px){ .view-grid { grid-template-columns:1fr; } }
     .view-col { border:1px solid var(--color-border); border-radius:var(--radius-sm); overflow:hidden; }
     .view-col-head { background:var(--color-primary); color:#fff; text-align:center; font-weight:700; padding:7px; font-size:0.85rem; }
+    .view-col-sub { font-size:0.72rem; font-weight:600; font-style:italic; opacity:0.85; }
     .view-col-body { padding:8px; }
     .view-posto { font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--color-primary);
       margin:7px 0 2px; letter-spacing:0.03em; }
+    .view-posto:first-child { margin-top:0; }
+    /* Título dos blocos abaixo da tabela de equipes (Seg-Sex, fim de semana) */
+    .view-bloco { font-size:0.78rem; font-weight:700; text-transform:uppercase; color:var(--color-primary);
+      margin:16px 0 5px; letter-spacing:0.03em; border-bottom:1px solid var(--color-primary); padding-bottom:3px; }
+    .view-bloco:first-child { margin-top:0; }
     .view-agente { font-size:0.82rem; padding:1px 0; color:var(--color-text); }
     .view-obs { margin-top:14px; font-size:0.85rem; color:var(--color-text); }
     /* Calendário dia a dia (visualização da escala) */
@@ -76,7 +82,6 @@
     .cal-ag:first-child { margin-top:0; }
     .cal-nome { font-size:0.8rem; font-weight:600; color:var(--color-text); line-height:1.2; }
     .cal-setor { font-size:0.72rem; color:var(--color-hint); line-height:1.2; }
-    .cal-subrotulo { font-size:0.75rem; font-weight:700; font-style:italic; color:var(--color-text-muted,#555); margin:6px 0 2px; }
     /* Alternador Calendário/Resumo + baixar PDF */
     .view-toolbar { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 16px; border-bottom:1px solid var(--color-border); flex-wrap:wrap; }
     .view-seg { display:inline-flex; border:1px solid var(--color-border); border-radius:var(--radius-sm); overflow:hidden; }
@@ -519,26 +524,44 @@
       return html+'</div>';
     }
 
+    // Só o nome: usado na tabela de equipes, onde o setor já é o título do grupo.
+    function agenteNomeHTML(i){
+      const nome=(i.nome_exibicao||i.nome||'')+(i.matricula?` — ${i.matricula}`:'');
+      return `<div class="cal-ag"><div class="cal-nome">${nome}</div></div>`;
+    }
+
+    // Turno abreviado no título do grupo (coluna estreita) — igual ao PDF.
+    function horarioCurto(horario){
+      const h=(horario||'').toLowerCase();
+      if(h.includes('noturno')) return '12x36 N';
+      if(h.includes('12x36')) return '12x36 D';
+      return horario||'';
+    }
+
+    // Tabela única das 4 equipes do rodízio: cada coluna é quem está de serviço no dia
+    // daquela equipe, agrupado por posto + horário. O 12x36 vem repetido em duas
+    // colunas (o backend já resolve isso em montarResumoEscala).
+    function gradeEquipes(equipes, dia1){
+      let h='<div class="view-grid">';
+      ['1','2','3','4'].forEach(p=>{
+        const grupos=(equipes&&equipes[p])||[];
+        const body=grupos.length
+          ? grupos.map(g=>{ const hc=horarioCurto(g.horario);
+              return `<div class="view-posto">${g.posto}${hc?` · ${hc}`:''}</div>${g.itens.map(agenteNomeHTML).join('')}`; }).join('')
+          : '<div class="cal-dia-vazio">(sem lançamentos)</div>';
+        h+=`<div class="view-col"><div class="view-col-head">Equipe ${p}<div class="view-col-sub">${p===dia1?'Dia 1':'&nbsp;'}</div></div><div class="view-col-body">${body}</div></div>`;
+      });
+      return h+'</div>';
+    }
+
     function renderResumoHTML(data){
       const r=data.resumo||{}; const dia1=String(data.escala.patrulha_dia1||'1');
-      let html='<div class="view-grid">';
-      ['1','2','3','4'].forEach(p=>{
-        const its=(r.patrulhas&&r.patrulhas[p])||[];
-        const body=its.length? its.map(agenteHTML).join('') : '<div class="cal-dia-vazio">(sem lançamentos)</div>';
-        html+=`<div class="view-col"><div class="view-col-head">Patrulha ${p}${p===dia1?' (dia 1)':''}</div><div class="view-col-body">${body}</div></div>`;
-      });
-      html+='</div>';
-      const bloco=(titulo,itens)=> (!itens||!itens.length)?'':`<div class="view-obs"><div class="view-posto">${titulo}</div>${itens.map(agenteHTML).join('')}</div>`;
-      const bloco12=(titulo,e1,e2)=>{ e1=e1||[]; e2=e2||[]; if(!e1.length&&!e2.length) return '';
-        let h=`<div class="view-obs"><div class="view-posto">${titulo}</div>`;
-        if(e1.length) h+=`<div class="cal-subrotulo">Equipe 1 — dias ímpares</div>${e1.map(agenteHTML).join('')}`;
-        if(e2.length) h+=`<div class="cal-subrotulo">Equipe 2 — dias pares</div>${e2.map(agenteHTML).join('')}`;
-        return h+'</div>'; };
-      html+=bloco('Segunda a Sexta', r.segSex);
-      html+=bloco12('12x36 Diurno', r.diurno&&r.diurno[1], r.diurno&&r.diurno[2]);
-      html+=bloco12('12x36 Noturno', r.noturno&&r.noturno[1], r.noturno&&r.noturno[2]);
-      html+=bloco('Fim de semana', r.fimDeSemana);
-      return html;
+      // Seg-Sex e fim de semana não seguem o rodízio: blocos soltos, com o setor
+      // embaixo de cada nome (ali não há agrupamento por posto).
+      const bloco=(titulo,itens)=> (!itens||!itens.length)?'':`<div class="view-obs"><div class="view-bloco">${titulo}</div>${itens.map(agenteHTML).join('')}</div>`;
+      return gradeEquipes(r.equipes, dia1)
+        + bloco('Segunda a Sexta', r.segSex)
+        + bloco('Fim de semana', r.fimDeSemana);
     }
 
     function footerViewHTML(data){
