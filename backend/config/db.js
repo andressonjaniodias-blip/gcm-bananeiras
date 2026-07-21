@@ -408,6 +408,62 @@ pool.connect()
       console.warn('[schema] UNIQUE em agentes.matricula não aplicado (verifique matrículas duplicadas):', e.message);
     }
 
+    // ── Nome de guerra próprio + login por matrícula ─────────────────────────
+    // Antes desta migração o nome de guerra NÃO existia como campo: ele era o
+    // próprio login (agentes.usuario), usado nos documentos via COALESCE. Agora
+    // ele ganha coluna própria e o login passa a ser a matrícula.
+    //
+    // A ORDEM É OBRIGATÓRIA: copiar usuario → nome_guerra ANTES de sobrescrever
+    // usuario com a matrícula. Invertido, os nomes de guerra somem sem backup.
+    await client.query(`ALTER TABLE agentes ADD COLUMN IF NOT EXISTS nome_guerra TEXT;`);
+
+    // 1º — preserva o nome de guerra que hoje mora no login. O "IS DISTINCT FROM
+    // matricula" torna o passo seguro numa 2ª execução: depois da migração
+    // usuario já é a matrícula, e matrícula não pode virar nome de guerra.
+    await client.query(`
+      UPDATE agentes SET nome_guerra = NULLIF(TRIM(usuario), '')
+       WHERE nome_guerra IS NULL
+         AND NULLIF(TRIM(usuario), '') IS NOT NULL
+         AND TRIM(usuario) IS DISTINCT FROM TRIM(matricula);
+    `);
+
+    // 2º — login passa a ser a matrícula, nos dois lados do vínculo
+    // (usuarios.usuario = agentes.usuario é como o sistema liga usuário e agente).
+    // Usuário sem agente vinculado (ex.: admin do setup) fica como está.
+    try {
+      const { rows: candidatos } = await client.query(`
+        SELECT u.id AS usuario_id, a.id AS agente_id, a.nome,
+               TRIM(a.matricula) AS matricula, u.usuario AS login_atual,
+               EXISTS (SELECT 1 FROM usuarios o
+                        WHERE o.usuario = TRIM(a.matricula) AND o.id <> u.id) AS colide
+          FROM usuarios u
+          JOIN agentes  a ON a.usuario = u.usuario
+         WHERE NULLIF(TRIM(a.matricula), '') IS NOT NULL
+           AND TRIM(a.matricula) IS DISTINCT FROM TRIM(u.usuario)
+      `);
+
+      // Um login ligado a mais de um agente é ambíguo: não dá para escolher a
+      // matrícula sozinho, então fica de fora e sai no aviso.
+      const porLogin = new Map();
+      candidatos.forEach(c => porLogin.set(c.usuario_id, (porLogin.get(c.usuario_id) || 0) + 1));
+
+      const pulados = [], migrar = [];
+      candidatos.forEach(c => {
+        if (c.colide) pulados.push(`${c.nome} mat.${c.matricula} — matrícula já é login de outra pessoa`);
+        else if (porLogin.get(c.usuario_id) > 1) pulados.push(`${c.nome} — login "${c.login_atual}" está ligado a mais de um agente`);
+        else migrar.push(c);
+      });
+      if (pulados.length) console.warn('[schema] login por matrícula pulado:', pulados.join('; '));
+
+      for (const c of migrar) {
+        await client.query(`UPDATE usuarios SET usuario = $1 WHERE id = $2`, [c.matricula, c.usuario_id]);
+        await client.query(`UPDATE agentes  SET usuario = $1 WHERE id = $2`, [c.matricula, c.agente_id]);
+      }
+      if (migrar.length) console.log(`[schema] login migrado para matrícula: ${migrar.length} usuário(s).`);
+    } catch (e) {
+      console.warn('[schema] migração do login para matrícula não aplicada:', e.message);
+    }
+
     // ── Salvaguarda da chave de criptografia (canário) ───────────────────────
     // Detecta troca acidental da ENCRYPTION_KEY, que tornaria todos os BOs e o
     // CPF/RG dos agentes ilegíveis de forma permanente e silenciosa. Se a chave
