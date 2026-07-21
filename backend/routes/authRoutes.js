@@ -114,7 +114,8 @@ router.post('/logout-inatividade', verificarToken, async (req, res) => {
 // Perfil do usuário logado
 router.get('/me', verificarToken, async (req, res) => {
   const { rows } = await db.query(
-    `SELECT u.lgpd_aceito, a.id AS agente_id, a.foto
+    `SELECT u.lgpd_aceito, a.id AS agente_id, a.foto,
+            COALESCE(NULLIF(TRIM(a.nome_guerra), ''), a.nome) AS nome_exibicao
      FROM usuarios u
      LEFT JOIN agentes a ON a.usuario = u.usuario
      WHERE u.usuario = $1`,
@@ -122,6 +123,8 @@ router.get('/me', verificarToken, async (req, res) => {
   );
   res.json({
     usuario: req.usuario.usuario,
+    // O login é a matrícula; a interface mostra o nome de guerra do agente vinculado.
+    nome_exibicao: rows[0]?.nome_exibicao || req.usuario.usuario,
     role: req.usuario.role,
     sessao_id: req.usuario.sessao_id,
     inatividade_minutos: INATIVIDADE_MINUTOS,
