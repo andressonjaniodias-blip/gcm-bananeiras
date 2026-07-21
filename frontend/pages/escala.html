@@ -25,6 +25,8 @@
     .ta-item { padding:6px 9px; cursor:pointer; font-size:0.8rem; color:var(--color-text); line-height:1.25; }
     .ta-item:hover, .ta-item.ativo { background:var(--color-row-alt); }
     .ta-item .ta-mat { color:var(--color-text-muted); font-size:0.72rem; }
+    /* Nome completo abaixo do nome de guerra, para confirmar de quem se trata */
+    .ta-item .ta-completo { color:var(--color-hint); font-size:0.7rem; line-height:1.2; }
     .ta-empty { padding:6px 9px; font-size:0.76rem; color:var(--color-text-muted); }
     /* Botões-ícone (lista de escalas salvas) */
     .icon-btn { background:none; border:1px solid var(--color-border); border-radius:var(--radius-sm); cursor:pointer;
@@ -331,7 +333,7 @@
       const mes=document.getElementById('mesRef').value;
       const ini=document.getElementById('ferInicio').value;
       const a=AGENTES.find(x=>String(x.id)===document.getElementById('ferAgente').value);
-      const nome=a?(a.nome||'').trim():'';
+      const nome=nomeDeGuerra(a);
       if(!nome||!ini){ msgFer('Selecione o agente e a data de início.',false); return; }
       const fim=addDias(ini,29);
       try{
@@ -369,21 +371,28 @@
     // ── Busca inteligente de agente (typeahead, ignora acento/maiúsculas) ──────
     function normNome(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim(); }
 
+    // Nome que vai para os documentos. O nome completo fica só como reserva de quem
+    // ainda não tem nome de guerra cadastrado.
+    function nomeDeGuerra(a){ return a ? (String(a.nome_guerra||'').trim() || String(a.nome||'').trim()) : ''; }
+
     function filtrarAgentes(colKey){
       const inp=document.getElementById(`form_agente_${colKey}`);
       const box=document.getElementById(`ta_${colKey}`);
       if(!inp||!box) return;
       document.getElementById(`form_agenteid_${colKey}`).value='';   // texto mudou → invalida seleção
+      // A busca aceita nome completo, nome de guerra e matrícula — é como as pessoas procuram.
       const q=normNome(inp.value);
-      const achados=(q?AGENTES.filter(a=>normNome(a.nome).includes(q)||String(a.matricula||'').toLowerCase().includes(q)):AGENTES).slice(0,8);
+      const achados=(q?AGENTES.filter(a=>normNome(a.nome).includes(q)||normNome(a.nome_guerra).includes(q)||String(a.matricula||'').toLowerCase().includes(q)):AGENTES).slice(0,8);
       if(!achados.length){ box.innerHTML='<div class="ta-empty">Nenhum agente encontrado.</div>'; box.classList.add('aberta'); return; }
-      box.innerHTML=achados.map((a,i)=>`<div class="ta-item${i===0?' ativo':''}" data-id="${a.id}"
-        onmousedown="event.preventDefault();escolherAgente('${colKey}',${a.id})">${a.nome}${a.matricula?` <span class="ta-mat">${a.matricula}</span>`:''}</div>`).join('');
+      // Mostra o nome de guerra (o que vai sair no documento) e o completo embaixo.
+      box.innerHTML=achados.map((a,i)=>{ const g=nomeDeGuerra(a); const completo=(a.nome||'').trim();
+        return `<div class="ta-item${i===0?' ativo':''}" data-id="${a.id}"
+        onmousedown="event.preventDefault();escolherAgente('${colKey}',${a.id})">${g}${a.matricula?` <span class="ta-mat">${a.matricula}</span>`:''}${completo&&completo!==g?`<div class="ta-completo">${completo}</div>`:''}</div>`;}).join('');
       box.classList.add('aberta');
     }
     function escolherAgente(colKey,id){
       const a=AGENTES.find(x=>String(x.id)===String(id)); if(!a) return;
-      document.getElementById(`form_agente_${colKey}`).value=a.nome;
+      document.getElementById(`form_agente_${colKey}`).value=nomeDeGuerra(a);
       document.getElementById(`form_agenteid_${colKey}`).value=a.id;
       const box=document.getElementById(`ta_${colKey}`); if(box) box.classList.remove('aberta');
     }
@@ -419,9 +428,10 @@
       const posto=document.getElementById(`form_posto_${colKey}`).value;
       let agenteId=document.getElementById(`form_agenteid_${colKey}`).value;
       if(!agenteId){
-        // Sem seleção: aceitar só se o texto casar exatamente e de forma única.
+        // Sem seleção: aceitar só se o texto casar exatamente e de forma única —
+        // pelo nome de guerra ou pelo nome completo.
         const q=normNome(document.getElementById(`form_agente_${colKey}`).value);
-        const iguais=AGENTES.filter(a=>normNome(a.nome)===q);
+        const iguais=AGENTES.filter(a=>normNome(a.nome)===q||normNome(a.nome_guerra)===q);
         if(q && iguais.length===1) agenteId=String(iguais[0].id);
       }
       if(!posto){ alert('Selecione o posto.'); return; }
@@ -431,7 +441,7 @@
       const a=AGENTES.find(x=>String(x.id)===String(agenteId));
       const dup=lancamentoRepetido(agenteId,posto,horario,colKey);
       if(dup){ alert(msgRepetido(a?a.nome:'Este agente',posto,horario,colKey,dup.patrulha)); return; }
-      ITENS.push({patrulha:colKey,posto,agente_id:Number(agenteId),nome:a?a.nome:'',matricula:a?a.matricula:'',regime:'24x72',turno:'',horario});
+      ITENS.push({patrulha:colKey,posto,agente_id:Number(agenteId),nome:nomeDeGuerra(a),matricula:a?a.matricula:'',regime:'24x72',turno:'',horario});
       renderGrid();
     }
 
