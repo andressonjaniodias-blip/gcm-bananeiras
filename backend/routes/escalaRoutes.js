@@ -5,6 +5,7 @@ const { verificarToken, verificarSupervisor, auditar } = require('../middleware/
 const erroServidor = require('../utils/erroServidor');
 const { numeroFolga, trabalhaNoDia, escalaTrabalhaHoje, montarCalendarioMes, montarResumoEscala, rankSetor, compararItensEscala } = require('../utils/escalaCalc');
 const { desenharPdfEscala, desenharPdfResumo, nomeMes } = require('../utils/escalaPdf');
+const { sqlNomeExibicao } = require('../utils/nomeAgente');
 const { enviarPdfNotificacao } = require('../utils/email');
 
 const PATRULHAS = ['1', '2', '3', '4'];
@@ -114,7 +115,7 @@ router.get('/:id', verificarToken, async (req, res) => {
     const { rows } = await pool.query(`SELECT * FROM escalas WHERE id = $1`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Escala não encontrada.' });
     const { rows: itens } = await pool.query(
-      `SELECT ei.*, COALESCE(NULLIF(a.usuario, ''), ei.nome) AS nome_exibicao
+      `SELECT ei.*, ${sqlNomeExibicao('a', 'ei.nome')}
          FROM escala_itens ei
          LEFT JOIN agentes a ON a.id = ei.agente_id
         WHERE ei.escala_id = $1
@@ -212,7 +213,7 @@ router.delete('/:id', verificarToken, verificarSupervisor, async (req, res) => {
 // (separado para permitir teste sem banco).
 async function construirPdfEscala(escala, formato = 'calendario') {
   const { rows: itens } = await pool.query(
-    `SELECT ei.*, COALESCE(NULLIF(a.usuario, ''), ei.nome) AS nome_exibicao
+    `SELECT ei.*, ${sqlNomeExibicao('a', 'ei.nome')}
        FROM escala_itens ei
        LEFT JOIN agentes a ON a.id = ei.agente_id
       WHERE ei.escala_id = $1
@@ -225,7 +226,10 @@ async function construirPdfEscala(escala, formato = 'calendario') {
   const [anoFer, mesFer] = mes.split('-');
   const fimMes = `${mes}-${String(new Date(parseInt(anoFer, 10), parseInt(mesFer, 10), 0).getDate()).padStart(2, '0')}`;
   const { rows: ferias } = await pool.query(
-    `SELECT * FROM ferias WHERE data_inicio <= $2 AND data_fim >= $1 ORDER BY data_inicio, nome`,
+    `SELECT f.*, ${sqlNomeExibicao('a', 'f.nome')}
+       FROM ferias f LEFT JOIN agentes a ON a.id = f.agente_id
+      WHERE f.data_inicio <= $2 AND f.data_fim >= $1
+      ORDER BY f.data_inicio, nome_exibicao`,
     [inicioMes, fimMes]
   );
 
@@ -243,7 +247,7 @@ router.get('/:id/visualizacao', verificarToken, async (req, res) => {
 
     const { rows: itens } = await pool.query(
       `SELECT ei.posto, ei.patrulha, ei.horario, ei.matricula,
-              COALESCE(NULLIF(a.usuario, ''), ei.nome) AS nome
+              ${sqlNomeExibicao('a', 'ei.nome', 'nome')}
          FROM escala_itens ei
          LEFT JOIN agentes a ON a.id = ei.agente_id
         WHERE ei.escala_id = $1`,
@@ -255,8 +259,10 @@ router.get('/:id/visualizacao', verificarToken, async (req, res) => {
     const [anoFim, mesFim] = mes.split('-');
     const fimMes = `${mes}-${String(new Date(parseInt(anoFim, 10), parseInt(mesFim, 10), 0).getDate()).padStart(2, '0')}`;
     const { rows: ferias } = await pool.query(
-      `SELECT nome, matricula, data_inicio, data_fim FROM ferias
-        WHERE data_inicio <= $2 AND data_fim >= $1 ORDER BY data_inicio, nome`,
+      `SELECT ${sqlNomeExibicao('a', 'f.nome', 'nome')}, f.matricula, f.data_inicio, f.data_fim
+         FROM ferias f LEFT JOIN agentes a ON a.id = f.agente_id
+        WHERE f.data_inicio <= $2 AND f.data_fim >= $1
+        ORDER BY f.data_inicio, nome`,
       [inicioMes, fimMes]
     );
 
