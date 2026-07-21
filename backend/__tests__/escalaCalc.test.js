@@ -1,4 +1,4 @@
-const { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, montarCalendarioMes, montarResumoEscala, rankSetor, compararItensEscala } = require('../utils/escalaCalc');
+const { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, dedupItens, montarCalendarioMes, montarResumoEscala, rankSetor, compararItensEscala } = require('../utils/escalaCalc');
 
 describe('escalaCalc — rotação 24x72', () => {
   test('cada dia tem exatamente uma patrulha em serviço', () => {
@@ -294,5 +294,69 @@ describe('escalaCalc — tabela única de equipes (montarResumoEscala)', () => {
     ];
     expect(montarResumoEscala(misto).equipes['1'].map(g => g.posto))
       .toEqual(['Ronda / Viatura', 'Hospital', 'Monitoramento']);
+  });
+});
+
+describe('escalaCalc — lançamento repetido (dedupItens)', () => {
+  // Caso real: o 12x36 era lançado nas duas equipes irmãs, como no documento manual.
+  // Agora o sistema espelha sozinho, então o 2º lançamento vira duplicata.
+  const manoel = p => ({ agente_id: 9, nome: 'Manoel', matricula: '0009', posto: 'Ronda / Viatura', horario: '12x36 Noturno', patrulha: p });
+
+  test('12x36 do mesmo agente nas equipes irmãs (2 e 4) conta como um só', () => {
+    expect(dedupItens([manoel('2'), manoel('4')])).toHaveLength(1);
+    expect(dedupItens([manoel('1'), manoel('3')])).toHaveLength(1);
+  });
+
+  test('12x36 nas equipes de paridade oposta continuam dois lançamentos', () => {
+    // 2 e 3 não são irmãs: dias diferentes, os dois valem
+    expect(dedupItens([manoel('2'), manoel('3')])).toHaveLength(2);
+  });
+
+  test('lançamento idêntico repetido conta como um só', () => {
+    expect(dedupItens([manoel('2'), manoel('2')])).toHaveLength(1);
+  });
+
+  test('24x72 do mesmo agente em patrulhas diferentes continuam dois (dias diferentes)', () => {
+    const r = (p) => ({ agente_id: 7, nome: 'Rocha', posto: 'Ronda / Viatura', horario: '24x72', patrulha: p });
+    expect(dedupItens([r('2'), r('4')])).toHaveLength(2);
+    expect(dedupItens([r('2'), r('2')])).toHaveLength(1); // mesma patrulha = duplicata
+  });
+
+  test('mesmo agente e posto em horários diferentes continuam dois', () => {
+    expect(dedupItens([manoel('2'), { ...manoel('2'), horario: '24x72' }])).toHaveLength(2);
+  });
+
+  test('Segunda a Sexta em patrulhas diferentes conta como um só (não depende de equipe)', () => {
+    const h = p => ({ agente_id: 5, nome: 'Hélio', posto: 'Trânsito', horario: 'Segunda a Sexta', patrulha: p });
+    expect(dedupItens([h('1'), h('3')])).toHaveLength(1);
+    const f = p => ({ agente_id: 8, nome: 'Felipe', posto: 'Garagem', horario: 'Sábado e Domingo (12x36)', patrulha: p });
+    expect(dedupItens([f('2'), f('4')])).toHaveLength(1);
+  });
+
+  test('item legado sem agente_id é identificado por nome + matrícula', () => {
+    const semId = p => ({ nome: 'Manoel', matricula: '0009', posto: 'Ronda / Viatura', horario: '12x36 Noturno', patrulha: p });
+    expect(dedupItens([semId('2'), semId('4')])).toHaveLength(1);
+    // matrículas diferentes = pessoas diferentes
+    expect(dedupItens([semId('2'), { ...semId('4'), matricula: '0010' }])).toHaveLength(2);
+  });
+
+  test('o calendário e o resumo não repetem o agente lançado duas vezes', () => {
+    const itens = [
+      manoel('2'), manoel('4'),                                   // duplicata
+      { agente_id: 20, nome: 'Cassiano', posto: 'Escola', horario: '12x36 Noturno', patrulha: '1' },
+    ];
+    // patrulha_dia1 = 4 (como na escala real): equipes 4 e 2 nos dias ímpares
+    const dias = montarCalendarioMes(itens, '2026-07', '4');
+    expect(dias[0].itens.filter(i => i.nome === 'Manoel')).toHaveLength(1);  // dia 1
+    expect(dias[2].itens.filter(i => i.nome === 'Manoel')).toHaveLength(1);  // dia 3
+
+    const eq = montarResumoEscala(itens).equipes;
+    const manoeisEm = p => eq[p].flatMap(g => g.itens).filter(i => i.nome === 'Manoel');
+    expect(manoeisEm('2')).toHaveLength(1);
+    expect(manoeisEm('4')).toHaveLength(1);
+    // e o agente lançado uma vez só continua em duas colunas, como deve
+    const cassianoEm = p => eq[p].flatMap(g => g.itens).filter(i => i.nome === 'Cassiano');
+    expect(cassianoEm('1')).toHaveLength(1);
+    expect(cassianoEm('3')).toHaveLength(1);
   });
 });
