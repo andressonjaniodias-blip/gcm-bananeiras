@@ -23,14 +23,15 @@ function decifrarAgente(a) {
 }
 
 const CAMPOS_AGENTE = `
-  id, nome, matricula, cargo, usuario, ativo, criado_em, atualizado_em,
+  id, nome, nome_guerra, matricula, cargo, usuario, ativo, criado_em, atualizado_em,
   cpf, rg, data_nascimento, sexo, lotacao, turno, data_admissao,
   email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf, foto
 `;
 
 // Campos operacionais, sem dados pessoais sensíveis (CPF, RG, endereço, contato, foto) —
 // usados nas telas de autocomplete/seleção de agente, abertas a qualquer autenticado.
-const CAMPOS_AGENTE_RESUMO = `id, nome, matricula, cargo, lotacao, turno, ativo, usuario`;
+// nome_guerra vem junto porque é o nome que as telas gravam nos lançamentos.
+const CAMPOS_AGENTE_RESUMO = `id, nome, nome_guerra, matricula, cargo, lotacao, turno, ativo, usuario`;
 
 // Listar agentes — versão resumida (sem PII), aberta a qualquer autenticado
 router.get('/', verificarToken, async (req, res) => {
@@ -95,7 +96,7 @@ router.post('/meu', verificarToken, async (req, res) => {
 router.post('/', verificarToken, exigirAdmin, async (req, res) => {
   try {
     const {
-      nome, matricula, cargo, usuario, ativo,
+      nome, nome_guerra, matricula, cargo, usuario, ativo,
       cpf, rg, data_nascimento, sexo, lotacao, turno, data_admissao,
       email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf
     } = req.body;
@@ -103,15 +104,16 @@ router.post('/', verificarToken, exigirAdmin, async (req, res) => {
     if (email?.trim() && !validarEmail(email.trim())) return res.status(400).json({ error: 'E-mail inválido.' });
     const { rows } = await db.query(
       `INSERT INTO agentes
-        (nome, matricula, cargo, usuario, ativo,
+        (nome, nome_guerra, matricula, cargo, usuario, ativo,
          cpf, rg, data_nascimento, sexo, lotacao, turno, data_admissao,
          email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf,
          atualizado_em)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,NOW())
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,NOW())
        RETURNING ${CAMPOS_AGENTE}`,
       [
-        nome.trim(), matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal',
-        usuario?.trim() || null, ativo !== false,
+        nome.trim(), nome_guerra?.trim() || null,
+        matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal',
+        usuario?.trim() || matricula.trim(), ativo !== false,
         cifrar(cpf), cifrar(rg),
         cifrar(data_nascimento), sexo || null,
         lotacao?.trim() || null, turno || null, data_admissao || null,
@@ -133,7 +135,7 @@ router.post('/', verificarToken, exigirAdmin, async (req, res) => {
 router.put('/:id', verificarToken, exigirAdmin, async (req, res) => {
   try {
     const {
-      nome, matricula, cargo, usuario, ativo,
+      nome, nome_guerra, matricula, cargo, usuario, ativo,
       cpf, rg, data_nascimento, sexo, lotacao, turno, data_admissao,
       email, telefone, cep, logradouro, numero_end, complemento, bairro, cidade, uf
     } = req.body;
@@ -141,16 +143,17 @@ router.put('/:id', verificarToken, exigirAdmin, async (req, res) => {
     if (email?.trim() && !validarEmail(email.trim())) return res.status(400).json({ error: 'E-mail inválido.' });
     const { rows } = await db.query(
       `UPDATE agentes SET
-        nome=$1, matricula=$2, cargo=$3, usuario=$4, ativo=$5,
-        cpf=$6, rg=$7, data_nascimento=$8, sexo=$9,
-        lotacao=$10, turno=$11, data_admissao=$12,
-        email=$13, telefone=$14, cep=$15, logradouro=$16,
-        numero_end=$17, complemento=$18, bairro=$19, cidade=$20, uf=$21,
+        nome=$1, nome_guerra=$2, matricula=$3, cargo=$4, usuario=$5, ativo=$6,
+        cpf=$7, rg=$8, data_nascimento=$9, sexo=$10,
+        lotacao=$11, turno=$12, data_admissao=$13,
+        email=$14, telefone=$15, cep=$16, logradouro=$17,
+        numero_end=$18, complemento=$19, bairro=$20, cidade=$21, uf=$22,
         atualizado_em=NOW()
-       WHERE id=$22 RETURNING ${CAMPOS_AGENTE}`,
+       WHERE id=$23 RETURNING ${CAMPOS_AGENTE}`,
       [
-        nome.trim(), matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal',
-        usuario?.trim() || null, ativo !== false,
+        nome.trim(), nome_guerra?.trim() || null,
+        matricula.trim(), cargo?.trim() || 'Guarda Civil Municipal',
+        usuario?.trim() || matricula.trim(), ativo !== false,
         cifrar(cpf), cifrar(rg),
         cifrar(data_nascimento), sexo || null,
         lotacao?.trim() || null, turno || null, data_admissao || null,
