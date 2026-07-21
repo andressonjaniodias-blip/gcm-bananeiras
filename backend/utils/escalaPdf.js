@@ -99,7 +99,7 @@ function desenharObservacoes(doc, { escala, ferias, margem, conteudoW, pageW }) 
   if (ferias.length) {
     doc.fillColor(NAVY).fontSize(13).font('Helvetica-Bold').text('Férias no mês: ', { continued: true })
        .fillColor('#222').font('Helvetica')
-       .text(ferias.map(f => `${f.nome}${f.matricula ? ' (' + f.matricula + ')' : ''} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}`).join('; '));
+       .text(ferias.map(f => `${f.nome_exibicao || f.nome}${f.matricula ? ' (' + f.matricula + ')' : ''} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}`).join('; '));
   }
   if (escala.obs) {
     if (ferias.length) doc.moveDown(0.4);
