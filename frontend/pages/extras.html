@@ -233,14 +233,17 @@
       const sel = document.getElementById('selAgente');
       if (!sel) return;
       sel.innerHTML = '<option value="">— selecione —</option>' +
-        AGENTES.map(a => `<option value="${a.id}">${a.nome}${a.matricula?' ('+a.matricula+')':''}</option>`).join('');
+        AGENTES.map(a => `<option value="${a.id}">${nomeDeGuerra(a)}${a.matricula?' ('+a.matricula+')':''}</option>`).join('');
     }
+
+    // Nome que vai para os documentos: nome de guerra, com o completo como reserva.
+    function nomeDeGuerra(a) { return a ? (String(a.nome_guerra||'').trim() || String(a.nome||'').trim()) : ''; }
 
     function preencherMeusDados() {
       // Agente comum: trava no próprio nome (matrícula/telefone vêm da ficha do agente)
       if (!isComando()) {
         const a = MEU_AGENTE;
-        document.getElementById('fNome').value = a?.nome || PERFIL.usuario || '';
+        document.getElementById('fNome').value = nomeDeGuerra(a) || PERFIL.nome_exibicao || PERFIL.usuario || '';
         document.getElementById('fNome').readOnly = true;
       }
     }
@@ -260,7 +263,7 @@
     function onSelAgente() {
       const id = document.getElementById('selAgente').value;
       const a = AGENTES.find(x => String(x.id) === String(id));
-      document.getElementById('fNome').value = a?.nome || '';
+      document.getElementById('fNome').value = nomeDeGuerra(a);
       atualizarCota();
     }
 
