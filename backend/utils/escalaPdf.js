@@ -38,23 +38,52 @@ function entradaAgente(i) {
   return { linha1, linha2 };
 }
 
-function medirAgente(doc, i, w) {
+// `soNome` omite a 2ª linha: usado na tabela de equipes, onde o setor já é o título
+// do grupo. Os blocos Seg-Sex / fim de semana continuam com as duas linhas.
+function medirAgente(doc, i, w, soNome) {
   const e = entradaAgente(i);
   doc.fontSize(12).font('Helvetica-Bold');
   let h = doc.heightOfString(e.linha1, { width: w });
-  if (e.linha2) { doc.fontSize(11).font('Helvetica-Oblique'); h += doc.heightOfString(e.linha2, { width: w }); }
+  if (e.linha2 && !soNome) { doc.fontSize(11).font('Helvetica-Oblique'); h += doc.heightOfString(e.linha2, { width: w }); }
   return h + AGENTE_GAP;
 }
 
-function desenharAgente(doc, i, x, y, w) {
+function desenharAgente(doc, i, x, y, w, soNome) {
   const e = entradaAgente(i);
   doc.fillColor('#1a1a1a').fontSize(12).font('Helvetica-Bold').text(e.linha1, x, y, { width: w });
   let yy = doc.y;
-  if (e.linha2) {
+  if (e.linha2 && !soNome) {
     doc.fillColor('#666').fontSize(11).font('Helvetica-Oblique').text(e.linha2, x, yy, { width: w });
     yy = doc.y;
   }
   return yy + AGENTE_GAP;
+}
+
+// Título do grupo dentro da coluna da equipe: "POSTO · horário". O turno vai
+// abreviado (12x36 D / 12x36 N) porque a coluna é estreita e nomes de posto longos
+// já fazem o título quebrar em duas linhas.
+const GRUPO_GAP = 3;
+
+function horarioCurto(horario) {
+  const h = (horario || '').toLowerCase();
+  if (h.includes('noturno')) return '12x36 N';
+  if (h.includes('12x36')) return '12x36 D';
+  return horario || '';
+}
+
+function tituloGrupo(g) {
+  const h = horarioCurto(g.horario);
+  return `${(g.posto || '').toUpperCase()}${h ? ` · ${h}` : ''}`;
+}
+
+function medirTituloGrupo(doc, g, w) {
+  doc.fontSize(10).font('Helvetica-Bold');
+  return doc.heightOfString(tituloGrupo(g), { width: w }) + GRUPO_GAP;
+}
+
+function desenharTituloGrupo(doc, g, x, y, w) {
+  doc.fillColor(NAVY).fontSize(10).font('Helvetica-Bold').text(tituloGrupo(g), x, y, { width: w });
+  return doc.y + GRUPO_GAP;
 }
 
 // Bloco de OBSERVAÇÕES (férias + observações gerais). Compartilhado pelos dois PDFs.
@@ -175,29 +204,6 @@ function desenharPdfResumo(escala, resumo, ferias) {
   const bottomLimit = doc.page.height - doc.page.margins.bottom - 6;
   const dia1 = String(escala.patrulha_dia1 || '1');
 
-  // 4 colunas de patrulha (rodízio 24x72)
-  const gap4 = 10;
-  const colW4 = (conteudoW - gap4 * 3) / 4;
-  const topY = doc.y + 2;
-  let maxY = topY;
-  ['1', '2', '3', '4'].forEach((p, idx) => {
-    const x = margem + idx * (colW4 + gap4);
-    let y = topY;
-    doc.rect(x, y, colW4, 30).fill(NAVY);
-    doc.fillColor('#fff').fontSize(15).font('Helvetica-Bold')
-       .text(`PATRULHA ${p}${p === dia1 ? ' (dia 1)' : ''}`, x, y + 8, { width: colW4, align: 'center' });
-    y += 34;
-    const its = resumo.patrulhas[p];
-    if (!its.length) {
-      doc.fillColor('#999').fontSize(12).font('Helvetica-Oblique')
-         .text('(sem lançamentos)', x, y + 2, { width: colW4, align: 'center' });
-      y = doc.y;
-    }
-    its.forEach(i => { y = desenharAgente(doc, i, x + 3, y, colW4 - 6); });
-    maxY = Math.max(maxY, y);
-  });
-  doc.y = maxY;
-
   // Título de bloco (largura total), com quebra de página se necessário.
   function tituloBloco(texto) {
     if (doc.y > bottomLimit - 54) { doc.addPage(); doc.y = doc.page.margins.top; }
@@ -207,10 +213,81 @@ function desenharPdfResumo(escala, resumo, ferias) {
     doc.moveDown(0.3);
   }
 
-  function subRotulo(texto) {
-    if (doc.y > bottomLimit - 26) { doc.addPage(); doc.y = doc.page.margins.top; }
-    doc.fillColor('#555').fontSize(13).font('Helvetica-BoldOblique').text(texto, margem, doc.y, { width: conteudoW });
-    doc.y = doc.y + 2;
+  // Tabela única das 4 equipes do rodízio: cada coluna é quem está de serviço no dia
+  // daquela equipe — 24x72 e 12x36 juntos, agrupados por posto + horário. O 12x36
+  // aparece em duas colunas (ver _equipeIrma em escalaCalc).
+  const GRADE_GAP = 10, GRADE_HEAD_H = 42;
+
+  function gradeEquipes(colunas) {
+    const colW = (conteudoW - GRADE_GAP * 3) / colunas.length;
+    const colX = k => margem + k * (colW + GRADE_GAP);
+    const txtW = colW - 6;
+
+    // Desenha a faixa de cabeçalhos e devolve o y onde começa o conteúdo.
+    function cabecalhos(y, cont) {
+      colunas.forEach((c, k) => {
+        const x = colX(k);
+        doc.rect(x, y, colW, GRADE_HEAD_H).fill(NAVY);
+        doc.fillColor('#fff').fontSize(15).font('Helvetica-Bold')
+           .text(c.titulo, x, y + 6, { width: colW, align: 'center' });
+        const sub = [c.subtitulo, cont ? '(cont.)' : ''].filter(Boolean).join(' · ');
+        if (sub) {
+          doc.fillColor('#dfe6f2').fontSize(11).font('Helvetica-Oblique')
+             .text(sub, x, y + 25, { width: colW, align: 'center' });
+        }
+      });
+      return y + GRADE_HEAD_H + 4;
+    }
+
+    // Achata cada coluna em unidades desenháveis (título de grupo ou nome), para a
+    // fatia por página valer para as duas coisas.
+    const achatar = grupos => grupos.flatMap(g => [
+      { tipo: 'titulo', g },
+      ...g.itens.map(i => ({ tipo: 'nome', i })),
+    ]);
+    const medir = (u, k) => u.tipo === 'titulo'
+      ? medirTituloGrupo(doc, u.g, txtW) + (k ? 4 : 0)   // respiro antes do 2º grupo em diante
+      : medirAgente(doc, u.i, txtW, true);
+
+    // Fatia por página: o que não couber numa coluna transborda para a página
+    // seguinte, que redesenha os cabeçalhos marcados com "(cont.)".
+    let restos = colunas.map(c => achatar(c.grupos));
+    let cont = false;
+    for (;;) {
+      if (doc.y + GRADE_HEAD_H + 40 > bottomLimit) { doc.addPage(); doc.y = doc.page.margins.top; }
+      const yTop = cabecalhos(doc.y, cont);
+      const colY = restos.map(() => yTop);
+      const sobra = restos.map(() => []);
+      restos.forEach((us, k) => {
+        if (!us.length) {
+          if (!cont) {
+            doc.fillColor('#999').fontSize(11).font('Helvetica-Oblique')
+               .text('(sem lançamentos)', colX(k), yTop + 2, { width: colW, align: 'center' });
+            colY[k] = doc.y;
+          }
+          return;
+        }
+        us.forEach((u, idx) => {
+          if (sobra[k].length) { sobra[k].push(u); return; } // já transbordou: mantém a ordem
+          let h = medir(u, idx);
+          // não deixa título de grupo órfão no pé da coluna: exige o 1º nome junto
+          if (u.tipo === 'titulo' && us[idx + 1]) h += medir(us[idx + 1], idx + 1);
+          if (colY[k] + h > bottomLimit) { sobra[k].push(u); return; }
+          if (u.tipo === 'titulo') {
+            if (idx) colY[k] += 4;
+            colY[k] = desenharTituloGrupo(doc, u.g, colX(k) + 3, colY[k], txtW);
+          } else {
+            colY[k] = desenharAgente(doc, u.i, colX(k) + 3, colY[k], txtW, true);
+          }
+        });
+      });
+      doc.y = Math.max(...colY);
+      if (!sobra.some(s => s.length)) break;
+      restos = sobra;
+      cont = true;
+      doc.addPage();
+      doc.y = doc.page.margins.top;
+    }
   }
 
   // Distribui os agentes de um bloco em `ncols` colunas (preenche coluna por coluna),
@@ -234,17 +311,16 @@ function desenharPdfResumo(escala, resumo, ferias) {
     doc.y = Math.max(...colY);
   }
 
+  // Corpo do documento: a tabela das 4 equipes. Segunda a Sexta e fim de semana não
+  // seguem o rodízio, então vêm depois em blocos de largura total (com o setor embaixo
+  // de cada nome, já que ali não há agrupamento por posto).
+  gradeEquipes(['1', '2', '3', '4'].map(p => ({
+    titulo: `EQUIPE ${p}`,
+    subtitulo: p === dia1 ? 'Dia 1' : '',
+    grupos: resumo.equipes[p] || [],
+  })));
+
   if (resumo.segSex.length) { tituloBloco('SEGUNDA A SEXTA'); fluxoAgentes(resumo.segSex, 3); }
-  if (resumo.diurno[1].length || resumo.diurno[2].length) {
-    tituloBloco('12X36 DIURNO');
-    if (resumo.diurno[1].length) { subRotulo('Equipe 1 — dias ímpares'); fluxoAgentes(resumo.diurno[1], 3); }
-    if (resumo.diurno[2].length) { subRotulo('Equipe 2 — dias pares');  fluxoAgentes(resumo.diurno[2], 3); }
-  }
-  if (resumo.noturno[1].length || resumo.noturno[2].length) {
-    tituloBloco('12X36 NOTURNO');
-    if (resumo.noturno[1].length) { subRotulo('Equipe 1 — dias ímpares'); fluxoAgentes(resumo.noturno[1], 3); }
-    if (resumo.noturno[2].length) { subRotulo('Equipe 2 — dias pares');  fluxoAgentes(resumo.noturno[2], 3); }
-  }
   if (resumo.fimDeSemana.length) { tituloBloco('FIM DE SEMANA'); fluxoAgentes(resumo.fimDeSemana, 3); }
 
   desenharObservacoes(doc, { escala, ferias, margem, conteudoW, pageW });
