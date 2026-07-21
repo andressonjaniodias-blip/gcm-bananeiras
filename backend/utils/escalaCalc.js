@@ -107,11 +107,12 @@ function montarCalendarioMes(itens, mesRef, patrulhaDia1 = '1') {
   const ano = parseInt(String(mesRef).slice(0, 4), 10);
   const mes = parseInt(String(mesRef).slice(5, 7), 10);
   const ultimoDia = new Date(ano, mes, 0).getDate();
+  const unicos = dedupItens(itens);
   const dias = [];
   for (let dia = 1; dia <= ultimoDia; dia++) {
     const dd = String(dia).padStart(2, '0');
     const diaSemana = new Date(`${mesRef}-${dd}T12:00:00`).getDay(); // TZ-safe, igual a /hoje
-    const doDia = (itens || [])
+    const doDia = unicos
       .filter(i => escalaTrabalhaHoje(i.horario, i.patrulha, dia, diaSemana, patrulhaDia1))
       .sort(_compararItensDoDia);
     dias.push({ dia, diaSemana, fimDeSemana: diaSemana === 0 || diaSemana === 6, itens: doDia });
@@ -123,6 +124,44 @@ function montarCalendarioMes(itens, mesRef, patrulhaDia1 = '1') {
 // separadas por 2 posições têm delta de mesma paridade, então 1↔3 e 2↔4 — sempre,
 // independente de patrulha_dia1.
 function _equipeIrma(p) { return p <= 2 ? p + 2 : p - 2; }
+
+// Identidade de um lançamento para efeito de duplicidade: mesmo agente, mesmo posto,
+// mesmo horário — e a patrulha só entra na chave quando ela muda os dias trabalhados:
+//   24x72         → a patrulha define os dias, então patrulhas diferentes são
+//                   lançamentos diferentes e os dois valem;
+//   12x36         → equipes irmãs (1/3 e 2/4) cobrem exatamente os mesmos dias, então
+//                   lançar nas duas é o mesmo lançamento (normaliza para o par);
+//   Seg-Sex / FDS → não dependem da patrulha, qualquer repetição é duplicata.
+// Agente vem por agente_id; itens legados sem id caem em nome + matrícula.
+function _chaveItem(i) {
+  const agente = (i.agente_id !== null && i.agente_id !== undefined)
+    ? `#${i.agente_id}`
+    : `${_semAcento(i.nome_exibicao || i.nome)}|${i.matricula || ''}`;
+  const h = _semAcento(i.horario);
+  let p;
+  if (h.includes('segunda a sexta') || h.includes('sabado') || h.includes('domingo')) {
+    p = '';
+  } else if (h.includes('12x36')) {
+    const v = _patrulhaValida(i.patrulha);
+    p = String(Math.min(v, _equipeIrma(v)));
+  } else {
+    p = String(i.patrulha || '');
+  }
+  return `${agente}|${_semAcento(i.posto)}|${h}|${p}`;
+}
+
+// Descarta lançamentos equivalentes (ver _chaveItem), mantendo o primeiro de cada e
+// preservando a ordem. Aplicado na entrada do calendário e do resumo, para uma escala
+// com lançamento repetido não mostrar o agente duas vezes.
+function dedupItens(itens) {
+  const vistos = new Set();
+  return (itens || []).filter(i => {
+    const k = _chaveItem(i);
+    if (vistos.has(k)) return false;
+    vistos.add(k);
+    return true;
+  });
+}
 
 // Peso do horário dentro de um mesmo posto: 24x72 primeiro, depois diurno, depois
 // noturno (dá "Patrulha 24x72" antes de "Patrulha 12x36 Noturno").
@@ -158,7 +197,7 @@ function montarResumoEscala(itens) {
     m.get(chave).itens.push(i);
   };
 
-  (itens || []).forEach(i => {
+  dedupItens(itens).forEach(i => {
     const h = (i.horario || '').toLowerCase();
     if (h.includes('segunda a sexta')) { resumo.segSex.push(i); return; }
     if (h.includes('sábado') || h.includes('sabado') || h.includes('domingo')) { resumo.fimDeSemana.push(i); return; }
@@ -241,4 +280,4 @@ function compararItensEscala(a, b) {
   return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
 }
 
-module.exports = { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, montarCalendarioMes, montarResumoEscala, rankSetor, compararItensEscala };
+module.exports = { trabalhaNoDia, ehSegundaFolga, numeroFolga, diaDoMes, quinzenaDe, escalaTrabalhaHoje, dedupItens, montarCalendarioMes, montarResumoEscala, rankSetor, compararItensEscala };
