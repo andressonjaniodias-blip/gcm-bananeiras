@@ -58,15 +58,23 @@ function quinzenaDe(dataStr) {
   };
 }
 
+// Patrulha normalizada para 1..4. Fora da faixa (ex.: 'ADM' legado) cai em 1.
+function _patrulhaValida(patrulha) {
+  const p = parseInt(patrulha, 10);
+  return (p >= 1 && p <= 4) ? p : 1;
+}
+
 // Um lançamento (agente/posto) está de serviço no dia? O horário selecionado na
 // montagem decide a distribuição:
 //   'Segunda a Sexta'          → dias úteis (independe da patrulha);
 //   'Sábado e Domingo (12x36)' → fim de semana (independe da patrulha);
-//   '12x36 Diurno/Noturno'     → alterna por paridade do dia ancorada na patrulha:
-//                                patrulha ímpar (1,3) trabalha dias ímpares; par (2,4)
-//                                dias pares. Diurno e Noturno são turnos distintos
-//                                (itens/horários separados) e seguem a mesma paridade,
-//                                então convivem no mesmo dia com pessoas diferentes;
+//   '12x36 Diurno/Noturno'     → dia sim, dia não, ancorado no rodízio da patrulha em
+//                                que o agente foi lançado: trabalha quando a patrulha
+//                                está de serviço (delta 0) e na 2ª folga dela (delta 2),
+//                                ou seja todo dia de delta par. Assim o 12x36 sempre cai
+//                                junto da própria patrulha. Diurno e Noturno são turnos
+//                                distintos (itens/horários separados) e seguem o mesmo
+//                                critério, então convivem no dia com pessoas diferentes;
 //   24x72 (ou vazio)           → segue o rodízio de 4 patrulhas (trabalhaNoDia).
 // A ordem dos ifs importa: 'Sábado e Domingo (12x36)' contém '12x36' mas deve cair no
 // ramo de fim de semana, que vem antes.
@@ -78,8 +86,7 @@ function escalaTrabalhaHoje(horario, patrulha, dia, diaSemana, patrulhaDia1 = '1
     return diaSemana === 0 || diaSemana === 6;
   }
   if (h.includes('12x36')) {
-    const p = parseInt(patrulha, 10) || 1;
-    return (dia + p) % 2 === 0; // patrulha ímpar → dias ímpares; par → dias pares
+    return numeroFolga(_patrulhaValida(patrulha), dia, patrulhaDia1) % 2 === 0;
   }
   return trabalhaNoDia(patrulha, dia, patrulhaDia1);
 }
@@ -112,45 +119,71 @@ function montarCalendarioMes(itens, mesRef, patrulhaDia1 = '1') {
   return dias;
 }
 
-// Equipe de um lançamento 12x36 pela paridade da patrulha: patrulha ímpar (1,3)
-// cobre os dias ímpares (Equipe 1); par (2,4) cobre os pares (Equipe 2).
-function _equipe12x36(patrulha) {
-  const p = parseInt(patrulha, 10) || 1;
-  return (p % 2 === 1) ? 1 : 2;
+// Equipe "irmã" no rodízio: a que trabalha nos mesmos dias pares/ímpares. Patrulhas
+// separadas por 2 posições têm delta de mesma paridade, então 1↔3 e 2↔4 — sempre,
+// independente de patrulha_dia1.
+function _equipeIrma(p) { return p <= 2 ? p + 2 : p - 2; }
+
+// Peso do horário dentro de um mesmo posto: 24x72 primeiro, depois diurno, depois
+// noturno (dá "Patrulha 24x72" antes de "Patrulha 12x36 Noturno").
+function _rankHorario(horario) {
+  const h = _semAcento(horario);
+  if (h.includes('noturno')) return 2;
+  if (h.includes('12x36')) return 1;
+  return 0;
 }
 
-// Monta o "resumo" da escala (template compacto, sem expandir por dia): classifica
-// cada lançamento pelo horário — mesma leitura de escalaTrabalhaHoje — em blocos:
-//   patrulhas['1'..'4'] → rodízio 24x72 (por patrulha)
-//   segSex              → 'Segunda a Sexta'
-//   diurno {1,2}        → '12x36 Diurno', por equipe (paridade da patrulha)
-//   noturno {1,2}       → '12x36 Noturno', por equipe
-//   fimDeSemana         → 'Sábado e Domingo'
-// Cada lista já vem ordenada por setor (rankSetor → posto → nome).
+// Monta o "resumo" da escala: uma tabela só, com as 4 equipes do rodízio, contendo
+// todo mundo que está de serviço no dia daquela equipe. Retorna
+//   equipes['1'..'4'] → [{ posto, horario, itens: [...] }, ...]
+//   segSex / fimDeSemana → listas soltas (não dependem de equipe)
+// Um lançamento 24x72 entra só na coluna da sua patrulha. Um 12x36 trabalha dia sim,
+// dia não, então cobre os dias de duas equipes: entra na coluna dele e na da equipe
+// irmã (ver _equipeIrma). 'Segunda a Sexta' e 'Sábado e Domingo' independem do
+// rodízio e ficam fora da tabela, em blocos próprios.
+// Dentro da coluna os agentes vêm agrupados por posto + horário, na ordem operacional
+// dos setores (rankSetor → posto → horário), e por nome dentro de cada grupo.
 function montarResumoEscala(itens) {
   const resumo = {
-    patrulhas: { '1': [], '2': [], '3': [], '4': [] },
+    equipes: { '1': [], '2': [], '3': [], '4': [] },
     segSex: [],
-    diurno: { 1: [], 2: [] },
-    noturno: { 1: [], 2: [] },
     fimDeSemana: [],
   };
+  // Acumula por equipe numa chave "posto|horario" antes de virar lista de grupos.
+  const buckets = { '1': new Map(), '2': new Map(), '3': new Map(), '4': new Map() };
+  const juntar = (p, i) => {
+    const chave = `${i.posto || ''}|${i.horario || ''}`;
+    const m = buckets[String(p)];
+    if (!m.has(chave)) m.set(chave, { posto: i.posto || '', horario: i.horario || '', itens: [] });
+    m.get(chave).itens.push(i);
+  };
+
   (itens || []).forEach(i => {
     const h = (i.horario || '').toLowerCase();
     if (h.includes('segunda a sexta')) { resumo.segSex.push(i); return; }
     if (h.includes('sábado') || h.includes('sabado') || h.includes('domingo')) { resumo.fimDeSemana.push(i); return; }
     if (h.includes('12x36')) {
-      const turno = h.includes('noturno') ? 'noturno' : 'diurno';
-      resumo[turno][_equipe12x36(i.patrulha)].push(i);
+      const p = _patrulhaValida(i.patrulha);
+      juntar(p, i);
+      juntar(_equipeIrma(p), i);
       return;
     }
-    const p = String(parseInt(i.patrulha, 10));
-    if (resumo.patrulhas[p]) resumo.patrulhas[p].push(i);
+    const p = parseInt(i.patrulha, 10);
+    if (p >= 1 && p <= 4) juntar(p, i);
     else resumo.segSex.push(i); // 24x72 sem patrulha válida (ex.: 'ADM' legado) → administrativo
   });
-  const ord = a => a.sort(_compararItensDoDia);
-  ['1', '2', '3', '4'].forEach(p => ord(resumo.patrulhas[p]));
-  [resumo.segSex, resumo.fimDeSemana, resumo.diurno[1], resumo.diurno[2], resumo.noturno[1], resumo.noturno[2]].forEach(ord);
+
+  const porNome = (a, b) =>
+    String(a.nome_exibicao || a.nome || '').localeCompare(String(b.nome_exibicao || b.nome || ''), 'pt-BR');
+  ['1', '2', '3', '4'].forEach(p => {
+    resumo.equipes[p] = [...buckets[p].values()]
+      .sort((a, b) =>
+        (rankSetor(a.posto, a.horario) - rankSetor(b.posto, b.horario)) ||
+        String(a.posto).localeCompare(String(b.posto), 'pt-BR') ||
+        (_rankHorario(a.horario) - _rankHorario(b.horario)))
+      .map(g => ({ ...g, itens: g.itens.sort(porNome) }));
+  });
+  [resumo.segSex, resumo.fimDeSemana].forEach(a => a.sort(_compararItensDoDia));
   return resumo;
 }
 
@@ -164,7 +197,7 @@ function _semAcento(s) {
 // Lista fixa de setores nomeados (ranks 0..4). Cada entrada casa por palavra-chave
 // no nome normalizado, tolerando variações de grafia/acento.
 const _SETORES_NOMEADOS = [
-  n => n.includes('ronda') || n.includes('viatura'),   // 0 — Ronda / Viatura
+  n => n.includes('ronda') || n.includes('viatura') || n.includes('patrulha'), // 0 — Ronda / Viatura / Patrulha
   n => n.includes('hospital'),                          // 1 — Hospital
   n => n.includes('monitoramento'),                     // 2 — Monitoramento
   n => n.includes('transito'),                          // 3 — Trânsito
