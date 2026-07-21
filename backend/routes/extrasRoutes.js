@@ -9,11 +9,30 @@ const { quinzenaDe, numeroFolga, diaDoMes } = require('../utils/escalaCalc');
 const { horasDoTipo, valorDoTipo, calcularHoraFim } = require('../utils/extrasCalc');
 const { coletarPdfBuffer } = require('../utils/pdfBuffer');
 const { enviarPdfNotificacao } = require('../utils/email');
+const { sqlNomeExibicao } = require('../utils/nomeAgente');
 
 const VAGAS_DIA_PADRAO = 4; // padrão de vagas por dia (ajustável por admin/supervisor)
 const LIMITE_HORAS = 96;   // 4 plantões de 24h por quinzena
 
 function ehComando(req)      { return ['admin', 'supervisor'].includes(req.usuario?.role); }
+
+// Toda leitura de vaga sai com o nome de guerra do agente vinculado, caindo no nome
+// gravado na vaga quando não há vínculo (lançamento avulso ou agente removido).
+const SELECT_VAGAS = `SELECT v.*, ${sqlNomeExibicao('a', 'v.nome')}
+    FROM extras_vagas v LEFT JOIN agentes a ON a.id = v.agente_id`;
+
+// Nas somas por agente, agrupar pelo nome exibido — senão o mesmo agente aparece em
+// duas linhas quando o nome gravado na vaga difere do nome de guerra atual.
+const AGREGADO_EXTRAS = `
+  SELECT ${sqlNomeExibicao('a', 'v.nome')}, v.matricula,
+         SUM(CASE WHEN v.tipo='12' THEN 1 ELSE 0 END)::int AS qtd_12,
+         SUM(CASE WHEN v.tipo='24' THEN 1 ELSE 0 END)::int AS qtd_24,
+         SUM(CASE WHEN v.tipo='24' THEN 24 ELSE 12 END)::int AS total_horas,
+         COALESCE(SUM(v.valor),0)::numeric AS total_valor
+    FROM extras_vagas v LEFT JOIN agentes a ON a.id = v.agente_id
+   WHERE v.data BETWEEN $1 AND $2
+   GROUP BY nome_exibicao, v.matricula
+   ORDER BY nome_exibicao`;
 
 // Busca o agente_id vinculado ao usuário logado (usuarios.usuario = agentes.usuario)
 async function meuAgenteId(req) {
@@ -52,7 +71,7 @@ async function diaFechado(dataStr) {
 async function reenviarPdfSeFechado(dataStr, motivo, usuarioReq) {
   if (!(await diaFechado(dataStr))) return;
   const { rows: vagas } = await pool.query(
-    `SELECT * FROM extras_vagas WHERE data = $1 ORDER BY criado_em`, [dataStr]
+    `${SELECT_VAGAS} WHERE v.data = $1 ORDER BY v.criado_em`, [dataStr]
   );
   const pdfBuffer = await construirPdfDia(dataStr, vagas);
   enviarPdfNotificacao({
@@ -104,7 +123,7 @@ async function avisoFolga(agenteId, dataStr) {
 router.get('/dia/:data', verificarToken, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM extras_vagas WHERE data = $1 ORDER BY criado_em`, [req.params.data]
+      `${SELECT_VAGAS} WHERE v.data = $1 ORDER BY v.criado_em`, [req.params.data]
     );
     const vagas = await redigirSensiveis(rows, req);
     const totalVagas = await vagasDoDia(req.params.data);
@@ -120,11 +139,11 @@ router.get('/meus', verificarToken, async (req, res) => {
     if (!agenteId) return res.json([]);
     const { inicio, fim } = req.query;
     const { rows } = await pool.query(
-      `SELECT * FROM extras_vagas
-       WHERE agente_id = $1
-         AND ($2::date IS NULL OR data >= $2)
-         AND ($3::date IS NULL OR data <= $3)
-       ORDER BY data DESC`,
+      `${SELECT_VAGAS}
+       WHERE v.agente_id = $1
+         AND ($2::date IS NULL OR v.data >= $2)
+         AND ($3::date IS NULL OR v.data <= $3)
+       ORDER BY v.data DESC`,
       [agenteId, inicio || null, fim || null]
     );
     res.json(rows);
@@ -370,7 +389,7 @@ async function construirPdfDia(dataStr, vagas, redigido = false) {
     } else {
       vagas.forEach((v, idx) => {
         drawRow([
-          v.nome, v.matricula || '—', v.funcao || '—', `${v.tipo}h`,
+          v.nome_exibicao || v.nome, v.matricula || '—', v.funcao || '—', `${v.tipo}h`,
           v.hora_inicio || '—', v.hora_fim || '—', v.telefone || '—',
           v.valor == null ? '—' : `R$ ${Number(v.valor).toFixed(2)}`,
         ], { zebra: idx % 2 === 1 });
@@ -397,7 +416,7 @@ async function construirPdfDia(dataStr, vagas, redigido = false) {
 router.get('/dia/:data/pdf', verificarToken, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM extras_vagas WHERE data = $1 ORDER BY criado_em`, [req.params.data]
+      `${SELECT_VAGAS} WHERE v.data = $1 ORDER BY v.criado_em`, [req.params.data]
     );
     const vagas = await redigirSensiveis(rows, req);
     const pdfBuffer = await construirPdfDia(req.params.data, vagas, !ehComando(req));
@@ -419,7 +438,7 @@ router.post('/dia/:data/fechar', verificarToken, verificarSupervisor, async (req
       [data, VAGAS_DIA_PADRAO, req.usuario.usuario]
     );
     const { rows: vagas } = await pool.query(
-      `SELECT * FROM extras_vagas WHERE data = $1 ORDER BY criado_em`, [data]
+      `${SELECT_VAGAS} WHERE v.data = $1 ORDER BY v.criado_em`, [data]
     );
     await auditar(req, 'FECHAR_LISTA_EXTRA', `Lista de extras de ${fmtData(data)} fechada (${vagas.length} lançamento(s))`);
     res.json({ ok: true, data, total_vagas: vagas.length });
@@ -441,13 +460,7 @@ router.get('/relatorio', verificarToken, verificarSupervisor, async (req, res) =
     const { inicio, fim } = req.query;
     if (!inicio || !fim) return res.status(400).json({ error: 'Informe início e fim.' });
     const { rows } = await pool.query(
-      `SELECT nome, matricula,
-              SUM(CASE WHEN tipo='12' THEN 1 ELSE 0 END)::int AS qtd_12,
-              SUM(CASE WHEN tipo='24' THEN 1 ELSE 0 END)::int AS qtd_24,
-              SUM(CASE WHEN tipo='24' THEN 24 ELSE 12 END)::int AS total_horas,
-              COALESCE(SUM(valor),0)::numeric AS total_valor
-       FROM extras_vagas WHERE data BETWEEN $1 AND $2
-       GROUP BY nome, matricula ORDER BY nome`,
+      AGREGADO_EXTRAS,
       [inicio, fim]
     );
     const totalGeral = rows.reduce((a, r) => a + Number(r.total_valor), 0);
@@ -460,13 +473,7 @@ router.get('/relatorio/pdf', verificarToken, verificarSupervisor, async (req, re
     const { inicio, fim } = req.query;
     if (!inicio || !fim) return res.status(400).json({ error: 'Informe início e fim.' });
     const { rows } = await pool.query(
-      `SELECT nome, matricula,
-              SUM(CASE WHEN tipo='12' THEN 1 ELSE 0 END)::int AS qtd_12,
-              SUM(CASE WHEN tipo='24' THEN 1 ELSE 0 END)::int AS qtd_24,
-              SUM(CASE WHEN tipo='24' THEN 24 ELSE 12 END)::int AS total_horas,
-              COALESCE(SUM(valor),0)::numeric AS total_valor
-       FROM extras_vagas WHERE data BETWEEN $1 AND $2
-       GROUP BY nome, matricula ORDER BY nome`,
+      AGREGADO_EXTRAS,
       [inicio, fim]
     );
 
@@ -508,7 +515,7 @@ router.get('/relatorio/pdf', verificarToken, verificarSupervisor, async (req, re
          .text('Nenhum plantão no período.', margem, y + 8, { width: conteudoW, align: 'center' });
     } else {
       rows.forEach((r, idx) => {
-        row([r.nome, r.matricula || '—', r.qtd_12, r.qtd_24, `${r.total_horas}h`, Number(r.total_valor).toFixed(2)], { zebra: idx % 2 === 1 });
+        row([r.nome_exibicao || r.nome, r.matricula || '—', r.qtd_12, r.qtd_24, `${r.total_horas}h`, Number(r.total_valor).toFixed(2)], { zebra: idx % 2 === 1 });
       });
       const totalGeral = rows.reduce((a, r) => a + Number(r.total_valor), 0);
       const totalHoras = rows.reduce((a, r) => a + Number(r.total_horas), 0);
