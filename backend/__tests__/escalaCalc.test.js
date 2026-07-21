@@ -80,16 +80,40 @@ describe('escalaCalc — distribuição por horário (escalaTrabalhaHoje)', () =
     expect(escalaTrabalhaHoje('', '1', 1, 0)).toBe(true);   // vazio → rodízio
   });
 
-  test('12x36 alterna por paridade da patrulha (patrulha ímpar → dias ímpares)', () => {
-    // Patrulha 1 (ímpar) trabalha dias ímpares; independe do dia da semana
+  test('12x36 dia sim/dia não, com patrulha_dia1 = 1 (comportamento histórico)', () => {
+    // Patrulha 1 abre o mês: trabalha dias ímpares; independe do dia da semana
     expect(escalaTrabalhaHoje('12x36 Diurno', '1', 1, 3)).toBe(true);
     expect(escalaTrabalhaHoje('12x36 Diurno', '1', 2, 4)).toBe(false);
     expect(escalaTrabalhaHoje('12x36 Diurno', '1', 3, 5)).toBe(true);
-    expect(escalaTrabalhaHoje('12x36 Noturno', '3', 1, 0)).toBe(true);  // patrulha 3 = ímpar
-    // Patrulha 2 (par) trabalha dias pares
+    expect(escalaTrabalhaHoje('12x36 Noturno', '3', 1, 0)).toBe(true);  // patrulha 3 também abre ímpar
+    // Patrulhas 2 e 4 caem nos dias pares
     expect(escalaTrabalhaHoje('12x36 Diurno', '2', 1, 3)).toBe(false);
     expect(escalaTrabalhaHoje('12x36 Diurno', '2', 2, 4)).toBe(true);
-    expect(escalaTrabalhaHoje('12x36 Noturno', '4', 2, 6)).toBe(true);  // patrulha 4 = par
+    expect(escalaTrabalhaHoje('12x36 Noturno', '4', 2, 6)).toBe(true);
+  });
+
+  test('12x36 acompanha o rodízio da patrulha quando o dia 1 não é a patrulha 1', () => {
+    // Com patrulha_dia1 = 2, a patrulha 2 trabalha 1, 5, 9… (ímpares), então o 12x36
+    // lançado nela também tem que cair nos ímpares — junto da própria equipe.
+    expect(trabalhaNoDia('2', 1, '2')).toBe(true);
+    expect(escalaTrabalhaHoje('12x36 Noturno', '2', 1, 3, '2')).toBe(true);
+    expect(escalaTrabalhaHoje('12x36 Noturno', '2', 3, 5, '2')).toBe(true);
+    expect(escalaTrabalhaHoje('12x36 Noturno', '2', 2, 4, '2')).toBe(false);
+    // A patrulha 4 é a irmã da 2 (mesma paridade): mesmos dias para o 12x36
+    expect(escalaTrabalhaHoje('12x36 Noturno', '4', 1, 3, '2')).toBe(true);
+    expect(escalaTrabalhaHoje('12x36 Noturno', '4', 2, 4, '2')).toBe(false);
+    // E as patrulhas 1 e 3 ficam com os pares
+    expect(escalaTrabalhaHoje('12x36 Diurno', '1', 2, 4, '2')).toBe(true);
+    expect(escalaTrabalhaHoje('12x36 Diurno', '3', 2, 4, '2')).toBe(true);
+    expect(escalaTrabalhaHoje('12x36 Diurno', '1', 1, 3, '2')).toBe(false);
+  });
+
+  test('12x36 cobre o dia de serviço da patrulha e a 2ª folga dela', () => {
+    // A patrulha 1 (dia1 = 1) trabalha 1 e 5; o 12x36 dela cobre 1, 3, 5 — o 3 é a 2ª folga
+    expect(numeroFolga('1', 1, '1')).toBe(0);
+    expect(numeroFolga('1', 3, '1')).toBe(2);
+    [1, 3, 5, 7].forEach(d => expect(escalaTrabalhaHoje('12x36 Diurno', '1', d, 3)).toBe(true));
+    [2, 4, 6, 8].forEach(d => expect(escalaTrabalhaHoje('12x36 Diurno', '1', d, 3)).toBe(false));
   });
 
   test('"Sábado e Domingo (12x36)" cai no ramo de fim de semana, não no de 12x36', () => {
@@ -197,48 +221,78 @@ describe('escalaCalc — ordem dos setores (rankSetor / compararItensEscala)', (
   });
 });
 
-describe('escalaCalc — resumo por tipo de escala (montarResumoEscala)', () => {
+describe('escalaCalc — tabela única de equipes (montarResumoEscala)', () => {
   const itens = [
-    { posto: 'Ronda / Viatura', patrulha: '1', horario: '24x72', nome: 'Ana' },
-    { posto: 'Hospital',        patrulha: '2', horario: '24x72', nome: 'Bruno' },
-    { posto: 'Trânsito',        patrulha: '1', horario: 'Segunda a Sexta', nome: 'Caio' },
-    { posto: 'Base',            patrulha: '1', horario: '12x36 Diurno',  nome: 'Davi' },   // ímpar → equipe 1
-    { posto: 'Base',            patrulha: '2', horario: '12x36 Diurno',  nome: 'Elis' },   // par  → equipe 2
-    { posto: 'Base',            patrulha: '3', horario: '12x36 Noturno', nome: 'Fábio' },  // ímpar → equipe 1
-    { posto: 'Base',            patrulha: '4', horario: '12x36 Noturno', nome: 'Gina' },   // par  → equipe 2
-    { posto: 'Praça',           patrulha: '4', horario: 'Sábado e Domingo (12x36)', nome: 'Hugo' },
-    { posto: 'Apoio',           patrulha: 'ADM', horario: '', nome: 'Ivo' }, // legado sem horário → segSex
+    { posto: 'Patrulha', patrulha: '1', horario: '24x72', nome: 'Ana' },
+    { posto: 'Hospital', patrulha: '2', horario: '24x72', nome: 'Bruno' },
+    { posto: 'Trânsito', patrulha: '1', horario: 'Segunda a Sexta', nome: 'Caio' },
+    { posto: 'Patrulha', patrulha: '1', horario: '12x36 Diurno',  nome: 'Davi' },   // equipes 1 e 3
+    { posto: 'Base',     patrulha: '2', horario: '12x36 Noturno', nome: 'Elis' },   // equipes 2 e 4
+    { posto: 'Praça',    patrulha: '4', horario: 'Sábado e Domingo (12x36)', nome: 'Hugo' },
+    { posto: 'Apoio',    patrulha: 'ADM', horario: '', nome: 'Ivo' }, // legado sem horário → segSex
   ];
   const r = montarResumoEscala(itens);
-  const nomes = arr => arr.map(i => i.nome);
+  // achata uma coluna em "Posto|horario: nome, nome" para comparar de forma legível
+  const coluna = p => r.equipes[p].map(g => `${g.posto}|${g.horario}: ${g.itens.map(i => i.nome).join(', ')}`);
 
-  test('24x72 vai para a coluna da sua patrulha', () => {
-    expect(nomes(r.patrulhas['1'])).toEqual(['Ana']);
-    expect(nomes(r.patrulhas['2'])).toEqual(['Bruno']);
-    expect(nomes(r.patrulhas['3'])).toEqual([]);
+  test('24x72 entra só na coluna da sua patrulha', () => {
+    expect(coluna('1')).toContain('Patrulha|24x72: Ana');
+    expect(coluna('2')).toContain('Hospital|24x72: Bruno');
+    expect(coluna('3').join()).not.toMatch(/Ana|Bruno/);
+    expect(coluna('4').join()).not.toMatch(/Ana|Bruno/);
   });
 
-  test('Segunda a Sexta (e ADM legado sem horário) vão para segSex', () => {
-    expect(nomes(r.segSex).sort()).toEqual(['Caio', 'Ivo']);
+  test('12x36 aparece em duas colunas: a da patrulha e a da equipe irmã (1↔3, 2↔4)', () => {
+    expect(coluna('1')).toContain('Patrulha|12x36 Diurno: Davi');
+    expect(coluna('3')).toContain('Patrulha|12x36 Diurno: Davi');
+    expect(coluna('2')).toContain('Base|12x36 Noturno: Elis');
+    expect(coluna('4')).toContain('Base|12x36 Noturno: Elis');
+    // e não vaza para o par oposto
+    expect(coluna('2').join()).not.toContain('Davi');
+    expect(coluna('1').join()).not.toContain('Elis');
   });
 
-  test('12x36 Diurno/Noturno separados, por equipe de paridade da patrulha', () => {
-    expect(nomes(r.diurno[1])).toEqual(['Davi']);   // patrulha 1 (ímpar)
-    expect(nomes(r.diurno[2])).toEqual(['Elis']);   // patrulha 2 (par)
-    expect(nomes(r.noturno[1])).toEqual(['Fábio']); // patrulha 3 (ímpar)
-    expect(nomes(r.noturno[2])).toEqual(['Gina']);  // patrulha 4 (par)
+  test('agrupa por posto + horário e ordena Patrulha 24x72 antes de Patrulha 12x36', () => {
+    // Ana (24x72) e Davi (12x36) dividem o posto "Patrulha": dois grupos, nessa ordem
+    expect(coluna('1')).toEqual(['Patrulha|24x72: Ana', 'Patrulha|12x36 Diurno: Davi']);
+    // "Patrulha" é setor nomeado (rank 0), então vem antes de Hospital na coluna 2
+    expect(coluna('2')[0]).toBe('Hospital|24x72: Bruno');
   });
 
-  test('Sábado e Domingo vai para fimDeSemana (não confunde com 12x36)', () => {
-    expect(nomes(r.fimDeSemana)).toEqual(['Hugo']);
-  });
-
-  test('cada lista vem ordenada por setor (rankSetor → posto → nome)', () => {
-    const misto = [
-      { posto: 'Hospital',        patrulha: '1', horario: '24x72', nome: 'Zeca' },   // rank 1
-      { posto: 'Ronda / Viatura', patrulha: '1', horario: '24x72', nome: 'Bia' },    // rank 0
-      { posto: 'Ronda / Viatura', patrulha: '1', horario: '24x72', nome: 'Ana' },    // rank 0
+  test('vários agentes no mesmo posto+horário viram um grupo só, ordenados por nome', () => {
+    const time = [
+      { posto: 'Patrulha', patrulha: '1', horario: '24x72', nome: 'Zeca' },
+      { posto: 'Patrulha', patrulha: '1', horario: '24x72', nome: 'Bia' },
+      { posto: 'Patrulha', patrulha: '1', horario: '24x72', nome: 'Ana' },
     ];
-    expect(montarResumoEscala(misto).patrulhas['1'].map(i => i.nome)).toEqual(['Ana', 'Bia', 'Zeca']);
+    const g = montarResumoEscala(time).equipes['1'];
+    expect(g).toHaveLength(1);
+    expect(g[0].itens.map(i => i.nome)).toEqual(['Ana', 'Bia', 'Zeca']);
+  });
+
+  test('Segunda a Sexta, fim de semana e ADM legado ficam fora da tabela', () => {
+    expect(r.segSex.map(i => i.nome).sort()).toEqual(['Caio', 'Ivo']);
+    expect(r.fimDeSemana.map(i => i.nome)).toEqual(['Hugo']);
+    ['1', '2', '3', '4'].forEach(p => expect(coluna(p).join()).not.toMatch(/Caio|Ivo|Hugo/));
+  });
+
+  test('12x36 com patrulha inválida cai na equipe 1 (e na 3), igual a escalaTrabalhaHoje', () => {
+    const legado = montarResumoEscala([{ posto: 'Apoio', patrulha: 'ADM', horario: '12x36 Diurno', nome: 'Nina' }]);
+    expect(legado.equipes['1'][0].itens.map(i => i.nome)).toEqual(['Nina']);
+    expect(legado.equipes['3'][0].itens.map(i => i.nome)).toEqual(['Nina']);
+    expect(legado.equipes['2']).toEqual([]);
+    // e o calendário concorda: dia 1 (patrulha 1 de serviço) tem Nina, dia 2 não
+    expect(escalaTrabalhaHoje('12x36 Diurno', 'ADM', 1, 3)).toBe(true);
+    expect(escalaTrabalhaHoje('12x36 Diurno', 'ADM', 2, 4)).toBe(false);
+  });
+
+  test('os grupos da coluna saem na ordem operacional dos setores', () => {
+    const misto = [
+      { posto: 'Monitoramento',   patrulha: '1', horario: '24x72', nome: 'Cida' },  // rank 2
+      { posto: 'Hospital',        patrulha: '1', horario: '24x72', nome: 'Zeca' },  // rank 1
+      { posto: 'Ronda / Viatura', patrulha: '1', horario: '24x72', nome: 'Bia' },   // rank 0
+    ];
+    expect(montarResumoEscala(misto).equipes['1'].map(g => g.posto))
+      .toEqual(['Ronda / Viatura', 'Hospital', 'Monitoramento']);
   });
 });
