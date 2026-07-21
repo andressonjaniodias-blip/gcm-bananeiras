@@ -7,6 +7,12 @@ const PDFDocument  = require('pdfkit');
 const { cabecalhoPDF, rodapePDF, fmtData, NAVY } = require('../utils/pdfLayout');
 const { coletarPdfBuffer } = require('../utils/pdfBuffer');
 const { enviarPdfNotificacao } = require('../utils/email');
+const { sqlNomeExibicao } = require('../utils/nomeAgente');
+
+// Toda leitura de férias sai com o nome de guerra do agente vinculado, caindo no
+// nome gravado no registro quando não há vínculo (agente removido do efetivo).
+const SELECT_FERIAS = `SELECT f.*, ${sqlNomeExibicao('a', 'f.nome')}
+    FROM ferias f LEFT JOIN agentes a ON a.id = f.agente_id`;
 
 function nomeMes(mesRef) {
   const [ano, mes] = String(mesRef).split('-');
@@ -19,7 +25,7 @@ async function feriasDoMes(mes) {
   const [ano, m] = mes.split('-');
   const fimMes = `${mes}-${String(new Date(parseInt(ano), parseInt(m), 0).getDate()).padStart(2, '0')}`;
   const { rows } = await pool.query(
-    `SELECT * FROM ferias WHERE data_inicio <= $2 AND data_fim >= $1 ORDER BY data_inicio, nome`,
+    `${SELECT_FERIAS} WHERE f.data_inicio <= $2 AND f.data_fim >= $1 ORDER BY f.data_inicio, nome_exibicao`,
     [inicioMes, fimMes]
   );
   return rows;
@@ -35,11 +41,11 @@ router.get('/', verificarToken, verificarSupervisor, async (req, res) => {
       const [ano, m] = mes.split('-');
       const fimMes = `${mes}-${String(new Date(parseInt(ano), parseInt(m), 0).getDate()).padStart(2, '0')}`;
       ({ rows } = await pool.query(
-        `SELECT * FROM ferias WHERE data_inicio <= $2 AND data_fim >= $1 ORDER BY data_inicio, nome`,
+        `${SELECT_FERIAS} WHERE f.data_inicio <= $2 AND f.data_fim >= $1 ORDER BY f.data_inicio, nome_exibicao`,
         [inicioMes, fimMes]
       ));
     } else {
-      ({ rows } = await pool.query(`SELECT * FROM ferias ORDER BY data_inicio DESC, nome`));
+      ({ rows } = await pool.query(`${SELECT_FERIAS} ORDER BY f.data_inicio DESC, nome_exibicao`));
     }
     res.json(rows);
   } catch (err) { erroServidor(res, err); }
@@ -139,7 +145,7 @@ async function construirPdfFerias(rows, subtitulo) {
     } else {
       rows.forEach((r, idx) => {
         const dias = Math.round((new Date(r.data_fim) - new Date(r.data_inicio)) / 86400000) + 1;
-        row([r.nome, r.matricula || '—', fmtData(r.data_inicio), fmtData(r.data_fim), dias], { zebra: idx % 2 === 1 });
+        row([r.nome_exibicao || r.nome, r.matricula || '—', fmtData(r.data_inicio), fmtData(r.data_fim), dias], { zebra: idx % 2 === 1 });
       });
     }
 
@@ -161,13 +167,13 @@ router.get('/pdf', verificarToken, verificarSupervisor, async (req, res) => {
       arq = `ferias-${mes}.pdf`;
     } else if (inicio && fim) {
       ({ rows } = await pool.query(
-        `SELECT * FROM ferias WHERE data_inicio <= $2 AND data_fim >= $1 ORDER BY data_inicio, nome`,
+        `${SELECT_FERIAS} WHERE f.data_inicio <= $2 AND f.data_fim >= $1 ORDER BY f.data_inicio, nome_exibicao`,
         [inicio, fim]
       ));
       subtitulo = `Período: ${fmtData(inicio)} a ${fmtData(fim)}`;
       arq = `ferias-${inicio}_a_${fim}.pdf`;
     } else {
-      ({ rows } = await pool.query(`SELECT * FROM ferias ORDER BY data_inicio DESC, nome`));
+      ({ rows } = await pool.query(`${SELECT_FERIAS} ORDER BY f.data_inicio DESC, nome_exibicao`));
       subtitulo = 'Todos os registros';
       arq = 'ferias.pdf';
     }
