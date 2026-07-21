@@ -8,6 +8,7 @@ const path = require('path');
 const fs   = require('fs');
 const { coletarPdfBuffer } = require('../utils/pdfBuffer');
 const { enviarPdfNotificacao } = require('../utils/email');
+const { acharAgente, nomeExibicao } = require('../utils/nomeAgente');
 
 const brasaoGCM        = path.join(__dirname, '../../public/brasao-gcm.png');
 const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.png');
@@ -406,22 +407,23 @@ async function construirPdfBO(row, opts = {}) {
         ['patrulheiroI',  'matriculaPatrulheiroI'],
         ['patrulheiroII', 'matriculaPatrulheiroII'],
       ];
-      const nomes = paresAgente
-        .map(([nk]) => oc[nk])
-        .filter(v => v && String(v).trim())
-        .map(v => String(v).trim().toLowerCase());
-      if (nomes.length) {
-        const { rows: agRows } = await db.query(
-          `SELECT nome, matricula FROM agentes WHERE ativo = true AND LOWER(nome) = ANY($1)`,
-          [nomes]
+      const digitados = paresAgente.map(([nk]) => oc[nk]).filter(v => v && String(v).trim());
+      if (digitados.length) {
+        // Os campos são texto livre, então o operador pode ter digitado o nome de
+        // guerra, o nome completo ou a matrícula — acharAgente aceita os três.
+        // Só o efetivo entra aqui; nomes de civis (solicitante, pai, mãe,
+        // autoridade) não são tocados.
+        const { rows: agentes } = await db.query(
+          `SELECT nome, nome_guerra, matricula FROM agentes WHERE ativo = true`
         );
-        const mapaMatricula = new Map(agRows.map(r => [String(r.nome).toLowerCase(), r.matricula]));
         const ocEnriquecido = {};
         for (const [k, v] of Object.entries(oc)) {
           ocEnriquecido[k] = v;
           const par = paresAgente.find(([nk]) => nk === k);
           if (par && v && String(v).trim()) {
-            const mat = oc[par[1]] || mapaMatricula.get(String(v).trim().toLowerCase());
+            const ag = acharAgente(v, agentes);
+            if (ag) ocEnriquecido[k] = nomeExibicao(ag);        // documento sai com o nome de guerra
+            const mat = oc[par[1]] || (ag && ag.matricula);
             if (mat) ocEnriquecido[par[1]] = mat;
           }
         }
@@ -453,18 +455,21 @@ async function construirPdfBO(row, opts = {}) {
     const nomeComandante = dados.dadosOcorrencia?.comandante || null;
     let matricCmd = dados.dadosOcorrencia?.matriculaComandante || null;
     let cargoCmd  = null;
+    let comandanteExibido = nomeComandante;
     if (nomeComandante) {
+      // Casa por nome de guerra, nome completo ou matrícula (campo é texto livre).
       const { rows: agRows } = await db.query(
-        `SELECT matricula, cargo FROM agentes WHERE ativo = true AND LOWER(nome) = LOWER($1) LIMIT 1`,
-        [nomeComandante.trim()]
+        `SELECT nome, nome_guerra, matricula, cargo FROM agentes WHERE ativo = true`
       );
-      if (agRows.length) {
-        if (!matricCmd) matricCmd = agRows[0].matricula;
-        cargoCmd = agRows[0].cargo;
+      const ag = acharAgente(nomeComandante, agRows);
+      if (ag) {
+        if (!matricCmd) matricCmd = ag.matricula;
+        cargoCmd = ag.cargo;
+        comandanteExibido = nomeExibicao(ag);
       }
     }
 
-    const nomeCmd  = nomeComandante ? String(nomeComandante).toUpperCase() : null;
+    const nomeCmd  = comandanteExibido ? String(comandanteExibido).toUpperCase() : null;
 
     const autoridade = dados.autoridade || {};
     const nomeAut    = autoridade.nomeAutoridade ? String(autoridade.nomeAutoridade).toUpperCase() : null;
