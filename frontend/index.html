@@ -254,7 +254,7 @@
         <form onsubmit="login(); return false;">
           <div class="input-icon-group">
             <span class="input-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg></span>
-            <input type="text" id="usuario" placeholder="Usuário" required>
+            <input type="text" id="usuario" placeholder="Matrícula" autocomplete="username" required>
           </div>
           <div class="input-icon-group">
             <span class="input-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="9" width="10" height="8" rx="1.5"/><path d="M7 9V6a3 3 0 016 0v3"/></svg></span>
@@ -440,12 +440,14 @@
       document.getElementById('btnNovoBO').style.display = '';
       const role = perfil.role || 'agente';
       const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' }[role] || 'Agente GCM';
-      document.getElementById('sbNome').textContent = perfil.usuario || '—';
+      // O login é a matrícula: mostrar o nome de guerra, não o número.
+      const nomeSidebar = perfil.nome_exibicao || perfil.usuario || '—';
+      document.getElementById('sbNome').textContent = nomeSidebar;
       document.getElementById('sbRole').textContent = roleLabel;
       const sbAvatar = document.getElementById('sbAvatar');
       sbAvatar.innerHTML = perfil.foto
         ? `<img src="${perfil.foto}" alt="Foto de perfil">`
-        : (perfil.usuario || '?')[0].toUpperCase();
+        : (nomeSidebar || '?')[0].toUpperCase();
       buildSidebarNav(role);
 
       document.getElementById('avisosCarousel').style.display = '';
