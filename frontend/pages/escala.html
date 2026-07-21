@@ -429,8 +429,40 @@
       const horario=document.getElementById(`form_horario_${colKey}`).value;
       if(!horario){ alert('Selecione o horário (define em que dias o agente entra na escala).'); return; }
       const a=AGENTES.find(x=>String(x.id)===String(agenteId));
+      const dup=lancamentoRepetido(agenteId,posto,horario,colKey);
+      if(dup){ alert(msgRepetido(a?a.nome:'Este agente',posto,horario,colKey,dup.patrulha)); return; }
       ITENS.push({patrulha:colKey,posto,agente_id:Number(agenteId),nome:a?a.nome:'',matricula:a?a.matricula:'',regime:'24x72',turno:'',horario});
       renderGrid();
+    }
+
+    // Mesma regra do backend (dedupItens em escalaCalc.js): o lançamento é o mesmo
+    // quando agente + posto + horário coincidem e a patrulha não muda os dias —
+    // 12x36 nas equipes irmãs (1/3, 2/4) é o mesmo dia; Seg-Sex e fim de semana
+    // independem da equipe. Só o 24x72 distingue por patrulha.
+    const equipeIrma=p=>p<=2?p+2:p-2;
+    function lancamentoRepetido(agenteId,posto,horario,colKey){
+      const h=(horario||'').toLowerCase();
+      const fixo=h.includes('segunda a sexta')||h.includes('sábado')||h.includes('sabado')||h.includes('domingo');
+      const doze=!fixo&&h.includes('12x36');
+      const p=parseInt(colKey,10);
+      const equivalem=q=>{ const n=parseInt(q,10);
+        if(fixo) return true;
+        if(doze) return n===p||n===equipeIrma(p);
+        return String(q)===String(colKey); };
+      return ITENS.find(x=>String(x.agente_id)===String(agenteId)&&x.posto===posto
+        &&(x.horario||'')===(horario||'')&&equivalem(x.patrulha));
+    }
+
+    function msgRepetido(nome,posto,horario,colKey,patrulhaExistente){
+      const onde=`${posto} · ${horario}`;
+      if(String(patrulhaExistente)===String(colKey)) return `${nome} já está lançado em ${onde} nesta equipe.`;
+      const h=(horario||'').toLowerCase();
+      if(h.includes('12x36')&&!h.includes('sábado')&&!h.includes('sabado')&&!h.includes('domingo')){
+        return `${nome} já está lançado em ${onde} na Equipe ${patrulhaExistente}.\n\n`+
+               `O 12x36 já entra automaticamente na Equipe ${colKey} — não precisa lançar de novo.`;
+      }
+      return `${nome} já está lançado em ${onde} na Equipe ${patrulhaExistente}.\n\n`+
+             `Esse horário não depende da equipe, então lançar de novo duplicaria o agente.`;
     }
 
     // Sufixo de horário exibido após o nome. Usa o campo `horario` (seletor único);
