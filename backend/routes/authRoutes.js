@@ -12,6 +12,8 @@ const {
 } = require('../middleware/auth');
 const { gerarCsrfToken } = require('../middleware/csrf');
 const { validarSenha, validarEmail } = require('../utils/validation');
+const { nomeExibicao } = require('../utils/nomeAgente');
+const { CARGOS, CARGO_PADRAO, normalizarCargo } = require('../utils/cargos');
 const { encriptar, desencriptarComFallback } = require('../utils/encryption');
 
 // Mascara o IP para papéis que não precisam do endereço completo (mínimo necessário,
@@ -114,8 +116,7 @@ router.post('/logout-inatividade', verificarToken, async (req, res) => {
 // Perfil do usuário logado
 router.get('/me', verificarToken, async (req, res) => {
   const { rows } = await db.query(
-    `SELECT u.lgpd_aceito, a.id AS agente_id, a.foto,
-            COALESCE(NULLIF(TRIM(a.nome_guerra), ''), a.nome) AS nome_exibicao
+    `SELECT u.lgpd_aceito, a.id AS agente_id, a.foto, a.nome, a.matricula, a.cargo
      FROM usuarios u
      LEFT JOIN agentes a ON a.usuario = u.usuario
      WHERE u.usuario = $1`,
@@ -123,8 +124,11 @@ router.get('/me', verificarToken, async (req, res) => {
   );
   res.json({
     usuario: req.usuario.usuario,
-    // O login é a matrícula; a interface mostra o nome de guerra do agente vinculado.
-    nome_exibicao: rows[0]?.nome_exibicao || req.usuario.usuario,
+    // O login é o que o admin cadastrou; a interface mostra o agente vinculado no
+    // padrão "João Carlos, 1234" (ver utils/nomeAgente.js).
+    nome_exibicao: nomeExibicao(rows[0]) || req.usuario.usuario,
+    cargo: rows[0]?.cargo || null,
+    matricula: rows[0]?.matricula || null,
     role: req.usuario.role,
     sessao_id: req.usuario.sessao_id,
     inatividade_minutos: INATIVIDADE_MINUTOS,
@@ -184,8 +188,8 @@ router.post('/setup', async (req, res) => {
       );
       await client.query(
         `INSERT INTO agentes (nome, matricula, cargo, usuario, ativo, atualizado_em)
-         VALUES ($1, $2, 'Guarda Civil Municipal', $3, true, NOW())`,
-        [nome.trim(), matricula.trim(), usuario]
+         VALUES ($1, $2, $3, $4, true, NOW())`,
+        [nome.trim(), matricula.trim(), normalizarCargo(req.body.cargo) || CARGO_PADRAO, usuario]
       );
       await client.query('COMMIT');
     } catch (e) {
@@ -200,41 +204,117 @@ router.post('/setup', async (req, res) => {
   }
 });
 
-// Listar usuários (admin)
+// Listar usuários (admin) — já traz o agente vinculado, sem dados pessoais
+// sensíveis (CPF, RG, endereço e foto ficam de fora; a tela de lista não precisa
+// deles e cada campo a mais é exposição desnecessária).
 router.get('/usuarios', verificarToken, verificarAdmin, async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT id, usuario, role, email FROM usuarios ORDER BY id');
-    res.json(rows);
+    const { rows } = await db.query(
+      `SELECT u.id, u.usuario, u.role, u.email,
+              a.id AS agente_id, a.nome, a.nome_guerra, a.matricula, a.cargo,
+              a.lotacao, a.ativo
+         FROM usuarios u
+         LEFT JOIN agentes a ON a.usuario = u.usuario
+        ORDER BY a.nome NULLS LAST, u.id`
+    );
+    res.json(rows.map(r => ({ ...r, nome_exibicao: nomeExibicao(r) || r.usuario })));
   } catch (error) {
     erroServidor(res, error);
   }
 });
 
-// Criar usuário (admin)
+// Criar usuário (admin) — cria o login E o registro no efetivo numa única
+// transação. Antes eram duas chamadas independentes do frontend, e uma falha na
+// segunda deixava login órfão, sem agente vinculado.
 router.post('/usuarios', verificarToken, verificarAdmin, async (req, res) => {
   try {
-    const { usuario, senha, role = 'agente', email } = req.body;
-    if (!usuario || !senha) {
-      return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
-    }
+    const { usuario, senha, role = 'agente', email, cargo, nome, matricula, nome_guerra } = req.body;
+
+    const login = String(usuario || '').trim();
+    const nomeCompleto = String(nome || '').trim();
+    const mat = String(matricula || '').trim();
+
+    if (!login || !senha) return res.status(400).json({ error: 'Usuário e senha são obrigatórios.' });
+    if (!nomeCompleto)    return res.status(400).json({ error: 'Nome completo é obrigatório.' });
+    if (!mat)             return res.status(400).json({ error: 'Matrícula é obrigatória.' });
     if (!ROLES.includes(role)) {
-      return res.status(400).json({ error: `Role inválido. Valores aceitos: ${ROLES.join(', ')}` });
+      return res.status(400).json({ error: `Nível de acesso inválido. Valores aceitos: ${ROLES.join(', ')}` });
+    }
+    const cargoOficial = normalizarCargo(cargo);
+    if (!cargoOficial) {
+      return res.status(400).json({ error: `Cargo inválido. Valores aceitos: ${CARGOS.join('; ')}` });
     }
     if (email?.trim() && !validarEmail(email.trim())) return res.status(400).json({ error: 'E-mail inválido.' });
     const erroSenha = validarSenha(senha);
     if (erroSenha) return res.status(400).json({ error: erroSenha });
+
     const hash = await bcrypt.hash(senha, 10);
-    const result = await db.query(
-      'INSERT INTO usuarios (usuario, senha, role, email) VALUES ($1, $2, $3, $4) RETURNING id',
-      [usuario, hash, role, email || null]
-    );
+    const client = await db.connect();
+    let usuarioId, agenteId;
+    try {
+      await client.query('BEGIN');
+      const resU = await client.query(
+        'INSERT INTO usuarios (usuario, senha, role, email) VALUES ($1, $2, $3, $4) RETURNING id',
+        [login, hash, role, email?.trim() || null]
+      );
+      usuarioId = resU.rows[0].id;
+      const resA = await client.query(
+        `INSERT INTO agentes (nome, nome_guerra, matricula, cargo, usuario, ativo, email, atualizado_em)
+         VALUES ($1, $2, $3, $4, $5, true, $6, NOW()) RETURNING id`,
+        [nomeCompleto, nome_guerra?.trim() || null, mat, cargoOficial, login, email?.trim() || null]
+      );
+      agenteId = resA.rows[0].id;
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+
     const ip = ipFromReq(req);
-    await registrarAuditoria(req.usuario.usuario, 'CRIAR_USUARIO', usuario, ip, extraFromReq(req));
-    res.status(201).json({ message: 'Usuário criado com sucesso', id: result.rows[0].id });
+    await registrarAuditoria(req.usuario.usuario, 'CRIAR_USUARIO', `${login} — ${nomeCompleto} (mat. ${mat})`, ip, extraFromReq(req));
+    res.status(201).json({ message: 'Servidor cadastrado com sucesso', id: usuarioId, agente_id: agenteId });
   } catch (error) {
     if (error.code === '23505') {
-      return res.status(409).json({ error: 'Usuário já existe' });
+      const campo = /matricula/.test(error.constraint || '') ? 'Matrícula já cadastrada para outro agente.'
+                                                            : 'Este nome de usuário já existe.';
+      return res.status(409).json({ error: campo });
     }
+    erroServidor(res, error);
+  }
+});
+
+// Renomear o login (admin). O vínculo entre `usuarios` e `agentes` é feito pela
+// string do login, então os dois lados são atualizados na mesma transação — do
+// contrário o agente ficaria desvinculado da conta.
+router.patch('/usuarios/:id/usuario', verificarToken, verificarAdmin, async (req, res) => {
+  try {
+    const novo = String(req.body?.usuario || '').trim();
+    if (!novo) return res.status(400).json({ error: 'Informe o novo nome de usuário.' });
+
+    const { rows } = await db.query('SELECT usuario FROM usuarios WHERE id = $1', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Usuário não encontrado' });
+    const antigo = rows[0].usuario;
+    if (antigo === novo) return res.json({ message: 'Nome de usuário mantido.' });
+
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('UPDATE usuarios SET usuario = $1, sessao_ativa = NULL WHERE id = $2', [novo, req.params.id]);
+      await client.query('UPDATE agentes  SET usuario = $1 WHERE usuario = $2', [novo, antigo]);
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+
+    await auditar(req, 'ALTERAR_LOGIN', `${antigo} → ${novo}`);
+    res.json({ message: 'Nome de usuário alterado. O servidor precisará entrar novamente.' });
+  } catch (error) {
+    if (error.code === '23505') return res.status(409).json({ error: 'Este nome de usuário já existe.' });
     erroServidor(res, error);
   }
 });
@@ -253,10 +333,28 @@ router.delete('/usuarios/:id', verificarToken, verificarAdmin, async (req, res) 
       }
     }
 
-    await db.query('DELETE FROM usuarios WHERE id = $1', [id]);
+    // O registro no efetivo NÃO é apagado: escalas, plantões extras e férias já
+    // lançados referenciam o agente. Ele é desativado e desvinculado do login,
+    // preservando o histórico.
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM usuarios WHERE id = $1', [id]);
+      await client.query(
+        'UPDATE agentes SET ativo = false, usuario = NULL, atualizado_em = NOW() WHERE usuario = $1',
+        [rows[0].usuario]
+      );
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+
     const ip = ipFromReq(req);
     await registrarAuditoria(req.usuario.usuario, 'REMOVER_USUARIO', rows[0].usuario, ip, extraFromReq(req));
-    res.json({ message: 'Usuário removido com sucesso' });
+    res.json({ message: 'Usuário removido. O agente foi inativado no efetivo, preservando o histórico.' });
   } catch (error) {
     erroServidor(res, error);
   }
