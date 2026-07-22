@@ -9,15 +9,16 @@ const { quinzenaDe, numeroFolga, diaDoMes } = require('../utils/escalaCalc');
 const { horasDoTipo, valorDoTipo, calcularHoraFim } = require('../utils/extrasCalc');
 const { coletarPdfBuffer } = require('../utils/pdfBuffer');
 const { enviarPdfNotificacao } = require('../utils/email');
-const { sqlNomeExibicao } = require('../utils/nomeAgente');
+const { sqlNomeExibicao, nomeCurto } = require('../utils/nomeAgente');
 
 const VAGAS_DIA_PADRAO = 4; // padrão de vagas por dia (ajustável por admin/supervisor)
 const LIMITE_HORAS = 96;   // 4 plantões de 24h por quinzena
 
 function ehComando(req)      { return ['admin', 'supervisor'].includes(req.usuario?.role); }
 
-// Toda leitura de vaga sai com o nome de guerra do agente vinculado, caindo no nome
-// gravado na vaga quando não há vínculo (lançamento avulso ou agente removido).
+// Toda leitura de vaga sai com o nome do agente vinculado, caindo no nome gravado
+// na vaga quando não há vínculo (lançamento avulso ou agente removido). A redução
+// para dois nomes acontece na exibição — ver utils/nomeAgente.js.
 const SELECT_VAGAS = `SELECT v.*, ${sqlNomeExibicao('a', 'v.nome')}
     FROM extras_vagas v LEFT JOIN agentes a ON a.id = v.agente_id`;
 
@@ -389,7 +390,7 @@ async function construirPdfDia(dataStr, vagas, redigido = false) {
     } else {
       vagas.forEach((v, idx) => {
         drawRow([
-          v.nome_exibicao || v.nome, v.matricula || '—', v.funcao || '—', `${v.tipo}h`,
+          nomeCurto(v.nome_exibicao || v.nome), v.matricula || '—', v.funcao || '—', `${v.tipo}h`,
           v.hora_inicio || '—', v.hora_fim || '—', v.telefone || '—',
           v.valor == null ? '—' : `R$ ${Number(v.valor).toFixed(2)}`,
         ], { zebra: idx % 2 === 1 });
@@ -515,7 +516,7 @@ router.get('/relatorio/pdf', verificarToken, verificarSupervisor, async (req, re
          .text('Nenhum plantão no período.', margem, y + 8, { width: conteudoW, align: 'center' });
     } else {
       rows.forEach((r, idx) => {
-        row([r.nome_exibicao || r.nome, r.matricula || '—', r.qtd_12, r.qtd_24, `${r.total_horas}h`, Number(r.total_valor).toFixed(2)], { zebra: idx % 2 === 1 });
+        row([nomeCurto(r.nome_exibicao || r.nome), r.matricula || '—', r.qtd_12, r.qtd_24, `${r.total_horas}h`, Number(r.total_valor).toFixed(2)], { zebra: idx % 2 === 1 });
       });
       const totalGeral = rows.reduce((a, r) => a + Number(r.total_valor), 0);
       const totalHoras = rows.reduce((a, r) => a + Number(r.total_horas), 0);
