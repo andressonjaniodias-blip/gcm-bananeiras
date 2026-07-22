@@ -8,6 +8,17 @@ const NAVY = '#0e2a52';
 const brasaoGCM        = path.join(__dirname, '../../public/brasao-gcm.png');
 const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.png');
 
+// Altura do rodapé, medida a partir do pé da página: a linha divisória fica em
+// RODAPE_Y e o texto logo abaixo. RODAPE_RESERVA acrescenta um respiro — é até
+// onde o conteúdo pode descer sem encostar no rodapé (ver limiteConteudoY).
+const RODAPE_Y = 42;
+const RODAPE_RESERVA = 50;
+
+/** Y máximo que o conteúdo de uma página pode ocupar sem invadir o rodapé. */
+function limiteConteudoY(doc) {
+  return doc.page.height - RODAPE_RESERVA;
+}
+
 /**
  * Desenha o cabeçalho institucional (brasões + títulos) e posiciona doc.y
  * logo abaixo da linha divisória. Retorna a margem lateral usada.
@@ -57,7 +68,7 @@ function rodapePDF(doc, { info } = {}) {
   for (let i = 0; i < total; i++) {
     doc.switchToPage(i);
     doc.page.margins.bottom = 0;
-    const baseY = doc.page.height - 42;
+    const baseY = doc.page.height - RODAPE_Y;
     doc.moveTo(margem, baseY).lineTo(pageW - margem, baseY).lineWidth(0.5).strokeColor('#aaa').stroke();
     if (info) {
       doc.fontSize(8).font('Helvetica').fillColor('#555')
@@ -122,4 +133,4 @@ function assinaturasPDF(doc, { comandante = 'Comandante da GCM', subcomandante =
   doc.y = linhaY + 20;
 }
 
-module.exports = { cabecalhoPDF, rodapePDF, assinaturasPDF, fmtData, NAVY };
+module.exports = { cabecalhoPDF, rodapePDF, assinaturasPDF, limiteConteudoY, fmtData, NAVY };
