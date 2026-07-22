@@ -8,7 +8,7 @@ const path = require('path');
 const fs   = require('fs');
 const { coletarPdfBuffer } = require('../utils/pdfBuffer');
 const { enviarPdfNotificacao } = require('../utils/email');
-const { acharAgente, nomeExibicao } = require('../utils/nomeAgente');
+const { acharAgente, nomeCurto } = require('../utils/nomeAgente');
 
 const brasaoGCM        = path.join(__dirname, '../../public/brasao-gcm.png');
 const brasaoPrefeitura = path.join(__dirname, '../../public/brasao-prefeitura.png');
@@ -409,8 +409,9 @@ async function construirPdfBO(row, opts = {}) {
       ];
       const digitados = paresAgente.map(([nk]) => oc[nk]).filter(v => v && String(v).trim());
       if (digitados.length) {
-        // Os campos são texto livre, então o operador pode ter digitado o nome de
-        // guerra, o nome completo ou a matrícula — acharAgente aceita os três.
+        // Os campos são texto livre, então o operador pode ter digitado o nome
+        // completo, os dois primeiros nomes, o nome de guerra ou a matrícula —
+        // acharAgente aceita todos.
         // Só o efetivo entra aqui; nomes de civis (solicitante, pai, mãe,
         // autoridade) não são tocados.
         const { rows: agentes } = await db.query(
@@ -422,7 +423,8 @@ async function construirPdfBO(row, opts = {}) {
           const par = paresAgente.find(([nk]) => nk === k);
           if (par && v && String(v).trim()) {
             const ag = acharAgente(v, agentes);
-            if (ag) ocEnriquecido[k] = nomeExibicao(ag);        // documento sai com o nome de guerra
+            // A matrícula tem campo próprio logo ao lado, então aqui sai só o nome.
+            if (ag) ocEnriquecido[k] = nomeCurto(ag.nome);
             const mat = oc[par[1]] || (ag && ag.matricula);
             if (mat) ocEnriquecido[par[1]] = mat;
           }
@@ -457,7 +459,8 @@ async function construirPdfBO(row, opts = {}) {
     let cargoCmd  = null;
     let comandanteExibido = nomeComandante;
     if (nomeComandante) {
-      // Casa por nome de guerra, nome completo ou matrícula (campo é texto livre).
+      // Casa por nome completo, dois primeiros nomes, nome de guerra ou matrícula
+      // (o campo é texto livre).
       const { rows: agRows } = await db.query(
         `SELECT nome, nome_guerra, matricula, cargo FROM agentes WHERE ativo = true`
       );
@@ -465,7 +468,7 @@ async function construirPdfBO(row, opts = {}) {
       if (ag) {
         if (!matricCmd) matricCmd = ag.matricula;
         cargoCmd = ag.cargo;
-        comandanteExibido = nomeExibicao(ag);
+        comandanteExibido = nomeCurto(ag.nome);   // a matrícula sai na linha de baixo
       }
     }
 
