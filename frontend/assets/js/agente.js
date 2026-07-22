@@ -60,13 +60,6 @@ function gerarSenhaForte() {
   return base.sort(() => Math.random() - 0.5).join('');
 }
 
-// Sugestão de login a partir do nome completo: primeiro nome em minúsculas, sem
-// acento (o comando costuma usar o nome de guerra, mas isso já adianta o campo).
-function sugerirUsuario(nomeCompleto) {
-  return String(nomeCompleto || '').trim().split(/\s+/)[0]
-    ?.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9.]/g, '') || '';
-}
-
 // ── Ficha funcional ──────────────────────────────────────────────────────────
 const FichaUI = {
   schema: null,
@@ -85,13 +78,16 @@ const FichaUI = {
    *   editaveis:  ids dos blocos que este usuário pode gravar (vem da API)
    *   abertos:    ids dos blocos que começam expandidos
    *   somenteLeitura: força tudo como texto (visualização)
+   *   travados:   { blocoId: [campoId] } — campos que saem só como texto porque
+   *               já são digitados fora da ficha (ver o cadastro de servidor)
    */
-  render(container, { valores = {}, editaveis = [], abertos = [], somenteLeitura = false } = {}) {
+  render(container, { valores = {}, editaveis = [], abertos = [], somenteLeitura = false, travados = {} } = {}) {
     if (!this.schema) { container.innerHTML = '<p class="ficha-vazia">Carregando formulário…</p>'; return; }
     // Quem edita os blocos do comando é o comando: guarda isso para o teste de
     // campo isolado (o nome completo, por exemplo, mora num bloco do agente mas
     // só o comando altera).
     this._ehComando = editaveis.includes('funcional');
+    this._travados  = travados;
     container.innerHTML = this.schema.blocos.map(b => {
       const podeEditar = !somenteLeitura && editaveis.includes(b.id);
       const vals = valores[b.id] || {};
@@ -124,7 +120,8 @@ const FichaUI = {
   },
 
   _campoHTML(b, campo, valor, podeEditar) {
-    const editavel = podeEditar && (campo.dono !== 'comando' || this._ehComando);
+    const travado  = (this._travados?.[b.id] || []).includes(campo.id);
+    const editavel = podeEditar && !travado && (campo.dono !== 'comando' || this._ehComando);
     if (campo.tipo === 'lista') return this._listaHTML(b, campo, valor, editavel);
 
     const largura = campo.largura === 2 ? ' ficha-campo-largo' : '';
@@ -145,10 +142,11 @@ const FichaUI = {
         ${campo.mascara ? `data-mascara="${campo.mascara}"` : ''}>`;
     }
 
+    const ajuda = travado ? 'Preenchido no formulário de cadastro acima.' : campo.ajuda;
     return `<div class="ficha-campo${largura}">
       <label>${campo.rotulo}${campo.obrigatorio ? ' <span class="obrig">*</span>' : ''}</label>
       ${controle}
-      ${campo.ajuda ? `<small class="ficha-ajuda">${campo.ajuda}</small>` : ''}
+      ${ajuda ? `<small class="ficha-ajuda">${ajuda}</small>` : ''}
     </div>`;
   },
 
