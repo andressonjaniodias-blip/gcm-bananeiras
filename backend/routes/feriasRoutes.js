@@ -7,10 +7,11 @@ const PDFDocument  = require('pdfkit');
 const { cabecalhoPDF, rodapePDF, fmtData, NAVY } = require('../utils/pdfLayout');
 const { coletarPdfBuffer } = require('../utils/pdfBuffer');
 const { enviarPdfNotificacao } = require('../utils/email');
-const { sqlNomeExibicao } = require('../utils/nomeAgente');
+const { sqlNomeExibicao, nomeCurto } = require('../utils/nomeAgente');
 
-// Toda leitura de férias sai com o nome de guerra do agente vinculado, caindo no
-// nome gravado no registro quando não há vínculo (agente removido do efetivo).
+// Toda leitura de férias sai com o nome do agente vinculado, caindo no nome gravado
+// no registro quando não há vínculo (agente removido do efetivo). A redução para
+// dois nomes acontece na exibição — ver utils/nomeAgente.js.
 const SELECT_FERIAS = `SELECT f.*, ${sqlNomeExibicao('a', 'f.nome')}
     FROM ferias f LEFT JOIN agentes a ON a.id = f.agente_id`;
 
@@ -145,7 +146,7 @@ async function construirPdfFerias(rows, subtitulo) {
     } else {
       rows.forEach((r, idx) => {
         const dias = Math.round((new Date(r.data_fim) - new Date(r.data_inicio)) / 86400000) + 1;
-        row([r.nome_exibicao || r.nome, r.matricula || '—', fmtData(r.data_inicio), fmtData(r.data_fim), dias], { zebra: idx % 2 === 1 });
+        row([nomeCurto(r.nome_exibicao || r.nome), r.matricula || '—', fmtData(r.data_inicio), fmtData(r.data_fim), dias], { zebra: idx % 2 === 1 });
       });
     }
 
