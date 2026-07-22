@@ -24,7 +24,7 @@
     .obrig { color: var(--color-danger); }
     .row-submit { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
-    /* Campo com botão de apoio ao lado (sugerir usuário / gerar senha) */
+    /* Campo com botão de apoio ao lado (gerar senha) */
     .campo-com-acao { display: flex; gap: 6px; }
     .campo-com-acao input { flex: 1; min-width: 0; }
     .btn-apoio {
@@ -187,10 +187,7 @@
         <div class="fg-3" style="margin-bottom:4px;">
           <div class="field">
             <label>Usuário <span class="obrig">*</span></label>
-            <div class="campo-com-acao">
-              <input type="text" id="novoUsuario" placeholder="ex: rocha" required autocomplete="off" maxlength="40">
-              <button type="button" class="btn-apoio" onclick="sugerirLogin()" title="Sugerir a partir do nome completo">Sugerir</button>
-            </div>
+            <input type="text" id="novoUsuario" placeholder="ex: rocha" required autocomplete="off" maxlength="40">
             <small style="display:block;color:var(--color-hint);font-size:0.72rem;margin-top:4px;">
               É o que o servidor digita para entrar. Sugestão: use o nome de guerra.
             </small>
@@ -456,7 +453,7 @@
 
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/senha.js"></script>
-  <script src="../assets/js/agente.js?v=1"></script>
+  <script src="../assets/js/agente.js?v=2"></script>
   <script src="../assets/js/geolocalizacao.js"></script>
   <script>
     let meUsuario  = '';
@@ -519,12 +516,6 @@
       atualizarPreviewNome();
     }
 
-    function sugerirLogin() {
-      const sugestao = sugerirUsuario(document.getElementById('novoNome').value);
-      if (!sugestao) { toast('Preencha o nome completo primeiro.', 'erro'); return; }
-      document.getElementById('novoUsuario').value = sugestao;
-    }
-
     function gerarSenha() {
       document.getElementById('novaSenha').value = gerarSenhaForte();
     }
@@ -536,9 +527,28 @@
       const mat  = document.getElementById('novaMatricula').value;
       const exibicao = nomeExibicaoAgente({ nome, matricula: mat });
       document.getElementById('previewNome').textContent = exibicao || 'Nome Sobrenome, matrícula';
+      sincronizarIdentidadeFicha();
     }
     document.getElementById('novoNome').addEventListener('input', atualizarPreviewNome);
     document.getElementById('novaMatricula').addEventListener('input', atualizarPreviewNome);
+    document.getElementById('novoCargo').addEventListener('change', sincronizarIdentidadeFicha);
+
+    // Nome, matrícula e cargo aparecem travados dentro da ficha (ver toggleFichaNovo).
+    // Como são só texto, precisam acompanhar o que o admin digita aqui em cima.
+    function sincronizarIdentidadeFicha() {
+      const wrap = document.getElementById('fichaNovo');
+      if (!wrap.children.length) return;
+      const ident = identidadeDoFormulario();
+      const espelhar = (bloco, campo, valor) => {
+        const el = wrap.querySelector(`[data-bloco="${bloco}"][data-campo="${campo}"]`);
+        if (!el) return;
+        el.textContent = valor || 'Não informado';
+        el.classList.toggle('vazio', !valor);
+      };
+      espelhar('pessoal',   'nome',      ident.pessoal.nome);
+      espelhar('funcional', 'matricula', ident.funcional.matricula);
+      espelhar('funcional', 'cargo',     ident.funcional.cargo);
+    }
 
     function toggleFichaNovo() {
       const wrap = document.getElementById('fichaNovoWrap');
@@ -547,11 +557,12 @@
       wrap.style.display = abrir ? '' : 'none';
       btn.textContent = abrir ? '📋 Ocultar ficha completa' : '📋 Preencher ficha completa (opcional)';
       if (abrir && !document.getElementById('fichaNovo').children.length) {
-        // A ficha já nasce com o que foi digitado acima, para o admin não ver os
-        // mesmos campos vazios duas vezes. Na hora de salvar, o formulário de
-        // cima continua sendo a fonte da verdade (ver criarUsuario).
+        // Nome, matrícula e cargo já foram pedidos acima: na ficha eles entram
+        // travados, só espelhando o que o admin digitou (ver
+        // sincronizarIdentidadeFicha), para não haver o mesmo campo duas vezes.
         FichaUI.render(document.getElementById('fichaNovo'), {
           valores: identidadeDoFormulario(), editaveis: EDITAVEIS,
+          travados: { pessoal: ['nome'], funcional: ['matricula', 'cargo'] },
         });
       }
     }
