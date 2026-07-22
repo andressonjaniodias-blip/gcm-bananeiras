@@ -27,13 +27,13 @@ e ao *Framework de Privacidade e Segurança da Informação*.
 
 | Item | Descrição |
 |------|-----------|
-| **Finalidade** | Gestão funcional: escala, plantões extras, férias, contato e identificação. |
-| **Base legal** | art. 23 (política de pessoal) c/c art. 7º, II; execução de contrato/vínculo funcional. |
+| **Finalidade** | Gestão funcional: escala, plantões extras, férias, contato, identificação e ficha funcional do agente. |
+| **Base legal** | art. 23 (política de pessoal) c/c art. 7º, II; execução de contrato/vínculo funcional. Dados de saúde: art. 11, II, "a" e "b" (cumprimento de obrigação legal e proteção da vida/incolumidade física do titular em ocorrência de serviço). |
 | **Categorias de titulares** | Guardas civis municipais e usuários do sistema. |
-| **Categorias de dados** | Nome, matrícula, CPF, RG, data de nascimento, endereço, telefone, e-mail, lotação, turno, foto. |
+| **Categorias de dados** | Identificação: nome, nome social, nome de guerra, matrícula, CPF, RG, data de nascimento, naturalidade, estado civil, foto. Contato: endereço, telefones, e-mail, contato de emergência. Funcional: cargo, lotação, turno, data de ingresso, histórico de promoções/transferências, situação funcional. Operacional: nº da arma funcional, equipamentos sob responsabilidade, CNH, áreas de atuação. Formação: escolaridade, cursos e certificações. **Dados sensíveis (art. 11)**: tipo sanguíneo, alergias, restrições e condições de saúde, data do último exame de aptidão. Disciplinar: advertências, sanções, elogios e condecorações. |
 | **Operadores** | Provedor de nuvem. |
 | **Retenção** | Enquanto durar o vínculo + prazos legais/trabalhistas aplicáveis. |
-| **Segurança** | CPF, RG, endereço, telefone e data de nascimento **cifrados** em repouso; acesso restrito a admin/próprio titular. |
+| **Segurança** | CPF, RG, endereço, telefone e data de nascimento **cifrados** em repouso; toda a ficha funcional gravada em **blocos JSON cifrados** (tabela `agente_ficha`). Acesso restrito a admin e ao próprio titular, com registro em auditoria de cada consulta, alteração e emissão de ficha (`VER_FICHA`, `ALTERAR_FICHA`, `BAIXAR_FICHA`). Edição segregada por bloco: saúde e dados pessoais só pelo próprio agente; funcional, operacional e disciplinar só pelo comando. A ficha em PDF tem versão **resumida**, sem saúde e sem histórico disciplinar, para uso rotineiro e entrega a terceiros. |
 
 ## Operação 3 — Autenticação e trilha de auditoria (logs)
 
