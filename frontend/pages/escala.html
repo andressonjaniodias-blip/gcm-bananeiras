@@ -218,6 +218,7 @@
 
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/main.js"></script>
+  <script src="../assets/js/agente.js?v=1"></script>
   <script>
     let PERFIL={}, AGENTES=[], POSTOS=[], ITENS=[], ESCALA_ID=null;
     const PATRULHAS=['1','2','3','4'];
@@ -333,7 +334,7 @@
       const mes=document.getElementById('mesRef').value;
       const ini=document.getElementById('ferInicio').value;
       const a=AGENTES.find(x=>String(x.id)===document.getElementById('ferAgente').value);
-      const nome=nomeDeGuerra(a);
+      const nome=nomeCompleto(a);
       if(!nome||!ini){ msgFer('Selecione o agente e a data de início.',false); return; }
       const fim=addDias(ini,29);
       try{
@@ -373,7 +374,9 @@
 
     // Nome que vai para os documentos. O nome completo fica só como reserva de quem
     // ainda não tem nome de guerra cadastrado.
-    function nomeDeGuerra(a){ return a ? (String(a.nome_guerra||'').trim() || String(a.nome||'').trim()) : ''; }
+    // Nome gravado no lançamento: o completo. A exibição "João Carlos, 1234" é
+    // derivada dele por nomeExibicaoAgente (assets/js/agente.js).
+    function nomeCompleto(a){ return a ? String(a.nome||'').trim() : ''; }
 
     function filtrarAgentes(colKey){
       const inp=document.getElementById(`form_agente_${colKey}`);
@@ -385,14 +388,14 @@
       const achados=(q?AGENTES.filter(a=>normNome(a.nome).includes(q)||normNome(a.nome_guerra).includes(q)||String(a.matricula||'').toLowerCase().includes(q)):AGENTES).slice(0,8);
       if(!achados.length){ box.innerHTML='<div class="ta-empty">Nenhum agente encontrado.</div>'; box.classList.add('aberta'); return; }
       // Mostra o nome de guerra (o que vai sair no documento) e o completo embaixo.
-      box.innerHTML=achados.map((a,i)=>{ const g=nomeDeGuerra(a); const completo=(a.nome||'').trim();
+      box.innerHTML=achados.map((a,i)=>{ const g=nomeExibicaoAgente(a); const completo=(a.nome||'').trim();
         return `<div class="ta-item${i===0?' ativo':''}" data-id="${a.id}"
         onmousedown="event.preventDefault();escolherAgente('${colKey}',${a.id})">${g}${a.matricula?` <span class="ta-mat">${a.matricula}</span>`:''}${completo&&completo!==g?`<div class="ta-completo">${completo}</div>`:''}</div>`;}).join('');
       box.classList.add('aberta');
     }
     function escolherAgente(colKey,id){
       const a=AGENTES.find(x=>String(x.id)===String(id)); if(!a) return;
-      document.getElementById(`form_agente_${colKey}`).value=nomeDeGuerra(a);
+      document.getElementById(`form_agente_${colKey}`).value=nomeCompleto(a);
       document.getElementById(`form_agenteid_${colKey}`).value=a.id;
       const box=document.getElementById(`ta_${colKey}`); if(box) box.classList.remove('aberta');
     }
@@ -441,7 +444,7 @@
       const a=AGENTES.find(x=>String(x.id)===String(agenteId));
       const dup=lancamentoRepetido(agenteId,posto,horario,colKey);
       if(dup){ alert(msgRepetido(a?a.nome:'Este agente',posto,horario,colKey,dup.patrulha)); return; }
-      ITENS.push({patrulha:colKey,posto,agente_id:Number(agenteId),nome:nomeDeGuerra(a),matricula:a?a.matricula:'',regime:'24x72',turno:'',horario});
+      ITENS.push({patrulha:colKey,posto,agente_id:Number(agenteId),nome:nomeCompleto(a),matricula:a?a.matricula:'',regime:'24x72',turno:'',horario});
       renderGrid();
     }
 
@@ -549,9 +552,9 @@
     const DIAS_SEMANA=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     let VIEW_DATA=null, VIEW_ID=null, VIEW_MES='', VIEW_MODO='cal';
 
-    // Entrada por agente: "Nome — matrícula" em cima, "Setor · horário" embaixo.
+    // Entrada por agente: "João Carlos, 1234" em cima, "Setor · horário" embaixo.
     function agenteHTML(i){
-      const nome=(i.nome_exibicao||i.nome||'')+(i.matricula?` — ${i.matricula}`:'');
+      const nome=nomeExibicaoAgente(i);
       const h=sufHorario(i);
       const setor=`${i.posto||''}${h?` · ${h}`:''}`;
       return `<div class="cal-ag"><div class="cal-nome">${nome}</div><div class="cal-setor">${setor}</div></div>`;
@@ -568,7 +571,7 @@
 
     // Só o nome: usado na tabela de equipes, onde o setor já é o título do grupo.
     function agenteNomeHTML(i){
-      const nome=(i.nome_exibicao||i.nome||'')+(i.matricula?` — ${i.matricula}`:'');
+      const nome=nomeExibicaoAgente(i);
       return `<div class="cal-ag"><div class="cal-nome">${nome}</div></div>`;
     }
 
