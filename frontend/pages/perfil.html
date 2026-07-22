@@ -220,103 +220,26 @@
       </div>
     </div>
 
-    <!-- Editar dados de contato -->
-    <div class="card" id="cardContato" style="display:none;">
-      <div class="card-title" style="justify-content:space-between;">
-        <span>📞 Meus Dados de Contato</span>
-        <div id="botoesContato" style="display:flex;gap:8px;">
-          <button type="button" class="btn-editar" id="btnEditarContato" onclick="abrirEdicaoContato()">✏️ Editar</button>
+    <!-- Ficha funcional: dados pessoais, contato, saúde e formação são preenchidos
+         pelo próprio agente; os blocos do comando aparecem como leitura. -->
+    <div class="card" id="cardFicha" style="display:none;">
+      <div class="card-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <span>📋 Minha Ficha Funcional</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="btn-pdf" onclick="baixarMinhaFicha('completa')">⬇ Ficha completa (PDF)</button>
+          <button type="button" class="btn-pdf" onclick="baixarMinhaFicha('resumida')">⬇ Ficha resumida (PDF)</button>
         </div>
       </div>
-
-      <!-- Visualização dos dados -->
-      <div id="viewContato" style="margin-top:4px;">
-        <div class="info-grid">
-          <div class="info-item"><label>E-mail Institucional</label><span id="viewEmail">—</span></div>
-          <div class="info-item"><label>Telefone / WhatsApp</label><span id="viewTelefone">—</span></div>
-        </div>
-        <div style="margin-top:14px;">
-          <div class="info-item"><label>Endereço</label><span id="viewEndereco">—</span></div>
-        </div>
-      </div>
-
-      <!-- Formulário (oculto por padrão) -->
-      <div id="formContatoWrap" style="display:none;margin-top:16px;">
-      <p style="font-size:0.83rem;color:var(--color-text-muted);margin-bottom:16px;">
-        Mantenha seu telefone e endereço atualizados. Estas informações podem ser alteradas a qualquer momento.
+      <p style="font-size:0.83rem;color:var(--color-text-muted);margin-bottom:14px;" id="fichaMeta">
+        Mantenha seus dados atualizados. Os blocos marcados como “somente leitura” são preenchidos pelo comando.
       </p>
-      <form onsubmit="salvarContato(event)" autocomplete="off">
-        <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-label);margin-bottom:10px;padding-bottom:6px;border-bottom:1px dashed var(--color-border);">
-          Contato
-        </div>
-        <div class="fg-2" style="margin-bottom:14px;">
-          <div class="field" style="margin-bottom:0;">
-            <label>E-mail Institucional</label>
-            <input type="email" id="contatoEmail" placeholder="servidor@bananeiras.pb.gov.br" maxlength="150">
-          </div>
-          <div class="field" style="margin-bottom:0;">
-            <label>Telefone / WhatsApp</label>
-            <input type="text" id="contatoTelefone" placeholder="(83) 99999-9999" maxlength="20" oninput="mascaraTelefone(this)">
-          </div>
-        </div>
-
-        <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--color-label);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px dashed var(--color-border);">
-          Endereço Residencial
-        </div>
-        <div style="margin-bottom:10px;">
-          <button type="button" class="btn-geo" onclick="geoContato(this)" title="Preencher endereço com a localização GPS atual">📍 Usar localização atual</button>
-        </div>
-        <div class="fg-3" style="margin-bottom:14px;">
-          <div class="field" style="margin-bottom:0;">
-            <label>CEP</label>
-            <input type="text" id="contatoCep" placeholder="58000-000" maxlength="9"
-                   oninput="mascaraCep(this)" onblur="buscarCep(this.value, 'contato')">
-          </div>
-        </div>
-        <div class="fg-3x1" style="margin-bottom:14px;">
-          <div class="field" style="margin-bottom:0;">
-            <label>Logradouro</label>
-            <input type="text" id="contatoLogradouro" placeholder="Rua, Av., Travessa..." maxlength="200">
-          </div>
-          <div class="field" style="margin-bottom:0;">
-            <label>Número</label>
-            <input type="text" id="contatoNumeroEnd" placeholder="S/N" maxlength="20">
-          </div>
-        </div>
-        <div class="fg-4" style="margin-bottom:14px;">
-          <div class="field" style="margin-bottom:0;">
-            <label>Complemento</label>
-            <input type="text" id="contatoComplemento" placeholder="Apto, Bloco..." maxlength="100">
-          </div>
-          <div class="field" style="margin-bottom:0;">
-            <label>Bairro</label>
-            <input type="text" id="contatoBairro" placeholder="Bairro" maxlength="100">
-          </div>
-          <div class="field" style="margin-bottom:0;">
-            <label>Cidade</label>
-            <input type="text" id="contatoCidade" placeholder="Bananeiras" maxlength="100">
-          </div>
-          <div class="field" style="margin-bottom:0;">
-            <label>UF</label>
-            <select id="contatoUf">
-              <option value="">—</option>
-              <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
-              <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
-              <option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option>
-              <option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
-              <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
-              <option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
-              <option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
-              <option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
-              <option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option>
-            </select>
-          </div>
-        </div>
-        <div style="display:flex;gap:10px;margin-top:4px;">
-          <button type="submit" class="btn-primary" style="margin-top:0;">Salvar Dados de Contato</button>
-          <button type="button" class="btn-cancelar-edicao" onclick="fecharEdicaoContato()">Cancelar</button>
-        </div>
-      </form>
+      <div id="fichaContainer"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+        <button type="button" class="btn-primary" style="margin-top:0;width:auto;padding:10px 24px;" onclick="salvarFicha()">
+          Salvar Minha Ficha
+        </button>
+        <button type="button" class="btn-geo" style="margin:0;" onclick="geoFicha(this)"
+                title="Preencher o endereço com a localização GPS atual">📍 Usar localização atual</button>
       </div>
     </div>
 
@@ -341,8 +264,8 @@
         </div>
         <div class="fg-2" style="margin-bottom:14px;">
           <div class="field" style="margin-bottom:0;">
-            <label>Cargo / Função</label>
-            <input type="text" id="agCargo" placeholder="Guarda Civil Municipal" maxlength="80">
+            <label>Cargo</label>
+            <select id="agCargo"><option value="">— selecione —</option></select>
           </div>
           <div class="field" style="margin-bottom:0;">
             <label>Lotação / Setor</label>
@@ -409,19 +332,23 @@
 
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/senha.js"></script>
+  <script src="../assets/js/agente.js?v=1"></script>
   <script src="../assets/js/geolocalizacao.js"></script>
   <script>
-    function geoContato(btn) {
+    // O endereço fica no bloco "contato" da ficha, cujos campos são marcados por
+    // data-campo (não por id) — por isso passamos os elementos direto.
+    function geoFicha(btn) {
+      const campo = nome => document.querySelector(`#fichaContainer [data-campo="${nome}"]`);
       usarLocalizacaoAtual({
         tipo: 'endereco',
         campos: {
-          logradouro:  'contatoLogradouro',
-          numero:      'contatoNumeroEnd',
-          complemento: 'contatoComplemento',
-          bairro:      'contatoBairro',
-          cidade:      'contatoCidade',
-          uf:          'contatoUf',
-          cep:         'contatoCep'
+          logradouro:  campo('logradouro'),
+          numero:      campo('numero_end'),
+          complemento: campo('complemento'),
+          bairro:      campo('bairro'),
+          cidade:      campo('cidade'),
+          uf:          campo('uf'),
+          cep:         campo('cep'),
         },
         btn
       });
@@ -430,7 +357,9 @@
     const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente GCM' };
     const badgeClass = { admin: 'badge-admin', supervisor: 'badge-supervisor', agente: 'badge-agente' };
 
-    let meuUsuario = '';
+    let meuUsuario  = '';
+    let meuAgenteId = null;
+    let fichaEditaveis = [];
 
     (async () => {
       try {
@@ -452,9 +381,10 @@
         if (resA.ok) {
           const ag = await resA.json();
           if (ag) {
-            const nomeExibir = ag.nome || perfil.usuario;
+            meuAgenteId = ag.id;
+            const nomeExibir = nomeExibicaoAgente(ag) || perfil.usuario;
             document.getElementById('perfilNome').textContent  = nomeExibir;
-            renderAvatar(ag.foto, nomeExibir[0].toUpperCase());
+            renderAvatar(ag.foto, (ag.nome || perfil.usuario)[0].toUpperCase());
 
             // Dados funcionais
             document.getElementById('cardDadosFuncionais').style.display = '';
@@ -465,30 +395,20 @@
             setText('infoAdmissao',  ag.data_admissao ? new Date(ag.data_admissao + 'T00:00:00').toLocaleDateString('pt-BR') : null);
             setText('infoAtivo',     ag.ativo ? 'Ativo' : 'Inativo');
 
-            // Preenche dados de contato
-            document.getElementById('cardContato').style.display = '';
-            document.getElementById('contatoEmail').value      = ag.email || '';
-            document.getElementById('contatoTelefone').value   = ag.telefone || '';
-            document.getElementById('contatoCep').value        = ag.cep || '';
-            document.getElementById('contatoLogradouro').value = ag.logradouro || '';
-            document.getElementById('contatoNumeroEnd').value  = ag.numero_end || '';
-            document.getElementById('contatoComplemento').value= ag.complemento || '';
-            document.getElementById('contatoBairro').value     = ag.bairro || '';
-            document.getElementById('contatoCidade').value     = ag.cidade || '';
-            document.getElementById('contatoUf').value         = ag.uf || '';
-            // Atualiza visualização
-            atualizarViewContato(ag);
+            carregarFicha();
           } else {
             const inicial = (perfil.usuario || '?')[0].toUpperCase();
             renderAvatar(null, inicial);
             document.getElementById('perfilNome').textContent   = perfil.usuario;
             document.getElementById('cardVirarAgente').style.display = '';
+            preencherCargosPerfil();
           }
         } else {
           const inicial = (perfil.usuario || '?')[0].toUpperCase();
           renderAvatar(null, inicial);
           document.getElementById('perfilNome').textContent   = perfil.usuario;
           document.getElementById('cardVirarAgente').style.display = '';
+          preencherCargosPerfil();
         }
       } catch { window.location.href = '/'; }
 
@@ -502,32 +422,58 @@
       else     { el.textContent = 'Não informado'; el.className = 'vazio'; }
     }
 
-    function atualizarViewContato(ag) {
-      const setView = (id, val) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.textContent = val || '—';
-        el.className = val ? '' : 'vazio';
-      };
-      setView('viewEmail', ag.email);
-      setView('viewTelefone', ag.telefone);
-      const partes = [ag.logradouro, ag.numero_end, ag.complemento, ag.bairro, ag.cidade, ag.uf, ag.cep].filter(Boolean);
-      setView('viewEndereco', partes.length ? partes.join(', ') : null);
+    // ── Ficha funcional ───────────────────────────────────────────────────────
+    async function carregarFicha() {
+      const card = document.getElementById('cardFicha');
+      card.style.display = '';
+      try {
+        await FichaUI.carregarSchema();
+        const res = await fetch(`${API_BASE_URL}/api/agentes/${meuAgenteId}/ficha`, { credentials: 'include' });
+        if (!res.ok) { card.style.display = 'none'; return; }
+        const data = await res.json();
+        fichaEditaveis = data.editaveis;
+        FichaUI.render(document.getElementById('fichaContainer'), {
+          valores: data.blocos, editaveis: data.editaveis, abertos: ['contato'],
+        });
+        if (data.atualizado_em) {
+          document.getElementById('fichaMeta').textContent =
+            `Última atualização em ${new Date(data.atualizado_em).toLocaleDateString('pt-BR')}. `
+            + 'Os blocos marcados como “somente leitura” são preenchidos pelo comando.';
+        }
+      } catch { card.style.display = 'none'; }
     }
 
-    function abrirEdicaoContato() {
-      document.getElementById('viewContato').style.display = 'none';
-      document.getElementById('formContatoWrap').style.display = '';
-      document.getElementById('btnEditarContato').style.display = 'none';
+    async function salvarFicha() {
+      const blocos = FichaUI.coletar(document.getElementById('fichaContainer'), fichaEditaveis);
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/agentes/${meuAgenteId}/ficha`, {
+          method: 'PUT', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ blocos }),
+        });
+        const data = await res.json();
+        if (!res.ok) { toast(data.error || 'Erro ao salvar a ficha.', 'erro'); return; }
+        toast('Ficha atualizada com sucesso!', 'ok');
+        document.getElementById('banner-dados')?.remove();
+      } catch { toast('Erro de conexão.', 'erro'); }
     }
 
-    function fecharEdicaoContato() {
-      document.getElementById('viewContato').style.display = '';
-      document.getElementById('formContatoWrap').style.display = 'none';
-      document.getElementById('btnEditarContato').style.display = '';
+    function baixarMinhaFicha(formato) {
+      if (!meuAgenteId) return;
+      window.open(`${API_BASE_URL}/api/agentes/${meuAgenteId}/ficha.pdf?formato=${formato}`, '_blank');
     }
 
     // Auto-cadastro no efetivo: cria o registro de agente vinculado a este login.
+    // Só aparece para logins sem registro no efetivo (o cadastro feito pelo admin
+    // já cria os dois juntos).
+    async function preencherCargosPerfil() {
+      try {
+        const schema = await FichaUI.carregarSchema();
+        document.getElementById('agCargo').innerHTML = '<option value="">— selecione —</option>' +
+          (schema.cargos || []).map(c => `<option value="${c}">${c}</option>`).join('');
+      } catch {}
+    }
+
     async function virarAgente(e) {
       e.preventDefault();
       const nome      = document.getElementById('agNome').value.trim();
@@ -535,7 +481,7 @@
       if (!nome || !matricula) { toast('Informe nome e matrícula.', 'erro'); return; }
       const payload = {
         nome, matricula,
-        cargo:   document.getElementById('agCargo').value.trim() || null,
+        cargo:   document.getElementById('agCargo').value || null,
         lotacao: document.getElementById('agLotacao').value.trim() || null,
         turno:   document.getElementById('agTurno').value || null,
       };
@@ -559,74 +505,6 @@
         toast('Erro de conexão.', 'erro');
         if (btn) { btn.disabled = false; btn.textContent = 'Registrar como agente'; }
       }
-    }
-
-    async function salvarContato(e) {
-      e.preventDefault();
-      const payload = {
-        email:       document.getElementById('contatoEmail').value.trim() || null,
-        telefone:    document.getElementById('contatoTelefone').value.trim() || null,
-        cep:         document.getElementById('contatoCep').value.trim() || null,
-        logradouro:  document.getElementById('contatoLogradouro').value.trim() || null,
-        numero_end:  document.getElementById('contatoNumeroEnd').value.trim() || null,
-        complemento: document.getElementById('contatoComplemento').value.trim() || null,
-        bairro:      document.getElementById('contatoBairro').value.trim() || null,
-        cidade:      document.getElementById('contatoCidade').value.trim() || null,
-        uf:          document.getElementById('contatoUf').value || null,
-      };
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/agentes/meu-contato`, {
-          method: 'PATCH', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (res.ok) {
-          toast('Dados de contato salvos com sucesso!', 'ok');
-          const banner = document.getElementById('banner-dados');
-          if (banner) banner.remove();
-          // Atualiza visualização e fecha formulário
-          atualizarViewContato({
-            email:       document.getElementById('contatoEmail').value.trim() || null,
-            telefone:    document.getElementById('contatoTelefone').value.trim() || null,
-            logradouro:  document.getElementById('contatoLogradouro').value.trim() || null,
-            numero_end:  document.getElementById('contatoNumeroEnd').value.trim() || null,
-            complemento: document.getElementById('contatoComplemento').value.trim() || null,
-            bairro:      document.getElementById('contatoBairro').value.trim() || null,
-            cidade:      document.getElementById('contatoCidade').value.trim() || null,
-            uf:          document.getElementById('contatoUf').value || null,
-            cep:         document.getElementById('contatoCep').value.trim() || null,
-          });
-          fecharEdicaoContato();
-        } else { toast(data.error || 'Erro ao salvar.', 'erro'); }
-      } catch { toast('Erro de conexão.', 'erro'); }
-    }
-
-    async function buscarCep(cep, prefixo) {
-      const v = cep.replace(/\D/g, '');
-      if (v.length !== 8) return;
-      try {
-        const res = await fetch(`https://viacep.com.br/ws/${v}/json/`);
-        const data = await res.json();
-        if (data.erro) return;
-        document.getElementById(`${prefixo}Logradouro`).value = data.logradouro || '';
-        document.getElementById(`${prefixo}Bairro`).value     = data.bairro || '';
-        document.getElementById(`${prefixo}Cidade`).value     = data.localidade || '';
-        document.getElementById(`${prefixo}Uf`).value         = data.uf || '';
-      } catch {}
-    }
-
-    function mascaraTelefone(el) {
-      let v = el.value.replace(/\D/g, '').slice(0, 11);
-      if (v.length > 10)     v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-      else if (v.length > 6) v = v.replace(/(\d{2})(\d{4})(\d{1,4})/, '($1) $2-$3');
-      else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,5})/, '($1) $2');
-      el.value = v;
-    }
-    function mascaraCep(el) {
-      let v = el.value.replace(/\D/g, '').slice(0, 8);
-      if (v.length > 5) v = v.replace(/(\d{5})(\d{1,3})/, '$1-$2');
-      el.value = v;
     }
 
     async function trocarSenha(e) {
