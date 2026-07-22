@@ -5,7 +5,8 @@
 // Sem acesso ao banco — recebem a escala, os itens já carregados (com nome_exibicao)
 // e as férias do mês. Isolado de escalaRoutes para permitir teste/render sem Postgres.
 const PDFDocument = require('pdfkit');
-const { cabecalhoPDF, rodapePDF, assinaturasPDF, fmtData, NAVY } = require('./pdfLayout');
+const { cabecalhoPDF, rodapePDF, assinaturasPDF, limiteConteudoY, fmtData, NAVY } = require('./pdfLayout');
+const { nomeExibicao } = require('./nomeAgente');
 const { montarCalendarioMes, montarResumoEscala } = require('./escalaCalc');
 const { coletarPdfBuffer } = require('./pdfBuffer');
 
@@ -31,8 +32,7 @@ function nomeMes(mesRef) {
 const AGENTE_GAP = 5;
 
 function entradaAgente(i) {
-  const nome = i.nome_exibicao || i.nome || '';
-  const linha1 = nome + (i.matricula ? ` — ${i.matricula}` : '');
+  const linha1 = nomeExibicao(i);   // "João Carlos, 1234"
   const ht = horarioTexto(i);
   const linha2 = `${i.posto || ''}${ht ? ' · ' + ht : ''}`.trim();
   return { linha1, linha2 };
@@ -99,7 +99,7 @@ function desenharObservacoes(doc, { escala, ferias, margem, conteudoW, pageW }) 
   if (ferias.length) {
     doc.fillColor(NAVY).fontSize(13).font('Helvetica-Bold').text('Férias no mês: ', { continued: true })
        .fillColor('#222').font('Helvetica')
-       .text(ferias.map(f => `${f.nome_exibicao || f.nome}${f.matricula ? ' (' + f.matricula + ')' : ''} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}`).join('; '));
+       .text(ferias.map(f => `${nomeExibicao(f)} — ${fmtData(f.data_inicio)} a ${fmtData(f.data_fim)}`).join('; '));
   }
   if (escala.obs) {
     if (ferias.length) doc.moveDown(0.4);
@@ -108,8 +108,11 @@ function desenharObservacoes(doc, { escala, ferias, margem, conteudoW, pageW }) 
   }
 }
 
+// A margem inferior fica logo abaixo de limiteConteudoY (pageH - 50): quem decide a
+// quebra aqui é o nosso cálculo de coluna, não a quebra automática do pdfkit dentro
+// de doc.text() — se a margem fosse maior, um nome no pé da coluna criaria página fantasma.
 function novoDoc() {
-  return new PDFDocument({ margins: { top: 55, bottom: 65, left: 40, right: 40 }, size: 'A4', layout: 'landscape', bufferPages: true });
+  return new PDFDocument({ margins: { top: 55, bottom: 48, left: 40, right: 40 }, size: 'A4', layout: 'landscape', bufferPages: true });
 }
 
 // ── PDF calendário dia a dia ──────────────────────────────────────────────────
@@ -131,7 +134,7 @@ function desenharPdfEscala(escala, itens, ferias) {
   const colGap = 16;
   const colW   = (conteudoW - colGap) / 2;
   const colX   = [margem, margem + colW + colGap];
-  const bottomLimit = doc.page.height - doc.page.margins.bottom - 6;
+  const bottomLimit = limiteConteudoY(doc);
   let topY = doc.y + 2;
   const colY = [topY, topY];
   let col = 0;
@@ -146,42 +149,74 @@ function desenharPdfEscala(escala, itens, ferias) {
     col = 0;
   }
 
-  function medirCard(d) {
+  const txtW = colW - 10;
+
+  // Altura do card que contém exatamente `itens` (lista já fatiada).
+  function medirCard(itens) {
     let h = TITULO_H + PAD_TOP;
-    if (!d.itens.length) {
+    if (!itens.length) {
       doc.fontSize(12).font('Helvetica-Oblique');
-      h += doc.heightOfString('(sem serviço)', { width: colW - 10 });
+      return h + doc.heightOfString('(sem serviço)', { width: txtW }) + CARD_BOTTOM;
     }
-    d.itens.forEach(i => { h += medirAgente(doc, i, colW - 10); });
-    return h + CARD_BOTTOM;
+    itens.forEach(i => { h += medirAgente(doc, i, txtW); });
+    return h + CARD_BOTTOM - AGENTE_GAP;
   }
 
-  function desenharCard(d, x, y) {
+  // Quantos dos `itens` cabem num card que começa em `y` — a mesma conta de medirCard,
+  // parando no primeiro nome que estoura o pé da coluna.
+  function cabemEm(itens, y) {
+    let h = y + TITULO_H + PAD_TOP, n = 0;
+    for (const i of itens) {
+      const a = medirAgente(doc, i, txtW);
+      if (h + a + CARD_BOTTOM - AGENTE_GAP > bottomLimit) break;
+      h += a; n++;
+    }
+    return n;
+  }
+
+  function desenharCard(d, x, y, itens, cont) {
     const cor = d.fimDeSemana ? '#8b1e3f' : NAVY;
     doc.rect(x, y, colW, TITULO_H).fill(cor);
     doc.fillColor('#fff').fontSize(13).font('Helvetica-Bold')
-       .text(`DIA ${String(d.dia).padStart(2, '0')} — ${DIAS_SEM[d.diaSemana]}`, x + 5, y + 6, { width: colW - 10 });
+       .text(`DIA ${String(d.dia).padStart(2, '0')} — ${DIAS_SEM[d.diaSemana]}${cont ? ' (cont.)' : ''}`,
+             x + 5, y + 6, { width: txtW });
     let yy = y + TITULO_H + PAD_TOP;
-    if (!d.itens.length) {
+    if (!itens.length) {
       doc.fillColor('#999').fontSize(12).font('Helvetica-Oblique')
-         .text('(sem serviço)', x + 5, yy, { width: colW - 10 });
+         .text('(sem serviço)', x + 5, yy, { width: txtW });
       return doc.y + CARD_BOTTOM;
     }
-    d.itens.forEach(i => { yy = desenharAgente(doc, i, x + 5, yy, colW - 10); });
+    itens.forEach(i => { yy = desenharAgente(doc, i, x + 5, yy, txtW); });
     return yy + CARD_BOTTOM - AGENTE_GAP;
   }
 
+  // Cada dia procura uma coluna onde caiba inteiro. Um dia longo demais para caber
+  // até numa coluna vazia é dividido em "DIA xx — SEG (cont.)", em vez de empurrar a
+  // página toda: é o que deixava a 1ª página em branco, já que o cabeçalho
+  // institucional come ~60pt a mais de altura que o título de continuação.
+  const MIN_QUEBRA = 2; // dividir por causa de um nome só não compensa
   dias.forEach(d => {
-    const h = medirCard(d);
-    if (colY[col] + h > bottomLimit) {
-      if (col === 0) {
-        col = 1;
-        if (colY[1] + h > bottomLimit) quebrarPagina();
-      } else {
-        quebrarPagina();
+    let resto = d.itens;
+    let cont = false;
+    for (;;) {
+      const h = medirCard(resto);
+      if (colY[col] + h <= bottomLimit) {
+        colY[col] = desenharCard(d, colX[col], colY[col], resto, cont);
+        return;
       }
+      if (h > bottomLimit - topY) {
+        const noTopo = colY[col] === topY;
+        const n = cabemEm(resto, colY[col]);
+        // no topo de uma coluna vazia desenha pelo menos um nome, senão o laço não anda
+        const usar = n >= MIN_QUEBRA ? n : (noTopo ? Math.max(n, 1) : 0);
+        if (usar) {
+          colY[col] = desenharCard(d, colX[col], colY[col], resto.slice(0, usar), cont);
+          resto = resto.slice(usar);
+          cont = true;
+        }
+      }
+      if (col === 0) col = 1; else quebrarPagina();
     }
-    colY[col] = desenharCard(d, colX[col], colY[col]);
   });
 
   doc.y = Math.max(colY[0], colY[1]);
@@ -201,7 +236,7 @@ function desenharPdfResumo(escala, resumo, ferias) {
   const margem = cabecalhoPDF(doc, { titulo: `Escala de Serviço (Resumo) — ${nomeMes(escala.mes_referencia)}`, subtitulo: escala.titulo || 'Guarda Civil Municipal de Bananeiras/PB' });
   const pageW  = doc.page.width;
   const conteudoW = pageW - margem * 2;
-  const bottomLimit = doc.page.height - doc.page.margins.bottom - 6;
+  const bottomLimit = limiteConteudoY(doc);
   const dia1 = String(escala.patrulha_dia1 || '1');
 
   // Título de bloco (largura total), com quebra de página se necessário.
