@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../assets/css/style.css?v=4">
+  <link rel="stylesheet" href="../assets/css/style.css?v=5">
   <script src="../assets/js/theme-switcher.js?v=2"></script>
   <script src="../assets/js/sidebar.js?v=2"></script>
   <style>
@@ -17,22 +17,24 @@
     /* Grids de campos */
     .fg-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .fg-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-    .fg-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
-    .fg-3x1 { display: grid; grid-template-columns: 3fr 1fr; gap: 12px; }
-    .fg-acesso { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
     @media (max-width: 700px) {
-      .fg-2, .fg-3, .fg-4, .fg-3x1, .fg-acesso { grid-template-columns: 1fr; }
-    }
-    @media (min-width: 701px) and (max-width: 900px) {
-      .fg-4 { grid-template-columns: 1fr 1fr; }
-      .fg-3 { grid-template-columns: 1fr 1fr; }
+      .fg-2, .fg-3 { grid-template-columns: 1fr; }
     }
 
     .obrig { color: var(--color-danger); }
-
     .row-submit { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
-    /* Tabela */
+    /* Campo com botão de apoio ao lado (sugerir usuário / gerar senha) */
+    .campo-com-acao { display: flex; gap: 6px; }
+    .campo-com-acao input { flex: 1; min-width: 0; }
+    .btn-apoio {
+      flex-shrink: 0; padding: 0 10px; border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm); background: var(--color-input-bg);
+      color: var(--color-text-muted); cursor: pointer; font-size: 0.78rem; font-weight: 600;
+    }
+    .btn-apoio:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+    /* Tabela (frota) */
     .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 560px; }
     thead th {
@@ -53,19 +55,13 @@
     .badge-supervisor { background: #14532D; color: #fff; }
     .badge-agente     { background: var(--color-primary-light); color: var(--color-primary); }
     .badge-inativo    { background: #F3F4F6; color: #6B7280; }
+    .badge-semagente  { background: var(--color-warning-bg); color: var(--color-warning-text); }
 
-    .select-role {
-      padding: 4px 8px; border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm); font-size: 0.82rem;
-      background: var(--color-input-bg); color: var(--color-text); cursor: pointer;
-    }
     .btn-acao {
       border: none; border-radius: var(--radius-sm);
       padding: 5px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600;
       transition: background 0.2s; white-space: nowrap;
     }
-    .btn-salvar  { background: var(--color-success); color: #fff; margin-right: 4px; }
-    .btn-salvar:hover { background: var(--color-success-hover); }
     .btn-excluir { background: var(--color-danger); color: #fff; }
     .btn-excluir:hover { background: var(--color-danger-hover); }
     .acoes-cell { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
@@ -77,6 +73,7 @@
       transition: opacity 0.15s, transform 0.1s; flex-shrink: 0;
     }
     .btn-icon:hover { opacity: 0.82; transform: scale(1.1); }
+    .btn-icon-ficha   { background: var(--color-primary-light); color: var(--color-primary); }
     .btn-icon-editar  { background: var(--color-warning-bg); color: var(--color-warning-text); }
     .btn-icon-excluir { background: var(--color-danger-bg); color: var(--color-danger-text); }
 
@@ -92,6 +89,7 @@
       box-shadow: 0 8px 32px rgba(0,0,0,0.25); padding: 28px 28px 22px;
       max-width: 480px; width: 94%; margin: auto;
     }
+    .modal-box-largo { max-width: 860px; }
     .modal-box h3 { margin: 0 0 16px; font-size: 1.05rem; color: var(--color-text); }
     .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
     .btn-confirmar-excluir {
@@ -119,22 +117,23 @@
     .modal-field input:focus, .modal-field select:focus {
       outline: none; border-color: var(--color-primary); box-shadow: var(--shadow-input);
     }
-    .modal-secao {
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
-      text-transform: uppercase; color: var(--color-label);
-      margin: 16px 0 10px; padding-bottom: 6px;
-      border-bottom: 1px dashed var(--color-border);
+
+    /* Cabeçalho do modal da ficha */
+    .ficha-topo {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--color-border);
     }
+    .ficha-topo-nome { font-size: 1.05rem; font-weight: 700; color: var(--color-text); }
+    .ficha-topo-meta { font-size: 0.8rem; color: var(--color-text-muted); }
+    .ficha-topo-acoes { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
 
     /* LGPD */
     .lgpd-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 8px; }
     .lgpd-stat { font-size: 0.92rem; color: var(--color-text-muted); }
     .lgpd-stat strong { color: var(--color-danger); font-size: 1.05rem; }
 
-
     .empty-row td { text-align: center; color: var(--color-hint); padding: 20px; }
     .tag-voce { font-size: 0.74rem; color: var(--color-hint); margin-left: 4px; }
-    .td-sec { color: var(--color-text-muted); white-space: nowrap; }
 
     /* Abas de administração */
     .admin-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--color-border); }
@@ -177,26 +176,36 @@
     </div>
 
     <div id="tabUsuarios">
-    <!-- Formulário de cadastro -->
+    <!-- Cadastro: só o essencial para o servidor conseguir entrar no sistema.
+         Os dados pessoais ficam na ficha funcional, opcional aqui e editável
+         depois pelo próprio agente em Meu Perfil. -->
     <div class="card" id="cardNovoUsuario" style="display:none;">
       <div class="card-title">➕ Cadastrar Novo Servidor</div>
-      <form onsubmit="criarUsuario(event)" autocomplete="off">
+      <form id="formNovoUsuario" onsubmit="criarUsuario(event)" autocomplete="off">
 
-        <!-- 1. Acesso ao sistema -->
         <p class="secao-label">🔐 Acesso ao Sistema</p>
-        <div class="fg-acesso" style="margin-bottom:4px;">
+        <div class="fg-3" style="margin-bottom:4px;">
           <div class="field">
-            <label>Usuário / Nome de Guerra <span class="obrig">*</span></label>
-            <input type="text" id="novoUsuario" placeholder="ex: joao.silva" required autocomplete="off">
+            <label>Usuário <span class="obrig">*</span></label>
+            <div class="campo-com-acao">
+              <input type="text" id="novoUsuario" placeholder="ex: rocha" required autocomplete="off" maxlength="40">
+              <button type="button" class="btn-apoio" onclick="sugerirLogin()" title="Sugerir a partir do nome completo">Sugerir</button>
+            </div>
+            <small style="display:block;color:var(--color-hint);font-size:0.72rem;margin-top:4px;">
+              É o que o servidor digita para entrar. Sugestão: use o nome de guerra.
+            </small>
           </div>
           <div class="field">
             <label>Senha <span class="obrig">*</span></label>
-            <input type="password" id="novaSenha" placeholder="Mínimo 8 caracteres" required minlength="8" autocomplete="new-password">
+            <div class="campo-com-acao">
+              <input type="text" id="novaSenha" placeholder="Mínimo 8 caracteres" required minlength="8" autocomplete="new-password">
+              <button type="button" class="btn-apoio" onclick="gerarSenha()" title="Gerar uma senha forte">Gerar</button>
+            </div>
             <small class="senha-regras" style="display:block;color:var(--color-hint);font-size:0.72rem;margin-top:4px;"></small>
           </div>
           <div class="field">
-            <label>Perfil de Acesso</label>
-            <select id="novoRole">
+            <label>Nível de Acesso <span class="obrig">*</span></label>
+            <select id="novoRole" required>
               <option value="agente">Agente</option>
               <option value="supervisor">Supervisor</option>
               <option value="admin">Administrador</option>
@@ -204,140 +213,42 @@
           </div>
         </div>
 
-        <!-- 2. Identificação do servidor -->
         <p class="secao-label">🪪 Identificação do Servidor</p>
-        <div class="fg-2" style="margin-bottom:12px;">
+        <div class="fg-3" style="margin-bottom:4px;">
           <div class="field" style="grid-column:1/-1;">
             <label>Nome Completo <span class="obrig">*</span></label>
             <input type="text" id="novoNome" placeholder="Nome completo conforme documento oficial" maxlength="150" required>
+            <small style="display:block;color:var(--color-hint);font-size:0.72rem;margin-top:4px;">
+              Nos documentos o agente aparece como <strong id="previewNome">Nome Sobrenome, matrícula</strong>.
+            </small>
           </div>
-        </div>
-        <div class="fg-4" style="margin-bottom:4px;">
-          <div class="field">
-            <label>CPF</label>
-            <input type="text" id="novoCpf" placeholder="000.000.000-00" maxlength="14" oninput="mascaraCpf(this)">
-          </div>
-          <div class="field">
-            <label>RG</label>
-            <input type="text" id="novoRg" placeholder="0000000" maxlength="20">
-          </div>
-          <div class="field">
-            <label>Data de Nascimento</label>
-            <input type="date" id="novoNascimento">
-          </div>
-          <div class="field">
-            <label>Sexo</label>
-            <select id="novoSexo">
-              <option value="">Não informado</option>
-              <option value="M">Masculino</option>
-              <option value="F">Feminino</option>
-              <option value="O">Outro</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- 3. Dados funcionais -->
-        <p class="secao-label">🏛️ Dados Funcionais</p>
-        <div class="fg-3" style="margin-bottom:12px;">
           <div class="field">
             <label>Matrícula <span class="obrig">*</span></label>
-            <input type="text" id="novaMatricula" placeholder="Ex: GCM-001" maxlength="30" required>
+            <input type="text" id="novaMatricula" placeholder="Ex: 1234" maxlength="30" required>
           </div>
-          <div class="field">
-            <label>Cargo / Função</label>
-            <input type="text" id="novoCargo" placeholder="Guarda Civil Municipal" maxlength="100" value="Guarda Civil Municipal">
-          </div>
-          <div class="field">
-            <label>Lotação / Setor</label>
-            <input type="text" id="novaLotacao" placeholder="Ex: Rondas, Comando..." maxlength="100">
-          </div>
-          <div class="field">
-            <label>Turno</label>
-            <select id="novoTurno">
-              <option value="">Não definido</option>
-              <option value="Matutino">Matutino</option>
-              <option value="Vespertino">Vespertino</option>
-              <option value="Noturno">Noturno</option>
-              <option value="Integral">Integral</option>
-              <option value="Escala 12x36">Escala 12×36</option>
-              <option value="Escala 24x72">Escala 24×72</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Data de Admissão / Posse</label>
-            <input type="date" id="novoAdmissao">
-          </div>
-          <div class="field">
-            <label>Status</label>
-            <select id="novoAtivo">
-              <option value="true">Ativo</option>
-              <option value="false">Inativo</option>
+          <div class="field" style="grid-column:2/-1;">
+            <label>Cargo <span class="obrig">*</span></label>
+            <select id="novoCargo" required>
+              <option value="">— selecione —</option>
             </select>
           </div>
         </div>
 
-        <!-- 4. Contato e endereço -->
-        <p class="secao-label">📞 Contato e Endereço</p>
-        <div class="fg-3" style="margin-bottom:12px;">
-          <div class="field">
-            <label>E-mail Institucional</label>
-            <input type="email" id="novoEmail" placeholder="servidor@bananeiras.pb.gov.br" maxlength="150">
-          </div>
-          <div class="field">
-            <label>Telefone / WhatsApp</label>
-            <input type="text" id="novoTelefone" placeholder="(83) 99999-9999" maxlength="20" oninput="mascaraTelefone(this)">
-          </div>
-          <div class="field">
-            <label>CEP</label>
-            <input type="text" id="novoCep" placeholder="58000-000" maxlength="9" oninput="mascaraCep(this)" onblur="buscarCep(this.value)">
-          </div>
+        <div style="margin-top:18px;">
+          <button type="button" class="btn-secondary" id="btnToggleFichaNovo" onclick="toggleFichaNovo()">
+            📋 Preencher ficha completa (opcional)
+          </button>
         </div>
-        <div style="margin-bottom:8px;">
-          <button type="button" class="btn-geo" onclick="geoNovoServidor(this)" title="Preencher endereço com a localização GPS atual">📍 Usar localização atual</button>
-        </div>
-        <div class="fg-3x1" style="margin-bottom:12px;">
-          <div class="field">
-            <label>Logradouro</label>
-            <input type="text" id="novoLogradouro" placeholder="Rua, Av., Travessa..." maxlength="200">
-          </div>
-          <div class="field">
-            <label>Número</label>
-            <input type="text" id="novoNumeroEnd" placeholder="S/N" maxlength="20">
-          </div>
-        </div>
-        <div class="fg-4" style="margin-bottom:4px;">
-          <div class="field">
-            <label>Complemento</label>
-            <input type="text" id="novoComplemento" placeholder="Apto, Bloco..." maxlength="100">
-          </div>
-          <div class="field">
-            <label>Bairro</label>
-            <input type="text" id="novoBairro" placeholder="Bairro" maxlength="100">
-          </div>
-          <div class="field">
-            <label>Cidade</label>
-            <input type="text" id="novoCidade" placeholder="Bananeiras" maxlength="100">
-          </div>
-          <div class="field">
-            <label>UF</label>
-            <select id="novoUf">
-              <option value="">—</option>
-              <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
-              <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
-              <option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option>
-              <option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
-              <option value="MG">MG</option><option value="PA">PA</option><option value="PB" selected>PB</option>
-              <option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
-              <option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
-              <option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
-              <option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option>
-            </select>
-          </div>
+        <div id="fichaNovoWrap" style="display:none;margin-top:14px;">
+          <p style="font-size:0.82rem;color:var(--color-text-muted);margin-bottom:12px;">
+            Tudo aqui é opcional agora — o próprio agente pode completar depois em Meu Perfil.
+          </p>
+          <div id="fichaNovo"></div>
         </div>
 
         <div class="row-submit">
-          <button type="submit" class="btn-primary">✔ Cadastrar Servidor</button>
-          <button type="button" class="btn-secondary" onclick="this.closest('form').reset(); document.getElementById('novoUf').value='PB';">Limpar</button>
+          <button type="submit" class="btn-primary" id="btnCadastrar">✔ Cadastrar Servidor</button>
+          <button type="button" class="btn-secondary" onclick="limparFormNovo()">Limpar</button>
           <button type="button" class="btn-secondary" onclick="fecharFormNovoUsuario()">✕ Cancelar</button>
         </div>
       </form>
@@ -462,126 +373,68 @@
     </div><!-- /tabFrota -->
   </div><!-- /page-wrap -->
 
-  <!-- Modal de edição -->
-  <div class="modal-overlay" id="modalEditar">
-    <div class="modal-box" style="max-width:560px;">
-      <h3>✏️ Editar Servidor</h3>
-      <input type="hidden" id="editId">
-      <input type="hidden" id="editAgenteId">
+  <!-- Modal de acesso (login, senha, nível) -->
+  <div class="modal-overlay" id="modalAcesso">
+    <div class="modal-box">
+      <h3>🔐 Acesso ao Sistema</h3>
+      <input type="hidden" id="acessoId">
+      <p style="font-size:0.83rem;color:var(--color-text-muted);margin:-8px 0 16px;">
+        Dados pessoais e funcionais deste servidor ficam na <strong>ficha funcional</strong>.
+      </p>
 
-      <p class="modal-secao">🔐 Acesso ao Sistema</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-        <div class="modal-field">
-          <label>Usuário / Nome de Guerra</label>
-          <input type="text" id="editUsuario" disabled style="opacity:0.6;cursor:not-allowed;">
-        </div>
-        <div class="modal-field">
-          <label>Nova Senha <span style="font-weight:400;color:var(--color-hint)">(em branco = manter)</span></label>
-          <input type="password" id="editSenha" placeholder="Nova senha (mín. 8 caracteres)" autocomplete="new-password">
-          <small class="senha-regras" style="display:block;color:var(--color-hint);font-size:0.72rem;margin-top:4px;"></small>
-        </div>
-        <div class="modal-field">
-          <label>Perfil de Acesso</label>
-          <select id="editRole">
-            <option value="agente">Agente</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="admin">Administrador</option>
-          </select>
-        </div>
-        <div class="modal-field" style="grid-column:1/-1;">
-          <label>E-mail para recuperação de senha</label>
-          <input type="email" id="editEmailUsuario" placeholder="servidor@bananeiras.pb.gov.br" maxlength="150">
-        </div>
+      <div class="modal-field">
+        <label>Usuário</label>
+        <input type="text" id="acessoUsuario" maxlength="40">
+        <small style="display:block;color:var(--color-hint);font-size:0.72rem;margin-top:4px;">
+          Ao trocar o usuário, a sessão ativa é encerrada e o servidor entra com o novo login.
+        </small>
       </div>
-
-      <p class="modal-secao">🪪 Identificação</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="modal-field" style="grid-column:1/-1;">
-          <label>Nome Completo</label>
-          <input type="text" id="editNome" maxlength="150">
+      <div class="modal-field">
+        <label>Nova senha <span style="font-weight:400;color:var(--color-hint)">(em branco = manter)</span></label>
+        <div class="campo-com-acao">
+          <input type="text" id="acessoSenha" placeholder="Nova senha" autocomplete="new-password">
+          <button type="button" class="btn-apoio" onclick="document.getElementById('acessoSenha').value = gerarSenhaForte()">Gerar</button>
         </div>
-        <div class="modal-field" style="grid-column:1/-1;">
-          <label>Nome de Guerra</label>
-          <input type="text" id="editNomeGuerra" maxlength="60" placeholder="Como o agente é citado nos documentos">
-          <small style="color:var(--color-hint);font-size:0.72rem;">Usado na escala, nos plantões extras, nas férias e no BO. Em branco, o documento sai com o nome completo.</small>
-        </div>
-        <div class="modal-field">
-          <label>CPF</label>
-          <input type="text" id="editCpf" maxlength="14" oninput="mascaraCpf(this)">
-        </div>
-        <div class="modal-field">
-          <label>RG</label>
-          <input type="text" id="editRg" maxlength="20">
-        </div>
-        <div class="modal-field">
-          <label>Data de Nascimento</label>
-          <input type="date" id="editNascimento">
-        </div>
-        <div class="modal-field">
-          <label>Sexo</label>
-          <select id="editSexo">
-            <option value="">Não informado</option>
-            <option value="M">Masculino</option>
-            <option value="F">Feminino</option>
-            <option value="O">Outro</option>
-          </select>
-        </div>
+        <small class="senha-regras" style="display:block;color:var(--color-hint);font-size:0.72rem;margin-top:4px;"></small>
       </div>
-
-      <p class="modal-secao">🏛️ Dados Funcionais</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-        <div class="modal-field">
-          <label>Matrícula</label>
-          <input type="text" id="editMatricula" maxlength="30">
-        </div>
-        <div class="modal-field">
-          <label>Cargo / Função</label>
-          <input type="text" id="editCargo" maxlength="100">
-        </div>
-        <div class="modal-field">
-          <label>Lotação / Setor</label>
-          <input type="text" id="editLotacao" maxlength="100">
-        </div>
-        <div class="modal-field">
-          <label>Turno</label>
-          <select id="editTurno">
-            <option value="">Não definido</option>
-            <option value="Matutino">Matutino</option>
-            <option value="Vespertino">Vespertino</option>
-            <option value="Noturno">Noturno</option>
-            <option value="Integral">Integral</option>
-            <option value="Escala 12x36">Escala 12×36</option>
-            <option value="Escala 24x72">Escala 24×72</option>
-          </select>
-        </div>
-        <div class="modal-field">
-          <label>Data de Admissão</label>
-          <input type="date" id="editAdmissao">
-        </div>
-        <div class="modal-field">
-          <label>Status</label>
-          <select id="editAtivo">
-            <option value="true">Ativo</option>
-            <option value="false">Inativo</option>
-          </select>
-        </div>
+      <div class="modal-field">
+        <label>Nível de acesso</label>
+        <select id="acessoRole">
+          <option value="agente">Agente</option>
+          <option value="supervisor">Supervisor</option>
+          <option value="admin">Administrador</option>
+        </select>
       </div>
-
-      <p class="modal-secao">📞 Contato</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="modal-field">
-          <label>E-mail</label>
-          <input type="email" id="editEmail" maxlength="150">
-        </div>
-        <div class="modal-field">
-          <label>Telefone / WhatsApp</label>
-          <input type="text" id="editTelefone" maxlength="20" oninput="mascaraTelefone(this)">
-        </div>
+      <div class="modal-field">
+        <label>E-mail para recuperação de senha</label>
+        <input type="email" id="acessoEmail" placeholder="servidor@bananeiras.pb.gov.br" maxlength="150">
       </div>
 
       <div class="modal-actions">
-        <button class="btn-cancelar-modal" onclick="fecharModalEditar()">Cancelar</button>
-        <button class="btn-primary" onclick="salvarEdicao()" style="padding:9px 24px;">Salvar Alterações</button>
+        <button class="btn-cancelar-modal" onclick="fecharModalAcesso()">Cancelar</button>
+        <button class="btn-primary" onclick="salvarAcesso()" style="padding:9px 24px;">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal da ficha funcional -->
+  <div class="modal-overlay" id="modalFicha">
+    <div class="modal-box modal-box-largo">
+      <div class="ficha-topo">
+        <div>
+          <div class="ficha-topo-nome" id="fichaNome">—</div>
+          <div class="ficha-topo-meta" id="fichaMeta">—</div>
+        </div>
+        <div class="ficha-topo-acoes">
+          <button class="btn-pdf" onclick="baixarFicha('completa')">⬇ Ficha completa (PDF)</button>
+          <button class="btn-pdf" onclick="baixarFicha('resumida')">⬇ Ficha resumida (PDF)</button>
+        </div>
+      </div>
+      <input type="hidden" id="fichaAgenteId">
+      <div id="fichaContainer"></div>
+      <div class="modal-actions">
+        <button class="btn-cancelar-modal" onclick="fecharModalFicha()">Fechar</button>
+        <button class="btn-primary" onclick="salvarFicha()" style="padding:9px 24px;">Salvar Ficha</button>
       </div>
     </div>
   </div>
@@ -591,7 +444,9 @@
     <div class="modal-box" style="text-align:center;">
       <h3>⚠️ Remover Usuário</h3>
       <p id="modalExcluirTexto" style="font-size:0.9rem;color:var(--color-text-muted);margin:0 0 4px;"></p>
-      <p style="font-size:0.82rem;color:var(--color-hint);margin:0 0 8px;">Esta ação não pode ser desfeita.</p>
+      <p style="font-size:0.82rem;color:var(--color-hint);margin:0 0 8px;">
+        O acesso é apagado e o agente fica inativo no efetivo — escalas, plantões e férias já lançados são preservados.
+      </p>
       <div class="modal-actions" style="justify-content:center;">
         <button class="btn-cancelar-modal" onclick="fecharModalExcluir()">Cancelar</button>
         <button class="btn-confirmar-excluir" onclick="confirmarExclusao()">Remover</button>
@@ -601,26 +456,50 @@
 
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/senha.js"></script>
+  <script src="../assets/js/agente.js?v=1"></script>
   <script src="../assets/js/geolocalizacao.js"></script>
   <script>
-    function geoNovoServidor(btn) {
-      usarLocalizacaoAtual({
-        tipo: 'endereco',
-        campos: {
-          logradouro:  'novoLogradouro',
-          numero:      'novoNumeroEnd',
-          complemento: 'novoComplemento',
-          bairro:      'novoBairro',
-          cidade:      'novoCidade',
-          uf:          'novoUf',
-          cep:         'novoCep'
-        },
-        btn
+    let meUsuario  = '';
+    let USUARIOS   = [];
+    let EDITAVEIS  = [];   // blocos da ficha que este usuário pode gravar
+
+    // Realoca os modais para o <body>, fora do #app-shell (que tem overflow:clip
+    // e altura travada), garantindo que o position:fixed cubra a viewport e role.
+    function _realocarModais() {
+      ['modalAcesso', 'modalFicha', 'modalExcluir'].forEach(id => {
+        const m = document.getElementById(id);
+        if (m && m.parentElement !== document.body) document.body.appendChild(m);
       });
     }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _realocarModais);
+    else _realocarModais();
 
-    let meUsuario = '';
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
+        if (!res.ok) { window.location.href = '/'; return; }
+        const perfil = await res.json();
+        meUsuario = perfil.usuario;
+        if (perfil.role !== 'admin') { window.location.href = '/'; return; }
 
+        const schema = await FichaUI.carregarSchema();
+        EDITAVEIS = schema.editaveis;
+        preencherCargos(schema.cargos);
+
+        document.getElementById('cardListaUsuarios').style.display = '';
+        document.getElementById('cardRetencao').style.display = '';
+        carregarUsuarios();
+        carregarRetencao();
+      } catch { window.location.href = '/'; }
+    })();
+
+    function preencherCargos(cargos) {
+      document.getElementById('novoCargo').innerHTML =
+        '<option value="">— selecione —</option>' +
+        (cargos || []).map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    // ── Cadastro ──────────────────────────────────────────────────────────────
     function abrirFormNovoUsuario() {
       document.getElementById('cardNovoUsuario').style.display = '';
       document.getElementById('btnNovoUsuario').style.display  = 'none';
@@ -632,291 +511,298 @@
       document.getElementById('btnNovoUsuario').style.display  = '';
     }
 
-    // Realoca os modais para o <body>, fora do #app-shell (que tem overflow:clip
-    // e altura travada), garantindo que o position:fixed cubra a viewport e role.
-    // Roda após o sidebar.js mover o conteúdo para #app-content (DOMContentLoaded).
-    function _realocarModais() {
-      ['modalEditar', 'modalExcluir'].forEach(id => {
-        const m = document.getElementById(id);
-        if (m && m.parentElement !== document.body) document.body.appendChild(m);
-      });
-    }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', _realocarModais);
-    } else {
-      _realocarModais();
+    function limparFormNovo() {
+      document.getElementById('formNovoUsuario').reset();
+      document.getElementById('fichaNovoWrap').style.display = 'none';
+      document.getElementById('fichaNovo').innerHTML = '';
+      document.getElementById('btnToggleFichaNovo').textContent = '📋 Preencher ficha completa (opcional)';
+      atualizarPreviewNome();
     }
 
-    (async () => {
+    function sugerirLogin() {
+      const sugestao = sugerirUsuario(document.getElementById('novoNome').value);
+      if (!sugestao) { toast('Preencha o nome completo primeiro.', 'erro'); return; }
+      document.getElementById('novoUsuario').value = sugestao;
+    }
+
+    function gerarSenha() {
+      document.getElementById('novaSenha').value = gerarSenhaForte();
+    }
+
+    // Mostra, enquanto o admin digita, exatamente como o agente vai aparecer nos
+    // documentos — o padrão "João Carlos, 1234".
+    function atualizarPreviewNome() {
+      const nome = document.getElementById('novoNome').value;
+      const mat  = document.getElementById('novaMatricula').value;
+      const exibicao = nomeExibicaoAgente({ nome, matricula: mat });
+      document.getElementById('previewNome').textContent = exibicao || 'Nome Sobrenome, matrícula';
+    }
+    document.getElementById('novoNome').addEventListener('input', atualizarPreviewNome);
+    document.getElementById('novaMatricula').addEventListener('input', atualizarPreviewNome);
+
+    function toggleFichaNovo() {
+      const wrap = document.getElementById('fichaNovoWrap');
+      const btn  = document.getElementById('btnToggleFichaNovo');
+      const abrir = wrap.style.display === 'none';
+      wrap.style.display = abrir ? '' : 'none';
+      btn.textContent = abrir ? '📋 Ocultar ficha completa' : '📋 Preencher ficha completa (opcional)';
+      if (abrir && !document.getElementById('fichaNovo').children.length) {
+        // A ficha já nasce com o que foi digitado acima, para o admin não ver os
+        // mesmos campos vazios duas vezes. Na hora de salvar, o formulário de
+        // cima continua sendo a fonte da verdade (ver criarUsuario).
+        FichaUI.render(document.getElementById('fichaNovo'), {
+          valores: identidadeDoFormulario(), editaveis: EDITAVEIS,
+        });
+      }
+    }
+
+    function identidadeDoFormulario() {
+      return {
+        pessoal:   { nome: document.getElementById('novoNome').value.trim() },
+        funcional: {
+          matricula: document.getElementById('novaMatricula').value.trim(),
+          cargo:     document.getElementById('novoCargo').value,
+        },
+      };
+    }
+
+    async function criarUsuario(e) {
+      e.preventDefault();
+      const senha = document.getElementById('novaSenha').value;
+      const erroSenha = validarSenhaCliente(senha);
+      if (erroSenha) { toast(erroSenha, 'erro'); return; }
+
+      const payload = {
+        usuario:   document.getElementById('novoUsuario').value.trim(),
+        senha,
+        role:      document.getElementById('novoRole').value,
+        nome:      document.getElementById('novoNome').value.trim(),
+        matricula: document.getElementById('novaMatricula').value.trim(),
+        cargo:     document.getElementById('novoCargo').value,
+      };
+      if (!payload.cargo) { toast('Selecione o cargo.', 'erro'); return; }
+
+      const btn = document.getElementById('btnCadastrar');
+      btn.disabled = true;
       try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
-        if (!res.ok) { window.location.href = '/'; return; }
-        const perfil = await res.json();
-        meUsuario = perfil.usuario;
-        if (perfil.role !== 'admin') { window.location.href = '/'; return; }
-        document.getElementById('cardListaUsuarios').style.display = '';
-        document.getElementById('cardRetencao').style.display = '';
+        // Login e registro no efetivo são criados juntos, numa única transação
+        // no backend — não existe mais a chance de sobrar login sem agente.
+        const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) { toast(data.error || 'Erro ao cadastrar servidor.', 'erro'); return; }
+
+        // Ficha completa, se o admin abriu o formulário
+        const fichaAberta = document.getElementById('fichaNovoWrap').style.display !== 'none';
+        if (fichaAberta && data.agente_id) {
+          const blocos = FichaUI.coletar(document.getElementById('fichaNovo'), EDITAVEIS);
+          // Nome, matrícula e cargo valem os do formulário de cima, mesmo que o
+          // admin tenha aberto a ficha antes de preenchê-los.
+          Object.assign(blocos.pessoal,   { nome: payload.nome });
+          Object.assign(blocos.funcional, { matricula: payload.matricula, cargo: payload.cargo });
+          const resF = await fetch(`${API_BASE_URL}/api/agentes/${data.agente_id}/ficha`, {
+            method: 'PUT', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ blocos }),
+          });
+          if (!resF.ok) {
+            const d = await resF.json();
+            toast(`Servidor criado, mas a ficha não foi salva: ${d.error || 'erro'}`, 'erro');
+            limparFormNovo(); fecharFormNovoUsuario(); carregarUsuarios();
+            return;
+          }
+        }
+
+        toast('Servidor cadastrado com sucesso!', 'ok');
+        limparFormNovo();
+        fecharFormNovoUsuario();
         carregarUsuarios();
-        carregarRetencao();
-      } catch { window.location.href = '/'; }
-    })();
+      } catch { toast('Erro de conexão.', 'erro'); }
+      finally { btn.disabled = false; }
+    }
+
+    // ── Lista ─────────────────────────────────────────────────────────────────
+    const ROLE_LABEL = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente' };
+    const SVG_FICHA = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M5 2h10v16H5z"/><path d="M8 6h4M8 10h4M8 14h2"/></svg>`;
+    const SVG_KEY   = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="7" cy="10" r="3.5"/><path d="M10.5 10H18M15 10v3M17 10v2"/></svg>`;
+    const SVG_TRASH = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/></svg>`;
+    const SVG_USER  = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg>`;
 
     async function carregarUsuarios() {
       try {
-        const [resU, resA] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/auth/usuarios`, { credentials: 'include' }),
-          fetch(`${API_BASE_URL}/api/agentes/completo`, { credentials: 'include' }),
-        ]);
-        const lista   = await resU.json();
-        const agentes = resA.ok ? await resA.json() : [];
-        const agentePorUsuario = Object.fromEntries(agentes.map(a => [a.usuario, a]));
+        const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, { credentials: 'include' });
+        USUARIOS = await res.json();
 
         const el = document.getElementById('listaUsuarios');
-        if (!lista.length) {
+        if (!USUARIOS.length) {
           el.innerHTML = '<p style="text-align:center;color:var(--color-hint);padding:20px 0;">Nenhum usuário encontrado.</p>';
           return;
         }
-        const roleLabel = { admin: 'Administrador', supervisor: 'Supervisor', agente: 'Agente' };
-        const SVG_EDIT  = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 3l3 3L6 17H3v-3L14 3z"/></svg>`;
-        const SVG_TRASH = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/></svg>`;
-        const SVG_USER  = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg>`;
 
-        el.innerHTML = lista.map(u => {
-          const sou      = u.usuario === meUsuario;
-          const ag       = agentePorUsuario[u.usuario];
-          const ativoTag = ag && !ag.ativo ? ` <span class="badge badge-inativo">Inativo</span>` : '';
-          const metaParts = [
-            ag?.nome       || '',
-            ag?.matricula  ? `Mat. ${ag.matricula}` : '',
-            ag?.cargo      || '',
-            ag?.lotacao    || '',
-          ].filter(Boolean).join(' · ') || '—';
-          return `<div class="hist-item" data-uid="${u.id}" data-usuario="${encodeURIComponent(u.usuario)}" data-email="${encodeURIComponent(u.email || '')}" data-role="${u.role || 'agente'}"${sou ? ' data-sou="1"' : ''} style="${sou ? 'cursor:default;' : ''}">
+        el.innerHTML = USUARIOS.map(u => {
+          const sou = u.usuario === meUsuario;
+          const tags = [
+            `<span class="badge badge-${u.role}" style="margin-left:6px;font-size:0.72rem;vertical-align:middle;">${ROLE_LABEL[u.role] || u.role}</span>`,
+            !u.agente_id ? '<span class="badge badge-semagente">sem ficha</span>' : '',
+            u.agente_id && !u.ativo ? '<span class="badge badge-inativo">Inativo</span>' : '',
+          ].filter(Boolean).join(' ');
+          const meta = [u.cargo, u.lotacao, `login: ${u.usuario}`].filter(Boolean).join(' · ');
+          return `<div class="hist-item" data-uid="${u.id}"${sou ? ' data-sou="1"' : ''}>
             <div class="hist-item-icon">${SVG_USER}</div>
             <div class="hist-item-body">
               <div class="hist-item-title">
-                ${u.usuario}${sou ? ' <span class="tag-voce">(você)</span>' : ''}
-                <span class="badge badge-${u.role}" style="margin-left:6px;font-size:0.72rem;vertical-align:middle;">${roleLabel[u.role] || u.role}</span>${ativoTag}
+                ${escaparHtml(u.nome_exibicao)}${sou ? ' <span class="tag-voce">(você)</span>' : ''} ${tags}
               </div>
-              <div class="hist-item-meta"><span>${metaParts}</span></div>
+              <div class="hist-item-meta"><span>${escaparHtml(meta)}</span></div>
             </div>
             <div class="hist-item-right" style="flex-direction:row;gap:6px;">
+              ${u.agente_id ? `<button class="btn-icon btn-icon-ficha" data-action="ficha" title="Ficha funcional">${SVG_FICHA}</button>` : ''}
               ${!sou ? `
-                <button class="btn-icon btn-icon-editar" data-action="editar" title="Editar">${SVG_EDIT}</button>
+                <button class="btn-icon btn-icon-editar"  data-action="acesso"  title="Acesso ao sistema">${SVG_KEY}</button>
                 <button class="btn-icon btn-icon-excluir" data-action="excluir" title="Remover">${SVG_TRASH}</button>
               ` : ''}
             </div>
           </div>`;
         }).join('');
 
-        el.querySelectorAll('.hist-item:not([data-sou])').forEach(item => {
-          const id      = +item.dataset.uid;
-          const usuario = decodeURIComponent(item.dataset.usuario);
-          const email   = decodeURIComponent(item.dataset.email);
-          const role    = item.dataset.role;
-
+        el.querySelectorAll('.hist-item').forEach(item => {
+          const u = USUARIOS.find(x => String(x.id) === item.dataset.uid);
+          if (!u) return;
+          const acao = seletor => item.querySelector(`[data-action="${seletor}"]`);
           item.addEventListener('click', e => {
-            if (!e.target.closest('[data-action]')) abrirModalEditar(id, usuario, email, role);
+            if (!e.target.closest('[data-action]') && u.agente_id) abrirFicha(u);
           });
-          item.querySelector('[data-action="editar"]')?.addEventListener('click', e => {
-            e.stopPropagation();
-            abrirModalEditar(id, usuario, email, role);
-          });
-          item.querySelector('[data-action="excluir"]')?.addEventListener('click', e => {
-            e.stopPropagation();
-            abrirModalExcluir(id, usuario);
-          });
+          acao('ficha')?.addEventListener('click',  e => { e.stopPropagation(); abrirFicha(u); });
+          acao('acesso')?.addEventListener('click', e => { e.stopPropagation(); abrirModalAcesso(u); });
+          acao('excluir')?.addEventListener('click',e => { e.stopPropagation(); abrirModalExcluir(u); });
         });
       } catch { toast('Erro ao carregar usuários.', 'erro'); }
     }
 
-    async function criarUsuario(e) {
-      e.preventDefault();
-      const usuario       = document.getElementById('novoUsuario').value.trim();
-      const senha         = document.getElementById('novaSenha').value;
-      const erroSenha = validarSenhaCliente(senha);
-      if (erroSenha) { toast(erroSenha, 'erro'); return; }
-      const role          = document.getElementById('novoRole').value;
-      const nome          = document.getElementById('novoNome').value.trim();
-      const cpf           = document.getElementById('novoCpf').value.trim();
-      const rg            = document.getElementById('novoRg').value.trim();
-      const data_nascimento = document.getElementById('novoNascimento').value || null;
-      const sexo          = document.getElementById('novoSexo').value || null;
-      const matricula     = document.getElementById('novaMatricula').value.trim();
-      const cargo         = document.getElementById('novoCargo').value.trim();
-      const lotacao       = document.getElementById('novaLotacao').value.trim();
-      const turno         = document.getElementById('novoTurno').value || null;
-      const data_admissao = document.getElementById('novoAdmissao').value || null;
-      const ativo         = document.getElementById('novoAtivo').value === 'true';
-      const email         = document.getElementById('novoEmail').value.trim();
-      const telefone      = document.getElementById('novoTelefone').value.trim();
-      const cep           = document.getElementById('novoCep').value.trim();
-      const logradouro    = document.getElementById('novoLogradouro').value.trim();
-      const numero_end    = document.getElementById('novoNumeroEnd').value.trim();
-      const complemento   = document.getElementById('novoComplemento').value.trim();
-      const bairro        = document.getElementById('novoBairro').value.trim();
-      const cidade        = document.getElementById('novoCidade').value.trim();
-      const uf            = document.getElementById('novoUf').value;
+    // ── Acesso ────────────────────────────────────────────────────────────────
+    function abrirModalAcesso(u) {
+      document.getElementById('acessoId').value      = u.id;
+      document.getElementById('acessoUsuario').value = u.usuario;
+      document.getElementById('acessoUsuario').dataset.original = u.usuario;
+      document.getElementById('acessoSenha').value   = '';
+      document.getElementById('acessoRole').value    = u.role || 'agente';
+      document.getElementById('acessoEmail').value   = u.email || '';
+      document.getElementById('modalAcesso').classList.add('aberto');
+    }
+
+    function fecharModalAcesso() {
+      document.getElementById('modalAcesso').classList.remove('aberto');
+    }
+
+    async function salvarAcesso() {
+      const id       = document.getElementById('acessoId').value;
+      const campoUsr = document.getElementById('acessoUsuario');
+      const novoUsr  = campoUsr.value.trim();
+      const senha    = document.getElementById('acessoSenha').value.trim();
+
+      if (!novoUsr) { toast('O usuário não pode ficar em branco.', 'erro'); return; }
+      if (senha) {
+        const erro = validarSenhaCliente(senha);
+        if (erro) { toast(erro, 'erro'); return; }
+      }
 
       try {
-        const resU = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
-          method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuario, senha, role, email: email || null })
-        });
-        const dataU = await resU.json();
-        if (!resU.ok) { toast(dataU.error || 'Erro ao criar usuário.', 'erro'); return; }
+        if (novoUsr !== campoUsr.dataset.original) {
+          const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${id}/usuario`, {
+            method: 'PATCH', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ usuario: novoUsr }),
+          });
+          if (!res.ok) { toast((await res.json()).error || 'Erro ao alterar o usuário.', 'erro'); return; }
+        }
 
-        await fetch(`${API_BASE_URL}/api/agentes`, {
-          method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nome, matricula, cargo: cargo || 'Guarda Civil Municipal', usuario, ativo,
-            cpf: cpf || null, rg: rg || null, data_nascimento, sexo,
-            lotacao: lotacao || null, turno, data_admissao,
-            email: email || null, telefone: telefone || null,
-            cep: cep || null, logradouro: logradouro || null,
-            numero_end: numero_end || null, complemento: complemento || null,
-            bairro: bairro || null, cidade: cidade || null, uf: uf || null
-          })
-        });
+        if (senha) {
+          const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${id}/senha`, {
+            method: 'PATCH', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ senha }),
+          });
+          if (!res.ok) { toast((await res.json()).error || 'Erro ao alterar a senha.', 'erro'); return; }
+        }
 
-        toast('Servidor cadastrado com sucesso!', 'ok');
-        e.target.reset();
-        document.getElementById('novoUf').value = 'PB';
-        fecharFormNovoUsuario();
+        const resEmail = await fetch(`${API_BASE_URL}/api/auth/usuarios/${id}/email`, {
+          method: 'PATCH', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: document.getElementById('acessoEmail').value.trim() || null }),
+        });
+        if (!resEmail.ok) { toast((await resEmail.json()).error || 'Erro ao salvar o e-mail.', 'erro'); return; }
+
+        const resRole = await fetch(`${API_BASE_URL}/api/auth/usuarios/${id}`, {
+          method: 'PUT', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: document.getElementById('acessoRole').value }),
+        });
+        if (!resRole.ok) { toast((await resRole.json()).error || 'Erro ao alterar o nível de acesso.', 'erro'); return; }
+
+        toast('Acesso atualizado!', 'ok');
+        fecharModalAcesso();
         carregarUsuarios();
       } catch { toast('Erro de conexão.', 'erro'); }
     }
 
-    let _excluirId = null;
-
-    async function abrirModalEditar(userId, usuario, emailUsuario = '', role = 'agente') {
-      document.getElementById('editId').value      = userId;
-      document.getElementById('editUsuario').value = usuario;
-      document.getElementById('editSenha').value   = '';
-      document.getElementById('editEmailUsuario').value = emailUsuario;
-      document.getElementById('editRole').value    = role;
-
-      // Limpa campos do agente
-      ['editNome','editNomeGuerra','editCpf','editRg','editNascimento','editMatricula',
-       'editCargo','editLotacao','editAdmissao','editEmail','editTelefone'].forEach(id => {
-        document.getElementById(id).value = '';
-      });
-      document.getElementById('editSexo').value  = '';
-      document.getElementById('editTurno').value = '';
-      document.getElementById('editAtivo').value = 'true';
-      document.getElementById('editAgenteId').value = '';
-
-      // Carrega dados do agente vinculado
+    // ── Ficha funcional ───────────────────────────────────────────────────────
+    async function abrirFicha(u) {
+      document.getElementById('fichaAgenteId').value = u.agente_id;
+      document.getElementById('fichaNome').textContent = u.nome_exibicao;
+      document.getElementById('fichaMeta').textContent = 'Carregando ficha…';
+      document.getElementById('fichaContainer').innerHTML = '';
+      document.getElementById('modalFicha').classList.add('aberto');
       try {
-        const res = await fetch(`${API_BASE_URL}/api/agentes/completo`, { credentials: 'include' });
-        if (res.ok) {
-          const agentes = await res.json();
-          const ag = agentes.find(a => a.usuario === usuario);
-          if (ag) {
-            document.getElementById('editAgenteId').value  = ag.id;
-            document.getElementById('editNome').value      = ag.nome || '';
-            document.getElementById('editNomeGuerra').value= ag.nome_guerra || '';
-            document.getElementById('editCpf').value       = ag.cpf || '';
-            document.getElementById('editRg').value        = ag.rg || '';
-            document.getElementById('editNascimento').value= ag.data_nascimento ? ag.data_nascimento.slice(0,10) : '';
-            document.getElementById('editSexo').value      = ag.sexo || '';
-            document.getElementById('editMatricula').value = ag.matricula || '';
-            document.getElementById('editCargo').value     = ag.cargo || '';
-            document.getElementById('editLotacao').value   = ag.lotacao || '';
-            document.getElementById('editTurno').value     = ag.turno || '';
-            document.getElementById('editAdmissao').value  = ag.data_admissao ? ag.data_admissao.slice(0,10) : '';
-            document.getElementById('editAtivo').value     = ag.ativo ? 'true' : 'false';
-            document.getElementById('editEmail').value     = ag.email || '';
-            document.getElementById('editTelefone').value  = ag.telefone || '';
-          }
-        }
-      } catch {}
-
-      document.getElementById('modalEditar').classList.add('aberto');
-    }
-
-    function fecharModalEditar() {
-      document.getElementById('modalEditar').classList.remove('aberto');
-    }
-
-    async function salvarEdicao() {
-      const userId       = document.getElementById('editId').value;
-      const agenteId     = document.getElementById('editAgenteId').value;
-      const novaSenha    = document.getElementById('editSenha').value.trim();
-      const emailUsuario = document.getElementById('editEmailUsuario').value.trim();
-
-      // Atualiza senha se preenchida
-      if (novaSenha) {
-        const erroSenha = validarSenhaCliente(novaSenha);
-        if (erroSenha) { toast(erroSenha, 'erro'); return; }
-        try {
-          const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${userId}/senha`, {
-            method: 'PATCH', credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ senha: novaSenha })
-          });
-          if (!res.ok) { const d = await res.json(); toast(d.error || 'Erro ao alterar senha.', 'erro'); return; }
-        } catch { toast('Erro de conexão.', 'erro'); return; }
-      }
-
-      // Atualiza e-mail de recuperação
-      try {
-        await fetch(`${API_BASE_URL}/api/auth/usuarios/${userId}/email`, {
-          method: 'PATCH', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: emailUsuario || null })
+        const res = await fetch(`${API_BASE_URL}/api/agentes/${u.agente_id}/ficha`, { credentials: 'include' });
+        if (!res.ok) { toast((await res.json()).error || 'Erro ao abrir a ficha.', 'erro'); fecharModalFicha(); return; }
+        const data = await res.json();
+        document.getElementById('fichaNome').textContent = data.agente.nome_exibicao;
+        document.getElementById('fichaMeta').textContent =
+          [data.agente.cargo, data.agente.ativo ? 'Ativo' : 'Inativo',
+           data.atualizado_em ? `atualizada em ${new Date(data.atualizado_em).toLocaleDateString('pt-BR')}` : 'nunca preenchida']
+          .filter(Boolean).join(' · ');
+        FichaUI.render(document.getElementById('fichaContainer'), {
+          valores: data.blocos, editaveis: data.editaveis, abertos: ['pessoal'],
         });
-      } catch { toast('Erro ao salvar e-mail.', 'erro'); return; }
+      } catch { toast('Erro de conexão.', 'erro'); fecharModalFicha(); }
+    }
 
-      // Atualiza dados do agente
-      if (agenteId) {
-        const payload = {
-          nome:             document.getElementById('editNome').value.trim() || null,
-          nome_guerra:      document.getElementById('editNomeGuerra').value.trim() || null,
-          cpf:              document.getElementById('editCpf').value.trim() || null,
-          rg:               document.getElementById('editRg').value.trim() || null,
-          data_nascimento:  document.getElementById('editNascimento').value || null,
-          sexo:             document.getElementById('editSexo').value || null,
-          matricula:        document.getElementById('editMatricula').value.trim() || null,
-          cargo:            document.getElementById('editCargo').value.trim() || null,
-          lotacao:          document.getElementById('editLotacao').value.trim() || null,
-          turno:            document.getElementById('editTurno').value || null,
-          data_admissao:    document.getElementById('editAdmissao').value || null,
-          ativo:            document.getElementById('editAtivo').value === 'true',
-          email:            document.getElementById('editEmail').value.trim() || null,
-          telefone:         document.getElementById('editTelefone').value.trim() || null,
-        };
-        try {
-          const res = await fetch(`${API_BASE_URL}/api/agentes/${agenteId}`, {
-            method: 'PUT', credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          if (!res.ok) { const d = await res.json(); toast(d.error || 'Erro ao salvar dados.', 'erro'); return; }
-        } catch { toast('Erro de conexão.', 'erro'); return; }
-      }
+    function fecharModalFicha() {
+      document.getElementById('modalFicha').classList.remove('aberto');
+    }
 
-      // Atualiza perfil de acesso
-      const novoRole = document.getElementById('editRole').value;
+    async function salvarFicha() {
+      const id = document.getElementById('fichaAgenteId').value;
+      const blocos = FichaUI.coletar(document.getElementById('fichaContainer'), EDITAVEIS);
       try {
-        await fetch(`${API_BASE_URL}/api/auth/usuarios/${userId}`, {
+        const res = await fetch(`${API_BASE_URL}/api/agentes/${id}/ficha`, {
           method: 'PUT', credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ role: novoRole })
+          body: JSON.stringify({ blocos }),
         });
-      } catch {}
-
-      toast('Servidor atualizado com sucesso!', 'ok');
-      fecharModalEditar();
-      carregarUsuarios();
+        if (!res.ok) { toast((await res.json()).error || 'Erro ao salvar a ficha.', 'erro'); return; }
+        toast('Ficha salva com sucesso!', 'ok');
+        fecharModalFicha();
+        carregarUsuarios();
+      } catch { toast('Erro de conexão.', 'erro'); }
     }
 
-    function abrirModalExcluir(id, usuario) {
-      _excluirId = id;
+    function baixarFicha(formato) {
+      const id = document.getElementById('fichaAgenteId').value;
+      if (!id) return;
+      window.open(`${API_BASE_URL}/api/agentes/${id}/ficha.pdf?formato=${formato}`, '_blank');
+    }
+
+    // ── Exclusão ──────────────────────────────────────────────────────────────
+    let _excluirId = null;
+
+    function abrirModalExcluir(u) {
+      _excluirId = u.id;
       document.getElementById('modalExcluirTexto').textContent =
-        `Deseja remover o usuário "${usuario}" permanentemente?`;
+        `Deseja remover o acesso de "${u.nome_exibicao}" (login ${u.usuario})?`;
       document.getElementById('modalExcluir').classList.add('aberto');
     }
 
@@ -932,28 +818,12 @@
           method: 'DELETE', credentials: 'include'
         });
         const data = await res.json();
-        if (res.ok) { toast('Usuário removido.', 'ok'); fecharModalExcluir(); carregarUsuarios(); }
+        if (res.ok) { toast(data.message || 'Usuário removido.', 'ok'); fecharModalExcluir(); carregarUsuarios(); }
         else toast(data.error || 'Erro ao remover.', 'erro');
       } catch { toast('Erro de conexão.', 'erro'); }
     }
 
-    async function alterarRole(id) {
-      const role = document.getElementById(`role-${id}`).value;
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${id}`, {
-          method: 'PUT', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ role })
-        });
-        if (res.ok) { toast('Perfil atualizado!', 'ok'); carregarUsuarios(); }
-        else {
-          const data = await res.json();
-          toast(data.error || 'Erro ao alterar perfil.', 'erro');
-        }
-      } catch { toast('Erro de conexão.', 'erro'); }
-    }
-
-
+    // ── Retenção LGPD ─────────────────────────────────────────────────────────
     async function carregarRetencao() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/auth/retencao`, { credentials: 'include' });
@@ -978,40 +848,10 @@
       } catch { toast('Erro de conexão.', 'erro'); }
     }
 
-    // Busca endereço pelo CEP via ViaCEP
-    async function buscarCep(cep) {
-      const v = cep.replace(/\D/g, '');
-      if (v.length !== 8) return;
-      try {
-        const res = await fetch(`https://viacep.com.br/ws/${v}/json/`);
-        const data = await res.json();
-        if (data.erro) return;
-        document.getElementById('novoLogradouro').value = data.logradouro || '';
-        document.getElementById('novoBairro').value     = data.bairro || '';
-        document.getElementById('novoCidade').value     = data.localidade || '';
-        document.getElementById('novoUf').value         = data.uf || 'PB';
-      } catch {}
-    }
-
-    // Máscaras
-    function mascaraCpf(el) {
-      let v = el.value.replace(/\D/g, '').slice(0, 11);
-      if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
-      else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
-      else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
-      el.value = v;
-    }
-    function mascaraTelefone(el) {
-      let v = el.value.replace(/\D/g, '').slice(0, 11);
-      if (v.length > 10)     v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-      else if (v.length > 6) v = v.replace(/(\d{2})(\d{4})(\d{1,4})/, '($1) $2-$3');
-      else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,5})/, '($1) $2');
-      el.value = v;
-    }
-    function mascaraCep(el) {
-      let v = el.value.replace(/\D/g, '').slice(0, 8);
-      if (v.length > 5) v = v.replace(/(\d{5})(\d{1,3})/, '$1-$2');
-      el.value = v;
+    // ── Utilidades ────────────────────────────────────────────────────────────
+    function escaparHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
     function toast(texto, tipo) {
