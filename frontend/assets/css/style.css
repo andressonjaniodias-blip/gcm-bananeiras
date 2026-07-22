@@ -2745,3 +2745,196 @@ body.stage-page.sb-open #sidebar { transform: translateX(0) !important; }
 /* Páginas carregadas dentro do modal flutuante (iframe) não repetem o
    cabeçalho institucional — só o conteúdo do formulário é exibido. */
 body.in-page-modal .header { display: none; }
+
+/* ============================================================
+   FICHA FUNCIONAL DO AGENTE
+   Formulário montado pelo FichaUI (assets/js/agente.js) a partir do
+   schema servido pelo backend. Usado na tela de Usuários (admin) e
+   em Meu Perfil (o próprio agente).
+   ============================================================ */
+.ficha-bloco {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  background: var(--color-input-bg);
+  overflow: hidden;
+}
+.ficha-bloco > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  cursor: pointer;
+  background: var(--color-row-alt);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text);
+  list-style: none;
+}
+.ficha-bloco > summary::-webkit-details-marker { display: none; }
+.ficha-bloco > summary::before {
+  content: '▸';
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  transition: transform 0.15s;
+}
+.ficha-bloco[open] > summary::before { transform: rotate(90deg); }
+.ficha-bloco-titulo { flex: 1; }
+
+.ficha-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border-soft);
+  color: var(--color-text-muted);
+}
+.ficha-tag-sensivel {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.ficha-bloco-corpo { padding: 14px; }
+
+.ficha-aviso {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  background: var(--color-row-alt);
+  border-left: 3px solid var(--color-primary);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+}
+
+.ficha-campos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+}
+.ficha-campo { min-width: 0; }
+.ficha-campo-largo { grid-column: 1 / -1; }
+@media (max-width: 640px) {
+  .ficha-campos { grid-template-columns: 1fr; }
+}
+
+.ficha-campo label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-label);
+  margin-bottom: 4px;
+}
+.ficha-campo input,
+.ficha-campo select,
+.ficha-campo textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-family: inherit;
+  background: var(--bg-card);
+  color: var(--color-text);
+}
+.ficha-campo input:focus,
+.ficha-campo select:focus,
+.ficha-campo textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-input);
+}
+.ficha-campo textarea { resize: vertical; }
+
+.ficha-valor {
+  display: block;
+  font-size: 0.89rem;
+  color: var(--color-text);
+  padding: 7px 0;
+}
+.ficha-valor.vazio { color: var(--color-hint); font-style: italic; }
+.ficha-ajuda {
+  display: block;
+  font-size: 0.71rem;
+  color: var(--color-hint);
+  margin-top: 3px;
+}
+.ficha-vazia {
+  font-size: 0.83rem;
+  color: var(--color-hint);
+  font-style: italic;
+  padding: 6px 0;
+}
+
+/* Listas (cursos, histórico funcional, equipamentos, ocorrências) */
+.ficha-lista-head,
+.ficha-lista-linha {
+  display: grid;
+  grid-template-columns: repeat(var(--ficha-cols, 4), 1fr) 28px;
+  gap: 6px;
+  align-items: center;
+}
+.ficha-lista-head {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-label);
+  padding: 6px 0 4px;
+  border-bottom: 1px solid var(--color-border);
+  margin-top: 4px;
+}
+.ficha-lista-linha { padding: 4px 0; }
+.ficha-lista-linha input,
+.ficha-lista-linha select { font-size: 0.83rem; padding: 6px 8px; }
+
+.ficha-add {
+  margin-top: 8px;
+  padding: 5px 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ficha-add:hover { background: var(--color-row-alt); }
+.ficha-remove {
+  width: 26px; height: 26px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+.ficha-remove:hover { opacity: 0.8; }
+
+@media (max-width: 640px) {
+  .ficha-lista-head { display: none; }
+  .ficha-lista-linha {
+    grid-template-columns: 1fr;
+    border-bottom: 1px dashed var(--color-border);
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+  }
+}
+
+/* Botão de download da ficha em PDF (tela de Usuários e Meu Perfil) */
+.btn-pdf {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-input-bg);
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-pdf:hover { border-color: var(--color-primary); color: var(--color-primary); }
